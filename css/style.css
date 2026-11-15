@@ -460,8 +460,7 @@ img.pic.photo.g-pic { width: 76px; height: 76px; border-radius: 14px; }
 .game-card.dino { background: linear-gradient(180deg, #effbe0, #c6eaa0); animation-delay: .12s; }
 .game-card:active { transform: translateY(5px); box-shadow: 0 3px 0 rgba(107,44,0,.35); }
 .gc-art { display: block; width: 100%; aspect-ratio: 16 / 10; background: center / cover no-repeat; }
-.dino-art { display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 70%, #8fd16a, #2f7d3a 70%, #1d4d26); }
-.dino-art span { font-size: clamp(4rem, 12vw, 7rem); filter: drop-shadow(0 6px 8px rgba(0,0,0,.35)); animation: logoFloat 3s ease-in-out infinite; }
+.dino-art { background-image: url("../cards/dino-care.jpg"); background-color: #2f7d3a; }
 .gc-name { margin-top: 10px; font-size: clamp(1.4rem, 3.6vw, 1.9rem); font-weight: 900; color: #6b2c00; }
 .game-card.dino .gc-name { color: #24531f; }
 .gc-sub { font-size: 1rem; color: #6b5a3a; font-weight: 700; }

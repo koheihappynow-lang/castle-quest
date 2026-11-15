@@ -1,7 +1,7 @@
 // オフラインでも動くように、ゲームのファイルをiPadに保存しておく
 // ・ネットにつながっているときは、いつも最新のプログラムを取りにいく（更新がすぐ反映される）
 // ・つながっていないときは、保存しておいたものを使う
-const VERSION = 'cq-v13';
+const VERSION = 'cq-v14';
 const BG_FILES = ['hero', 'title', 'hub', 'study', 'select', 'build-day', 'build-sunset', 'build-night', 'exchange', 'ghosts', 'workshop']
   .map(n => `./bg/${n}.jpg`);
 const CASTLE_FILES = ['himeji', 'neuschwanstein', 'windsor', 'montsaintmichel', 'edinburgh', 'alhambra', 'chambord', 'hearst', 'forbiddencity', 'pena', 'tsuruga']
@@ -10,7 +10,7 @@ const LOCAL = [
   './', './index.html', './manifest.webmanifest', './css/style.css',
   './js/main.js', './js/store.js', './js/words.js', './js/quiz.js', './js/review.js',
   './js/speech.js', './js/sfx.js', './js/castles.js', './js/photos.js', './js/sentences.js', './js/diorama/engine.js', ...CASTLE_FILES,
-  './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', ...BG_FILES,
+  './cards/dino-care.jpg', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', ...BG_FILES,
 ];
 const CDN = [
   'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js',

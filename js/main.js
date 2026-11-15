@@ -158,7 +158,7 @@ const SCREENS = {
           <span class="gc-badge">🏰 かんせい ${doneN}</span>
         </button>
         <button class="game-card dino" data-act="playGame" data-g="dino">
-          <span class="gc-art dino-art"><span>🦖</span></span>
+          <span class="gc-art dino-art" role="img" aria-label="子どもたちが赤ちゃん恐竜をお世話している"></span>
           <span class="gc-name">ダイナソークエスト</span>
           <span class="gc-sub">えいごで きょうりゅうを そだてよう</span>
           <span class="gc-badge soon">🥚 もうすぐ できるよ（おためし）</span>
