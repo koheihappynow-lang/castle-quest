@@ -1,7 +1,7 @@
 // オフラインでも動くように、ゲームのファイルをiPadに保存しておく
 // ・ネットにつながっているときは、いつも最新のプログラムを取りにいく（更新がすぐ反映される）
 // ・つながっていないときは、保存しておいたものを使う
-const VERSION = 'cq-v9';
+const VERSION = 'cq-v10';
 const BG_FILES = ['hero', 'title', 'hub', 'study', 'select', 'build-day', 'build-sunset', 'build-night', 'exchange', 'ghosts', 'workshop']
   .map(n => `./bg/${n}.jpg`);
 const CASTLE_FILES = ['himeji', 'neuschwanstein', 'windsor', 'montsaintmichel', 'edinburgh', 'alhambra', 'chambord', 'hearst', 'forbiddencity', 'pena', 'tsuruga']
