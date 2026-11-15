@@ -1,0 +1,10 @@
+{
+  "name": "castle-quest",
+  "private": true,
+  "version": "0.1.0",
+  "description": "キャッスルクエスト：4〜7歳向けの英語クイズとお城づくり",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
