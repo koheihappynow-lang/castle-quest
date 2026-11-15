@@ -58,7 +58,7 @@ function go(screen, opts = {}) {
 const BG = {
   boot: 'hero', profiles: 'hero', newProfile: 'workshop', setupPin: 'workshop', pin: 'workshop', parent: 'workshop',
   home: 'hub', quiz: 'study', result: 'title', castles: 'select', collection: 'select', castle: 'castle',
-  exchange: 'exchange', ghosts: 'ghosts', limit: 'build-night',
+  exchange: 'exchange', ghosts: 'ghosts', limit: 'build-night', rest: 'build-sunset',
 };
 function render() {
   const fn = SCREENS[S.screen] || SCREENS.profiles;
@@ -425,6 +425,19 @@ const SCREENS = {
       </div>
     </div>`,
 
+  rest: () => `
+    <div class="page narrow center-text limit rest">
+      <div class="logo">☕</div>
+      <h2>ちょっと ひとやすみ しよう！</h2>
+      <p>たくさん がんばったね。めを やすめて、からだを うごかそう。</p>
+      <div class="rest-timer" id="restTimer">--:--</div>
+      <p class="rest-hint">🙆 のびを しよう　💧 おみずを のもう　👀 とおくを みよう</p>
+      <div class="row center" id="restBtns">
+        <button class="btn ghost" data-act="go" data-to="profiles">おわる</button>
+        <button class="btn" data-act="parent" data-next="endBreak">⚙️ おうちのひと</button>
+      </div>
+    </div>`,
+
   pin: () => pinPad({ title: 'おうちのひと メニュー', sub: S.pin.msg || '4けたの あんしょうばんごうを いれてください' }),
   parent: () => parentScreen(),
 };
@@ -456,6 +469,7 @@ const AFTER = {
   },
   castle: () => attachCastle(),
   parent: () => bindParent(),
+  rest: () => { updateRest(); sayJa('ちょっとひと休みしよう。'); },
 };
 
 // ---------- 写真 ----------
@@ -487,6 +501,7 @@ function squarePhoto(file) {
 
 // ---------- 暗証番号（遊ぶ時間などの「せってい」のときだけ） ----------
 function pinPassed() {
+  if (S.pin.next === 'endBreak') { const p = activeProfile(); if (p) { p.breakUntil = 0; p.contSec = 0; save(); } toast('きゅうけいを おわりに しました'); go('home'); return; }
   if (S.pin.next === 'preview') { go('castle', { previewing: true }); S.previewOK = true; return; }
   S.pinOK = true; S.parentTab = 'settings'; go('parent');
 }
@@ -535,6 +550,7 @@ async function pinKey(v) {
 function startQuiz(mode) {
   const p = activeProfile();
   if (overLimit(p)) { go('limit'); return; }
+  if (onBreak(p)) { go('rest'); return; }
   const qs = buildSession(p, mode);
   if (!qs.length) { toast('きょうの ふくしゅうは おわり！ 👻 は いないよ'); return; }
   S.quiz = { mode, qs, i: 0, correct: 0, streak: 0, answered: false, graduated: 0, tsuruga: 0, yen: { base: 0, streak: 0, challenge: 0, perfect: 0, retry: 0 }, retried: new Set() };
@@ -627,6 +643,7 @@ function nextQuestion() {
     return;
   }
   if (S.pendingLimit || overLimit(p)) { S.pendingLimit = false; save(); go('limit'); return; }
+  if (S.pendingBreak || onBreak(p)) { S.pendingBreak = false; save(); go('rest'); return; }
   render();
 }
 function burst(el) {
@@ -754,13 +771,50 @@ function showDesc(id, first = false) {
 
 // ---------- 遊ぶ時間 ----------
 function overLimit(p) { return p && playedSec(p) >= limitSec(p); }
+// 連続で遊べる時間と休憩
+function onBreak(p) { return !!(p && p.breakUntil && Date.now() < p.breakUntil); }
+function updateRest() {
+  const p = activeProfile();
+  const el = document.getElementById('restTimer');
+  if (!el || !p) return;
+  const left = Math.max(0, Math.ceil(((p.breakUntil || 0) - Date.now()) / 1000));
+  el.textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+  if (left === 0 && !el.dataset.done) {
+    el.dataset.done = '1';
+    el.classList.add('done');
+    el.textContent = 'おわり！';
+    document.getElementById('restBtns').insertAdjacentHTML('afterbegin', '<button class="btn primary" data-act="go" data-to="home">▶ また あそぶ</button>');
+    sfx.bonus();
+    sayJa('休憩おわり！また遊ぼう！');
+  }
+}
 let tickCount = 0;
 setInterval(() => {
   const p = activeProfile();
+  if (S.screen === 'rest') { updateRest(); return; }
   if (!p || !PLAY_SCREENS.has(S.screen) || document.visibilityState !== 'visible') return;
   const d = today();
   p.play[d] = (p.play[d] || 0) + 1;
   if (++tickCount % 15 === 0) save();
+  // 休憩の時間（breakMin）以上 はなれていたら、連続の時間をリセット
+  const now = Date.now();
+  const brk = (db().settings.breakMin || 15) * 60000;
+  if (!p.lastPlay || now - p.lastPlay > brk) p.contSec = 0;
+  p.lastPlay = now;
+  p.contSec = (p.contSec || 0) + 1;
+  const contLim = (db().settings.contMin || 0) * 60;
+  if (contLim) {
+    const cl = contLim - p.contSec;
+    if (cl === 300) { toast('☕ あと 5ふんで きゅうけいだよ', 3500); sayJa('あと5分で休憩だよ'); }
+    if (cl <= 0) {
+      p.breakUntil = now + brk;
+      p.contSec = 0;
+      save();
+      if (S.screen === 'quiz') S.pendingBreak = true;
+      else go('rest');
+      return;
+    }
+  }
   const left = limitSec(p) - playedSec(p);
   if (left === 300) { toast('⏰ あと 5ふんだよ', 3500); sayJa('あと5分だよ'); }
   if (left <= 0) {
@@ -801,6 +855,12 @@ function parentScreen() {
         <small class="hint">のこり5ふんで おしらせし、じかんに なったら「また あした」がめんに なります。</small>
         ${lm ? `<div class="sub-list">${d.profiles.map(p => `<div class="row between"><span>${esc(p.name)}：きょう ${Math.floor(playedSec(p) / 60)} / ${Math.round(limitSec(p) / 60)}ふん</span>
           <button class="btn sm" data-act="extend" data-id="${p.id}">＋15ふん（きょうだけ）</button></div>`).join('')}</div>` : ''}
+      </div>
+      <div class="card"><h3>☕ れんぞくで あそべる じかん と きゅうけい</h3>
+        <div class="field"><span>れんぞくで あそべる じかん</span><div class="row wrap">${[[0, 'せいげん なし'], [30, '30ぷん'], [60, '1じかん'], [90, '1じかん30ぷん'], [120, '2じかん']].map(([m, l]) => `<button class="pill ${(d.settings.contMin || 0) === m ? 'on' : ''}" data-act="setCont" data-v="${m}">${l}</button>`).join('')}</div></div>
+        <div class="field"><span>きゅうけい（さいてい）</span><div class="row wrap">${[15, 20, 30, 45, 60].map(m => `<button class="pill ${(d.settings.breakMin || 15) === m ? 'on' : ''}" data-act="setBreak" data-v="${m}">${m}ふん</button>`).join('')}</div></div>
+        <small class="hint">つづけて あそんだ じかんが きまった じかんに なると「ひとやすみ」がめんに なり、きゅうけいが おわるまで あそべません（のこり5ふんで おしらせ）。とちゅうで きゅうけいの じかん いじょう はなれていた ときは、0から かぞえなおします。</small>
+        ${d.profiles.some(onBreak) ? `<div class="sub-list">${d.profiles.filter(onBreak).map(p => `<div class="row between"><span>${esc(p.name)}：きゅうけいちゅう（あと ${Math.ceil((p.breakUntil - Date.now()) / 60000)}ふん）</span><button class="btn sm" data-act="clearBreak" data-id="${p.id}">きゅうけいを おわらせる</button></div>`).join('')}</div>` : ''}
       </div>
       <div class="card"><h3>👻 ふくしゅうの きびしさ（しっかりモード）</h3>
         <p class="hint">ふくしゅう待ちの おばけが この数を こえると、ふくしゅうするまで おしろの パーツを かえません。</p>
@@ -953,7 +1013,7 @@ function exportData() {
 // ---------- タップ操作 ----------
 const ACTIONS = {
   go: d => { sfx.tap(); go(d.to, { previewing: false }); },
-  pick: d => { sfx.tap(); setActive(d.id); const p = activeProfile(); if (overLimit(p)) go('limit'); else { go('home'); sayJa(`${p.name}、一緒にがんばろう！`); } },
+  pick: d => { sfx.tap(); setActive(d.id); const p = activeProfile(); if (overLimit(p)) go('limit'); else if (onBreak(p)) go('rest'); else { go('home'); sayJa(`${p.name}、一緒にがんばろう！`); } },
   age: d => { S.newProfile.name = document.getElementById('pname')?.value || S.newProfile.name; S.newProfile.age = Number(d.v); render(); },
   avatar: d => { S.newProfile.name = document.getElementById('pname')?.value || S.newProfile.name; S.newProfile.avatar = d.v; render(); },
   clearPhoto: () => { S.newProfile.photo = null; render(); },
@@ -999,13 +1059,13 @@ const ACTIONS = {
   },
   readDesc: d => showDesc(d.id),
   parent: d => {
-    if (d.next === 'extend') { askPin('extend'); return; }
+    if (d.next === 'extend' || d.next === 'endBreak') { askPin(d.next); return; }
     S.parentTab = 'home'; S.pinOK = false;
     go('parent');
   },
   pinKey: d => pinKey(d.v),
   pinDel: () => { S.pin.buf = S.pin.buf.slice(0, -1); render(); },
-  pinCancel: () => { if (S.pin.next === 'extend') go('limit'); else if (S.pin.next === 'preview') go('castle', { previewing: false }); else { S.parentTab = 'home'; go('parent'); } },
+  pinCancel: () => { if (S.pin.next === 'extend') go('limit'); else if (S.pin.next === 'endBreak') go('rest'); else if (S.pin.next === 'preview') go('castle', { previewing: false }); else { S.parentTab = 'home'; go('parent'); } },
   ptab: d => { if (d.v === 'settings' && !S.pinOK) { askPin('settings'); return; } S.parentTab = d.v; render(); },
   statsFor: d => { S.statsId = d.id; S.parentTab = 'stats'; render(); },
   setLevel: d => { const p = db().profiles.find(x => x.id === d.id); p.level = Number(d.v); save(); render(); },
@@ -1015,6 +1075,9 @@ const ACTIONS = {
     if (confirm(`${p.name} の データを けします。もとに もどせません。よろしいですか？`)) { deleteProfile(d.id); render(); }
   },
   setLimit: d => { db().settings.limitMin = Number(d.v); save(); render(); },
+  setCont: d => { db().settings.contMin = Number(d.v); save(); render(); },
+  setBreak: d => { db().settings.breakMin = Number(d.v); save(); render(); },
+  clearBreak: d => { const p = db().profiles.find(x => x.id === d.id); p.breakUntil = 0; p.contSec = 0; save(); toast(`${p.name}：きゅうけいを おわりに しました`); render(); },
   extend: d => { const p = db().profiles.find(x => x.id === d.id); const t = today(); p.extra[t] = (p.extra[t] || 0) + 15; save(); toast(`${p.name}：きょうは あと15ふん ふえました`); render(); },
   setGate: d => { db().settings.reviewGate = Number(d.v); save(); render(); },
   saveRates: () => {

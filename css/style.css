@@ -395,6 +395,13 @@ body[data-bg="hub"] .big-btn.quiz { min-height: 150px; }
 .castle-page .preview-banner { position: absolute; }
 .castle-panel { background: rgba(255, 255, 255, .93); backdrop-filter: blur(6px); }
 
+/* ===== ひとやすみ ===== */
+body[data-bg="build-sunset"]::before { background-image: url(../bg/build-sunset.jpg); }
+.rest-timer { font: 900 4.2rem/1 "Arial Rounded MT Bold", "Hiragino Sans", sans-serif; color: #fff; background: linear-gradient(180deg, #ff9a4d, #ff6f61); display: inline-block; padding: 14px 34px; border-radius: 28px; margin: 14px 0; box-shadow: 0 8px 0 rgba(0, 0, 0, .15), 0 14px 30px rgba(0, 0, 0, .25); }
+.rest-timer.done { background: linear-gradient(180deg, #4cc9a0, #2a9d8f); font-size: 3rem; }
+.rest-hint { font-size: 1.05rem; }
+.limit .btn.ghost { background: rgba(255, 255, 255, .9); color: var(--ink); box-shadow: var(--shadow); }
+
 /* ===== 完成記念カード ===== */
 .col-card { position: relative; overflow: hidden; }
 .col-card-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }

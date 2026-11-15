@@ -8,7 +8,7 @@ function blank() {
     version: 3,
     profiles: [],
     activeId: null,
-    settings: { pinHash: null, limitMin: 0, reviewGate: 30, rates: { ...DEFAULT_RATES }, ratesDate: RATES_DATE, voice: { en: '', ja: '', rate: 1 } },
+    settings: { pinHash: null, limitMin: 0, contMin: 60, breakMin: 15, reviewGate: 30, rates: { ...DEFAULT_RATES }, ratesDate: RATES_DATE, voice: { en: '', ja: '', rate: 1 } },
   };
 }
 
