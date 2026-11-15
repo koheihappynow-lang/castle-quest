@@ -271,7 +271,8 @@ export function retryOf(q, level) {
 }
 
 // ---------- 1回ぶん（10問）をつくる ----------
-export function buildSession(p, mode) {
+// boost：そのカテゴリの ことばを 多めに 出す（ダイナソークエストでは 'dino'）
+export function buildSession(p, mode, { boost = null } = {}) {
   const level = p.level;
   const due = shuffle(dueIds(p)).filter(id => BY_ID[id]);
   if (mode === 'review') {
@@ -290,6 +291,7 @@ export function buildSession(p, mode) {
     typeCount[type] = (typeCount[type] || 0) + 1;
     if (isSpecialType(type) || isLetterType(type)) { qs.push(makeQuestion(null, level, { type, challenge })); continue; }
     let pool = wordPool(level, challenge, type).filter(w => !used.has(w.id) && (level > 1 || w.hasPic));
+    if (boost && Math.random() < 0.3) { const bp = WORDS.filter(w => w.cat === boost && w.lv <= Math.min(3, level + 1) && !used.has(w.id) && (suits[type] || (() => true))(w) && (level > 1 || w.hasPic)); if (bp.length) pool = bp; }
     if (!pool.length) pool = wordPool(level, false, type);
     if (!pool.length) continue;
     const w = pickOne(pool);

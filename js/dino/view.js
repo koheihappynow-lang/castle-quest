@@ -211,7 +211,7 @@ export class DinoView {
     part(g, p => { for (let i = 0; i < 8; i++) p.add(mesh(new THREE.SphereGeometry(rr(0.12, 0.22), 8, 6), std(0x5d8f3a), CX + rr(-1.2, 1.2), rr(0.4, 1.2), CZ + rr(-1.0, 0.6))); });
     // 7 ひよけの やね
     g = stage();
-    const RX = 4.4, RZ = 2.4;
+    const RX = 0.8, RZ = -5.0;   // カメラと 恐竜の あいだに 入らないよう、おくに
     part(g, p => { for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) p.add(mesh(new THREE.CylinderGeometry(0.09, 0.11, 2.4, 7), wood, RX + x * 1.1, 1.2, RZ + z * 0.9)); });
     part(g, p => { for (const z of [-1, 1]) p.add(mesh(new THREE.BoxGeometry(2.6, 0.12, 0.14), wood, RX, 2.4, RZ + z * 0.9)); });
     part(g, p => { const roof = mesh(new THREE.BoxGeometry(2.9, 0.1, 2.4), straw, RX, 2.55, RZ); roof.rotation.x = 0.12; p.add(roof); });
@@ -306,6 +306,7 @@ export class DinoView {
   }
 
   pet() { if (!this.dino || this.dino.busy()) return false; this.dino.play('pet'); this.burst(this.heart, this.headPos(), 6, 0.45 * this.sizeK()); chirp(700, 1300, 0.14); chirp(900, 1500, 0.14, 'sine', 0.12, 0.18); return true; }
+  huh() { if (!this.dino) return; this.dino.actions = []; this.dino.play('huh'); chirp(500, 380, 0.18, 'sine', 0.12); chirp(380, 620, 0.22, 'sine', 0.12, 0.2); }
   roar() { if (!this.dino || this.dino.busy()) return false; this.dino.walking = false; this.dino.play('roar'); return true; }
   toggleWalk() { if (!this.dino) return false; this.dino.walking = !this.dino.walking; return this.dino.walking; }
   // えさを あげる → 食べおわったら resolve

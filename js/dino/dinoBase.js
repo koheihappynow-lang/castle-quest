@@ -37,7 +37,7 @@ export class DinoBase {
   stage() { return stageOf(this.growth * 100).name; }
 
   play(type, opts = {}) {
-    const dur = { pet: 1.9, feed: 3.4, roar: 2.6 }[type];
+    const dur = { pet: 1.9, feed: 3.4, roar: 2.6, huh: 1.5 }[type];
     this.actions = this.actions.filter(a => a.type !== type);
     const a = { type, t: 0, dur, fired: {}, ...opts };
     if (type === 'feed') a.reach = this.findReach(opts.foodY ?? 0.15);
@@ -120,6 +120,10 @@ export class DinoBase {
         else if (t >= 0.85 && t < 2.5) p.jaw = 0.22 * (0.5 - 0.5 * Math.cos((t - 0.85) * 15));
         if (t > 0.88 && !a.fired.bite) { a.fired.bite = 1; this.onEvent('bite'); }
         if (t > 2.6) eyeSquint = lerp(1, 0.3, env(t, 2.6, 2.8, 3.2, a.dur));
+      } else if (a.type === 'huh') {
+        // 「あれ？」と 首を かしげる
+        const e = env(t, 0, 0.3, 1.1, a.dur);
+        p.roll = 0.38 * e; p.neckZ += 0.12 * e; p.neckY = p.neckY * (1 - e) + 0.25 * e; p.jaw = 0.06 * e; p.tailAmp = lerp(p.tailAmp, 0.02, e);
       } else if (a.type === 'roar') {
         const e = env(t, 0, 0.45, 1.9, a.dur);
         p.pitch = 0.1 * e; p.neckZ = 0.4 * e; p.jaw = 0.8 * e; p.neckY = p.neckY * (1 - e) + 0.06 * Math.sin(t * 38) * e;

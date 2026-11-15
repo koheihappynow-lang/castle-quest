@@ -589,7 +589,7 @@ function startQuiz(mode) {
   const p = activeProfile();
   if (overLimit(p)) { go('limit'); return; }
   if (onBreak(p)) { go('rest'); return; }
-  const qs = buildSession(p, mode);
+  const qs = buildSession(p, mode, { boost: S.game === 'dino' ? 'dino' : null });
   if (!qs.length) { toast('きょうの ふくしゅうは おわり！ 👻 は いないよ'); return; }
   S.quiz = { mode, qs, i: 0, correct: 0, streak: 0, answered: false, graduated: 0, tsuruga: 0, yen: { base: 0, streak: 0, challenge: 0, perfect: 0, retry: 0 }, retried: new Set() };
   go('quiz');

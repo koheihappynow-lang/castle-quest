@@ -15,6 +15,20 @@ const curOf = id => DINO_CUR[id] || 'dollar';
 const ART = { trex: 'cards/dino-trex.jpg' };
 const BABY_ART = { trex: 'cards/dino-trex-baby.jpg' };
 const ICON = { trex: '🦖', triceratops: '🦏', stegosaurus: '🦕', brachiosaurus: '🦕', velociraptor: '🦖', spinosaurus: '🐊', ankylosaurus: '🐢', iguanodon: '🦕', parasaurolophus: '🦆', pteranodon: '🦅', fukuiraptor: '🦖' };
+// 恐竜からの 英語の おねがい（聞いて、そのとおりに おせわする）
+// en1：かんたん（レベル1）、en：ふつう。hint：わからないときに 出す 絵
+const REQUESTS = [
+  { id: 'hungry', act: 'feed', k: 'food', en1: '{food}, please!', en: "I'm hungry! Give me {food}, please!", ja: 'おなかが すいた！ {foodJa}を ちょうだい！', hint: '{icon}' },
+  { id: 'feast', act: 'feed', k: 'feast', en1: 'A feast, please!', en: 'I want a special feast!', ja: 'とくべつな ごちそうが たべたい！', hint: '🎂', need: (dd) => (dd.pantry.feast || 0) > 0 },
+  { id: 'walk', act: 'walk', on: true, en1: "Let's walk!", en: "Let's take a walk!", ja: 'さんぽに いこう！', hint: '🚶', need: (dd, v) => !v?.dino?.walking },
+  { id: 'stop', act: 'walk', on: false, en1: 'Stop, please!', en: "I'm tired. Stop, please!", ja: 'つかれた。とまって！', hint: '✋', need: (dd, v) => !!v?.dino?.walking },
+  { id: 'pet', act: 'pet', en1: 'Pat me, please!', en: 'Pat my head, please!', ja: 'あたまを なでて！', hint: '🖐' },
+  { id: 'roar', act: 'roar', en1: 'Roar!', en: "Let's roar together! Roar!", ja: 'いっしょに ほえよう！', hint: '🦖' },
+  { id: 'wear', act: 'wear', on: true, en1: 'My {acc}, please!', en: 'Put on my {acc}, please!', ja: '{accJa}を つけて！', hint: '{accIcon}', need: (dd, v, m) => dd.accessories.some(a => !m.wearing.includes(a)) },
+  { id: 'off', act: 'wear', on: false, en1: 'No {acc}, please!', en: 'Take off my {acc}, please!', ja: '{accJa}を はずして！', hint: '{accIcon}', need: (dd, v, m) => m.wearing.length > 0 },
+];
+const TALK_YEN = 300, TALK_MAX = 10;   // 1日に 10かいまで おこづかい
+
 // フクイラプトル（超レア）：おばけを 20ぴき ともだちに すると たまごが あらわれる
 const RARE_GHOSTS = 20;
 
@@ -111,6 +125,7 @@ export function installDino(api) {
     <div class="castle-page dino-page">
       <div id="dstage" class="stage"><div class="stage-loading">🦖 じゅんびちゅう…</div></div>
       ${d.order.length > 1 ? `<div class="d-switch">${d.order.map(id => `<button class="pill ${id === d.active ? 'on' : ''}" data-act="switchDino" data-id="${id}">${ICON[id]} ${DINO_BY_ID[id].name}</button>`).join('')}</div>` : ''}
+      <div class="d-bubble" id="dbubble" hidden></div>
       <div class="castle-panel d-panel" id="dpanel">${panelHTML(p)}</div>
     </div>`;
   };
@@ -241,6 +256,63 @@ export function installDino(api) {
   }
   const fmtEra = n => n >= 10000 ? `${Math.floor(n / 10000)}おく${n % 10000 ? `${n % 10000}まん` : ''}ねん` : `${n}まんねん`;
 
+  // ---------- 英語の おねがい ----------
+  let reqTimer = null, lastReq = null;
+  const schedReq = ms => { clearTimeout(reqTimer); reqTimer = setTimeout(makeReq, ms); };
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  function makeReq() {
+    if (S.screen !== 'dcare' || !view?.dino) return;
+    if (view.dino.busy() || view.food) { schedReq(4000); return; }
+    const p = activeProfile(), dd = p.dino, m = mine(p), info = DINO_BY_ID[dd.active];
+    const cands = REQUESTS.filter(r => r.id !== lastReq && (!r.need || r.need(dd, view, m)) && (r.act !== 'feed' || (dd.pantry[r.k === 'food' ? info.food : r.k] || 0) > 0));
+    if (!cands.length) { schedReq(15000); return; }
+    const r = pick(cands);
+    const f = FOODS[info.food];
+    let acc = null;
+    if (r.id === 'wear') acc = ACCESSORIES.find(a => dd.accessories.includes(a.id) && !m.wearing.includes(a.id));
+    if (r.id === 'off') acc = ACCESSORIES.find(a => m.wearing.includes(a.id));
+    const fill = s => s.replace('{food}', f.en).replace('{foodJa}', f.name).replace('{icon}', f.icon).replace('{acc}', acc ? acc.en : '').replace('{accJa}', acc ? acc.name : '').replace('{accIcon}', acc ? acc.icon : '');
+    const text = fill(p.level === 1 ? r.en1 : r.en);
+    S.dreq = { ...r, k: r.k === 'food' ? info.food : r.k, acc: acc ? acc.id : null, text, ja: fill(r.ja), hintIcon: fill(r.hint), tries: 0 };
+    lastReq = r.id;
+    showBubble();
+    sayEn(text);
+  }
+  function showBubble(showJa = false) {
+    const el = document.getElementById('dbubble'), q = S.dreq;
+    if (!el) return;
+    if (!q) { el.hidden = true; return; }
+    el.hidden = false;
+    const ja = (showJa || q.tries >= 2) ? '<div class="db-ja">' + q.hintIcon + ' ' + esc(q.ja) + '</div>' : '<button class="db-hint" data-act="reqHint">❓ ヒント</button>';
+    el.innerHTML = '<button class="db-say" data-act="reqSay" aria-label="もういちど きく">🔊</button>'
+      + '<div class="db-main"><div class="db-en">' + esc(q.text) + '</div>' + ja + '</div>'
+      + '<button class="db-x" data-act="reqClose" aria-label="とじる">✕</button>';
+    el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+  }
+  // 操作が おねがいと あっているか。あっていない ときは 首を かしげて false
+  function matchReq(act, key, on) {
+    const q = S.dreq;
+    if (!q) return true;
+    const ok = q.act === act && (act !== 'feed' || q.k === key) && (act !== 'wear' || (q.acc === key && q.on === on)) && (act !== 'walk' || q.on === on);
+    if (ok) {
+      S.dreq = null; showBubble();
+      const dd = activeProfile().dino;
+      dd.talk = dd.talk && dd.talk.d === today() ? dd.talk : { d: today(), n: 0 };
+      const paid = dd.talk.n < TALK_MAX;
+      if (paid) { dd.talk.n++; dd.wallet.yen += TALK_YEN; dd.totalYen = (dd.totalYen || 0) + TALK_YEN; }
+      save();
+      setTimeout(() => { sfx.coin(); toast('🎉 えいごが わかったね！' + (paid ? ' +' + TALK_YEN + 'えん' : '')); sayEn(pick(['Thank you!', 'Great job!', 'You did it!', 'I love it!'])); refreshPanel(); }, act === 'feed' ? 3600 : 900);
+      schedReq(act === 'feed' ? 30000 : 22000);
+      return true;
+    }
+    q.tries++;
+    if (view) view.huh();
+    if (sfx.wrong) sfx.wrong();
+    setTimeout(() => { sayEn("Hmm? That's not it. Listen again!"); setTimeout(() => sayEn(q.text), 2200); }, 300);
+    showBubble();
+    return false;
+  }
+
   // ---------- 3D の つけはずし ----------
   let view = null, viewP = null, viewDinoId = null;
   async function attachView() {
@@ -264,14 +336,15 @@ export function installDino(api) {
       S.homeAnim = null;
       view.attach(el);
       el.querySelector('.stage-loading')?.remove();
-      if (S.justHatched) { S.justHatched = false; setTimeout(() => view.hatchEffect(), 300); }
+      if (S.justHatched) { S.justHatched = false; setTimeout(() => view.hatchEffect(), 300); schedReq(12000); }
+      else if (S.dreq) showBubble(); else schedReq(5000);
     } catch (e) {
       console.error(e);
       el.innerHTML = '<div class="stage-loading">3Dを よみこめませんでした。インターネットに つないで もういちど ひらいてね。</div>';
     }
   }
   AFTER.dcare = () => attachView();
-  LEAVE.dcare = () => view?.detach();
+  LEAVE.dcare = () => { view?.detach(); clearTimeout(reqTimer); S.dreq = null; };
   AFTER.hatch = () => sayJa('たまごをタップして、あたためよう！');
 
   // ---------- 操作 ----------
@@ -307,7 +380,8 @@ export function installDino(api) {
       const p = activeProfile(), dd = p.dino, m = mine(p), k = d.k;
       if (!view) return;
       if ((dd.pantry[k] || 0) <= 0) { sfx.wrong(); toast(`${FOODS[k].icon} ${FOODS[k].name}が ないよ。おみせで かおう！`); sayJa('おみせで買おう！'); return; }
-      if (m.growth >= MAX_GROWTH && k !== 'feast') { /* おとなでも たべられる */ }
+      if (view.dino?.busy() || view.food) return;
+      if (!matchReq('feed', k)) return;
       dd.pantry[k]--;
       save(); refreshPanel();
       view.feed(k).then(ok => {
@@ -326,11 +400,12 @@ export function installDino(api) {
         }
       });
     },
-    petDino: () => { if (view?.pet()) { sfx.tap(); setTimeout(() => sayEn('Thank you!'), 300); } },
-    walkDino: () => { if (!view) return; const on = view.toggleWalk(); const b = document.querySelector('[data-act=walkDino]'); if (b) b.textContent = on ? '✋ とまる' : '🚶 さんぽ'; },
-    roarDino: () => { view?.roar(); },
+    petDino: () => { if (!view?.dino || view.dino.busy()) return; const had = !!S.dreq; if (!matchReq('pet')) return; if (view.pet()) { sfx.tap(); if (!had) setTimeout(() => sayEn('Thank you!'), 300); } },
+    walkDino: () => { if (!view?.dino) return; if (!matchReq('walk', null, !view.dino.walking)) return; const on = view.toggleWalk(); const b = document.querySelector('[data-act=walkDino]'); if (b) b.textContent = on ? '✋ とまる' : '🚶 さんぽ'; },
+    roarDino: () => { if (!view?.dino || view.dino.busy()) return; if (!matchReq('roar')) return; view.roar(); },
     wear: d => {
       const m = mine(); const i = m.wearing.indexOf(d.id);
+      if (!matchReq('wear', d.id, i < 0)) return;
       if (i >= 0) m.wearing.splice(i, 1); else m.wearing.push(d.id);
       save(); view?.setAccessories(m.wearing); refreshPanel(); sfx.tap();
     },
@@ -376,5 +451,8 @@ export function installDino(api) {
       go('dcare');
     },
     dinoDesc: d => { sfx.tap(); showDinoDesc(d.id); },
+    reqSay: () => { if (S.dreq) sayEn(S.dreq.text); },
+    reqHint: () => { if (!S.dreq) return; showBubble(true); sayJa(S.dreq.ja); },
+    reqClose: () => { S.dreq = null; showBubble(); schedReq(30000); },
   });
 }

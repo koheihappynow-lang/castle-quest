@@ -9,7 +9,7 @@ export const CATS = {
   clothes: 'ふく', vehicle: 'のりもの', people: 'ひと', fantasy: 'ふしぎ', weather: 'てんき',
   nature: 'しぜん', home: 'おうち', play: 'あそび', school: 'がっこう', job: 'しごと',
   shape: 'かたち', feeling: 'きもち', action: 'うごき', season: 'きせつ', town: 'まち', money: 'おかね・くに',
-  phrase: 'あいさつ・ことば', time: 'とき', place: 'ばしょ', describe: 'ようす', letter: 'アルファベット',
+  phrase: 'あいさつ・ことば', time: 'とき', place: 'ばしょ', describe: 'ようす', letter: 'アルファベット', dino: 'きょうりゅう',
 };
 
 // 絵が似ていて混ざると不公平なカテゴリの組み合わせ（選択肢に一緒に出さない）
@@ -309,6 +309,15 @@ const RAW_MORE = {
     ['bank', 'ぎんこう', '🏦', 3], ['church', 'きょうかい', '⛪', 3], ['bridge', 'はし', '🌉', 3], ['fountain', 'ふんすい', '⛲', 3],
     ['factory', 'こうじょう', '🏭', 3], ['post office', 'ゆうびんきょく', '🏣', 3], ['stadium', 'スタジアム', '🏟️', 3],
     ['Ferris wheel', 'かんらんしゃ', '🎡', 3], ['roller coaster', 'ジェットコースター', '🎢', 3], ['traffic light', 'しんごう', '🚦', 3],
+  ],
+  // ダイナソークエスト（恐竜で あそぶ ときは 少し 多めに 出る）
+  dino: [
+    ['T. rex', 'ティラノサウルス', '🦖', 1], ['nest', 'す', '🪺', 2], ['hatch', '（たまごから）うまれる', '🐣', 2],
+    ['footprint', 'あしあと', '👣', 3], ['tail', 'しっぽ', null, 2], ['roar', 'ほえる', null, 2], ['claw', 'つめ', null, 3],
+    ['horn', 'つの', null, 3], ['wing', 'つばさ', null, 3], ['fossil', 'かせき', null, 3], ['jungle', 'ジャングル', null, 3], ['sharp', 'するどい', null, 3],
+    ['Triceratops', 'トリケラトプス', null, 2], ['Stegosaurus', 'ステゴサウルス', null, 2], ['Brachiosaurus', 'ブラキオサウルス', null, 3],
+    ['Velociraptor', 'ヴェロキラプトル', null, 3], ['Spinosaurus', 'スピノサウルス', null, 3], ['Ankylosaurus', 'アンキロサウルス', null, 3],
+    ['Iguanodon', 'イグアノドン', null, 3], ['Parasaurolophus', 'パラサウロロフス', null, 3], ['Pteranodon', 'プテラノドン', null, 2],
   ],
   money: [
     ['money', 'おかね', '💰', 2], ['coin', 'コイン', '🪙', 2], ['flag', 'はた', '🚩', 2],
