@@ -132,3 +132,26 @@ export function build(ctx) {
   }
   void sub;
 }
+
+// ---------- 細部の かざり ----------
+import * as E from '../engine.js';
+export function details(ctx) {
+  const [, , , , , , g7, g8, g9, g10] = ctx.stages;
+  const TY = 3.3;
+  // テムズ川の 白鳥と ボート
+  E.swans(ctx, 7, [E.V(-28, 0, -27.5), E.V(28, 0, -27.5), E.V(28, 0, -25.5), E.V(-28, 0, -25.5), E.V(-28, 0, -27.5)], 5, 0.12);
+  const bt = E.boat(E.M.clothes[0]); g9.add(bt);
+  ctx.addWalker(8, bt, [E.V(-30, 0.1, -26.3), E.V(30, 0.1, -26.3)], { speed: 0.008, bob: 0.01 });
+  // 石の 橋
+  const br = new E.THREE.Group();
+  br.add(E.mesh(E.boxGeo(3.2, 0.5, 8.5), E.M.stoneWarm, 0, 1.2, 0));
+  for (const z of [-3.6, -1.2, 1.2, 3.6]) br.add(E.mesh(E.boxGeo(3.2, 1.3, 0.5), E.M.stoneWarm, 0, 0.5, z));
+  for (const s of [-1, 1]) br.add(E.mesh(E.boxGeo(0.2, 0.4, 8.5), E.M.stoneWarm, s * 1.5, 1.6, 0));
+  br.position.set(-12, 0, -26.5); g8.add(br);
+  // 衛兵の 小屋
+  E.sentryBox(g7, -10.2, TY, 8.6, 0);
+  E.sentryBox(g7, -4.8, TY, 8.6, 0);
+  // ロングウォークの 旗
+  E.bannerRow(g10, E.V(11.6, 0, 11), E.V(11.6, 0, 30), 5, 'uk', { h: 2.6, w: 0.9 });
+  E.bannerRow(g10, E.V(14.4, 0, 11), E.V(14.4, 0, 30), 5, 'uk', { h: 2.6, w: 0.9 });
+}

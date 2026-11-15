@@ -137,3 +137,16 @@ export function build(ctx) {
     g10.add(lanternsMesh(list, { size: 0.28, sphere: true }));
   }
 }
+
+// ---------- 細部の かざり ----------
+import * as E from '../engine.js';
+export function details(ctx) {
+  const [, , , , , , , g8, , g10] = ctx.stages;
+  // 堤防の 旗
+  E.bannerRow(g10, E.V(-1.35, 1.15, 11.5), E.V(-1.35, 1.15, 20.5), 4, 'fr', { h: 2.2, w: 0.8 });
+  E.bannerRow(g10, E.V(1.35, 1.15, 11.5), E.V(1.35, 1.15, 20.5), 4, 'fr', { h: 2.2, w: 0.8 });
+  // 陸がわの 屋台
+  E.stall(g8, -4.5, 24.5, 0, 0x2f6fd8, 0.6);
+  E.stall(g8, 4.5, 24.5, 0, 0xd94a3a, 0.6);
+  E.stall(g8, -8.5, 25.5, 0.2, 0xf2b632, 0.6);
+}

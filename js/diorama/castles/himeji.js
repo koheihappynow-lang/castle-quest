@@ -204,3 +204,24 @@ export function build(ctx) {
     void pts;
   }
 }
+
+// ---------- 細部の かざり ----------
+import * as E from '../engine.js';
+export function details(ctx) {
+  const [g1, , , , , , g7, , g9, g10] = ctx.stages;
+  // お堀の スイレン
+  E.lilyPads(g1, 0, -15, 26, 2.6, 22, -0.43);
+  E.lilyPads(g1, 15, 0, 2.6, 26, 18, -0.43);
+  E.lilyPads(g1, -15, 4, 2.6, 18, 14, -0.43);
+  // 門の 前の 番兵
+  for (const x of [-3.2, 3.2]) { const p = E.person(E.M.kimono[0], 'straw'); p.position.set(x, 1.5, 13.3); g9.add(p); }
+  // 城下町の のぼり旗
+  E.bannerRow(g10, E.V(-1.75, 0, 19.2), E.V(-1.75, 0, 30.5), 4, 'jp', { h: 2.4, w: 0.6 });
+  E.bannerRow(g10, E.V(1.75, 0, 19.2), E.V(1.75, 0, 30.5), 4, 'jp', { h: 2.4, w: 0.6 });
+  // 空の たこ
+  E.kites(ctx, 8, [[-16, 21, -16, 0xd83b2f], [14, 23, -20, 0x2f6fd8]]);
+  // 本丸の 植えこみ
+  const b = new E.Batch();
+  for (const x of [-5, -3.5, 3.5, 5]) for (const z of [7, 9.5]) b.geo('leafDark', new E.THREE.IcosahedronGeometry(0.45, 1), x, 1.8, z, 0, null, 1, 0.7, 1);
+  b.build(g7);
+}

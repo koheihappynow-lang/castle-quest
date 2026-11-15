@@ -162,3 +162,26 @@ export function build(ctx) {
     g10.add(lanternsMesh(list, { size: 0.28, sphere: true }));
   }
 }
+
+// ---------- 細部の かざり ----------
+import * as E from '../engine.js';
+export function details(ctx) {
+  const [, , , , , , , g8, g9, g10] = ctx.stages;
+  const CY = 9;
+  // ロイヤル・マイルの 旗
+  for (let x = 15; x <= 29; x += 3.5) {
+    const y = Math.max(0, CY + 0.3 + ((x - 11) / 20.5) * (1 - (CY + 0.3)) - 1.2);
+    E.flagPole(g10, x, y + 2.2, -3.4, 'scot', { h: 1.2, w: 0.7 });
+  }
+  // 庭園の 市場
+  E.stall(g8, -12, -13.5, 0, 0xc23b30);
+  E.stall(g8, -7.5, -13.5, 0, 0x2f5a3a);
+  E.stall(g8, -3, -13.5, 0, 0x2f6fd8);
+  // バグパイプの 楽隊
+  for (let i = 0; i < 3; i++) {
+    const p = E.person(E.M.tartan, 'bearskin');
+    p.add(E.mesh(new E.THREE.SphereGeometry(0.14, 8, 6), E.M.redCloth, 0.18, 0.6, 0.1));
+    g9.add(p);
+    ctx.addWalker(8, p, [E.V(28, 1.4, -1.6 + i * 0.6), E.V(14, CY - 0.6, -1.6 + i * 0.6)], { u: i * 0.02, speed: 0.012 });
+  }
+}

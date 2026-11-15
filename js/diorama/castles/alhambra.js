@@ -145,3 +145,18 @@ export function build(ctx) {
   }
   void merlonsRect; void sub;
 }
+
+// ---------- 細部の かざり ----------
+import * as E from '../engine.js';
+export function details(ctx) {
+  const [, , , , , , , g8, g9] = ctx.stages;
+  // ヘネラリフェの 噴水の アーチ
+  for (let z = -8; z <= 0; z += 2) { E.fountainJet(ctx, 7, 21.6, 0.12, z, 0.7, 18); E.fountainJet(ctx, 7, 22.4, 0.12, z + 1, 0.7, 18); }
+  // 馬車と 屋台
+  const c = E.carriage(E.M.black, { horses: 2, horseMat: E.M.horseWhite });
+  g9.add(c);
+  ctx.addWalker(8, c, [E.V(-30, 0.05, 7), E.V(30, 0.05, 7)], { speed: 0.01, bob: 0.02 });
+  E.stall(g8, -14, 7.8, 0, 0xc84b2f);
+  E.stall(g8, -10, 7.8, 0, 0xe0a526);
+  E.stall(g8, 4, 7.8, 0, 0x2f6d6a);
+}

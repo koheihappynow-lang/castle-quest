@@ -180,3 +180,25 @@ export function build(ctx) {
   }
   void rr; void rnd; void cylGeo; void sub;
 }
+
+// ---------- 細部の かざり ----------
+import * as E from '../engine.js';
+export function details(ctx) {
+  const [, , , , , g6, g7] = ctx.stages;
+  // 屋根の すみの かざり（走獣）
+  E.roofGuardians(g6, 0, -2.5, 6.3, 13, 7.6, 0.9, 0.55, 5);
+  E.roofGuardians(g6, 0, -15, 4.6, 9.2, 5.2, 0.6, 0.55, 3);
+  // 空の たこ
+  E.kites(ctx, 8, [[-12, 21, -22, 0xd83b2f], [10, 22, -24, 0xffd23f], [2, 24, -28, 0x2f6fd8]]);
+  // 青銅の 香炉と 鶴
+  for (const s of [-1, 1]) {
+    g7.add(E.mesh(new E.THREE.CylinderGeometry(0.35, 0.28, 0.5, 8), E.M.bronze, s * 3.5, 3.55, 1.6));
+    g7.add(E.mesh(new E.THREE.ConeGeometry(0.3, 0.4, 8), E.M.bronze, s * 3.5, 4.0, 1.6));
+    const crane = new E.THREE.Group();
+    crane.add(E.mesh(new E.THREE.SphereGeometry(0.2, 8, 6), E.M.bronze, 0, 0.55, 0));
+    const nk = E.mesh(new E.THREE.CylinderGeometry(0.03, 0.04, 0.6, 6), E.M.bronze, 0, 0.95, 0.08); nk.rotation.x = 0.2; crane.add(nk);
+    crane.add(E.mesh(new E.THREE.CylinderGeometry(0.025, 0.025, 0.4, 5), E.M.bronze, 0, 0.2, 0));
+    crane.position.set(s * 5.2, 3.3, 1.2);
+    g7.add(crane);
+  }
+}

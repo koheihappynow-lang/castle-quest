@@ -133,3 +133,24 @@ export function build(ctx) {
   }
   void sub;
 }
+
+// ---------- 細部の かざり ----------
+import * as E from '../engine.js';
+export function details(ctx) {
+  const [g1, , , , , , g7, g8] = ctx.stages;
+  const TY = 11.2;
+  // 山を ただよう きり
+  const n = 40, p = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { const a = E.rr(0, Math.PI * 2), r = E.rr(9, 16); p[i * 3] = Math.cos(a) * r; p[i * 3 + 1] = E.rr(2, 8); p[i * 3 + 2] = Math.sin(a) * r; }
+  const g = new E.THREE.BufferGeometry(); g.setAttribute('position', new E.THREE.BufferAttribute(p, 3));
+  const mist = new E.THREE.Points(g, new E.THREE.PointsMaterial({ map: E.TEX.dot, size: 9, color: 0xffffff, transparent: true, opacity: 0.22, depthWrite: false }));
+  g1.add(mist);
+  ctx.addUpdater(0, t => { mist.rotation.y = t * 0.01; });
+  // 城壁の 旗
+  E.flagPole(g7, -8.2, TY + 2.7, 4.6, 'pt', { h: 1.6, w: 0.8 });
+  E.flagPole(g7, 5.8, TY + 2.7, 4.6, 'pt', { h: 1.6, w: 0.8 });
+  E.flagPole(g7, -8.2, TY + 2.7, -4.6, 'pt', { h: 1.6, w: 0.8 });
+  // ふもとの 屋台
+  E.stall(g8, 22, 23, 0.6, 0xe0a526);
+  E.stall(g8, 18, 26, 0.6, 0xc23b30);
+}

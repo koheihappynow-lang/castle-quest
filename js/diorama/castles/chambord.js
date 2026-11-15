@@ -169,3 +169,23 @@ export function build(ctx) {
   }
   void hipHall;
 }
+
+// ---------- 細部の かざり ----------
+import * as E from '../engine.js';
+export function details(ctx) {
+  const [, , , , , , , g8, g9, g10] = ctx.stages;
+  // 堀の 白鳥と 川の ボート
+  E.swans(ctx, 0, [E.V(-16.8, 0, -13.8), E.V(16.8, 0, -13.8), E.V(16.8, 0, 9.8), E.V(-16.8, 0, 9.8), E.V(-16.8, 0, -13.8)], 5, 0.1);
+  const bt = E.boat(E.M.clothes[3]); g9.add(bt);
+  ctx.addWalker(8, bt, [E.V(-30, 0.08, 19), E.V(30, 0.08, 19)], { speed: 0.007, bob: 0.01 });
+  // 花だんの 花
+  const b = new E.Batch();
+  for (let i = 0; i < 6; i++) for (let j = 0; j < 2; j++) {
+    const x0 = -13 + i * 5.2, z0 = -18.5 - j * 4;
+    for (let k = 0; k < 18; k++) b.geo(E.pick(['sakuraA', 'orange', 'gold', 'blossomWhite', 'redCloth']), new E.THREE.IcosahedronGeometry(0.13, 0), x0 + E.rr(-1.8, 1.8), 0.22, z0 + E.rr(-1.2, 1.2));
+  }
+  b.build(g8);
+  // 並木道の 旗
+  E.bannerRow(g10, E.V(-1.8, 0, 22), E.V(-1.8, 0, 30), 3, 'fr', { h: 2.4, w: 0.8 });
+  E.bannerRow(g10, E.V(1.8, 0, 22), E.V(1.8, 0, 30), 3, 'fr', { h: 2.4, w: 0.8 });
+}

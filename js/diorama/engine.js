@@ -109,7 +109,23 @@ function makeTextures() {
     for (let x = 0; x < s; x += 16) { g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x, 0, 2, s); }
     noise(g, s, 900, ['#3f2a19', '#8a6443'], 0.4);
   }, 0.5);
-  TEX.grass = canvasTex(256, (g, s) => { g.fillStyle = '#74ad52'; g.fillRect(0, 0, s, s); noise(g, s, 9000, ['#5f9a41', '#8cc263', '#6aa34a', '#9ccf72'], 0.6); }, 0.12);
+  TEX.grass = canvasTex(512, (g, s) => {
+    g.fillStyle = '#6fa94e'; g.fillRect(0, 0, s, s);
+    // 濃い・うすい むらを つける（芝生らしく）
+    for (let i = 0; i < 70; i++) {
+      const x = rnd() * s, y = rnd() * s, r = rr(20, 70);
+      const gr = g.createRadialGradient(x, y, 0, x, y, r);
+      const c = pick(['rgba(70,120,45,0.35)', 'rgba(150,200,100,0.30)', 'rgba(95,150,60,0.30)', 'rgba(170,190,90,0.22)']);
+      gr.addColorStop(0, c); gr.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = gr;
+      for (const dx of [-s, 0, s]) for (const dy of [-s, 0, s]) { g.save(); g.translate(dx, dy); g.fillRect(x - r, y - r, r * 2, r * 2); g.restore(); }
+    }
+    noise(g, s, 26000, ['#5a9640', '#8cc263', '#6aa34a', '#a3d47a', '#4e8636'], 0.55);
+    // 草の すじ
+    g.globalAlpha = 0.35;
+    for (let i = 0; i < 2500; i++) { const x = rnd() * s, y = rnd() * s; g.strokeStyle = rnd() < 0.5 ? '#4a7f33' : '#9fd27a'; g.lineWidth = 1; g.beginPath(); g.moveTo(x, y); g.lineTo(x + rr(-1.5, 1.5), y - rr(2, 5)); g.stroke(); }
+    g.globalAlpha = 1;
+  }, 0.07);
   TEX.gravel = canvasTex(128, (g, s) => { g.fillStyle = '#d8c7a3'; g.fillRect(0, 0, s, s); noise(g, s, 3000, ['#b9a681', '#efe2c4', '#a8977a'], 0.6); }, 0.3);
   TEX.sand = canvasTex(128, (g, s) => { g.fillStyle = '#d9c9a3'; g.fillRect(0, 0, s, s); noise(g, s, 3000, ['#c4b28a', '#ebdfc0', '#b8a780'], 0.5); }, 0.15);
   TEX.paving = canvasTex(128, (g, s) => {
@@ -316,6 +332,15 @@ function addRelief() {
   }
   // 金・ガラス瓦・水は、まわりの景色が うつりこむように
   M.gold.envMapIntensity = 1.6; M.roofYellow.envMapIntensity = 1.2; M.water.envMapIntensity = 1.4; M.copper.envMapIntensity = 1.2;
+  M.blossomWhite = new THREE.MeshStandardMaterial({ color: 0xfff3f6, roughness: 0.9, flatShading: true });
+  M.leafLight = new THREE.MeshStandardMaterial({ color: 0x8cc05a, roughness: 0.9, flatShading: true });
+  // 窓の枠・さん
+  M.winFrame = new THREE.MeshStandardMaterial({ color: 0xece4d2, roughness: 0.8 });
+  M.winFrameDark = new THREE.MeshStandardMaterial({ color: 0x3d2f24, roughness: 0.8 });
+  M.winBar = new THREE.MeshStandardMaterial({ color: 0x2b2420, roughness: 0.7 });
+  // 草・花・小石・小物（あとで自動で散らす）
+  M.tuft = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, flatShading: true });
+  M.petalFlower = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7, flatShading: true });
   // 夜の あかりの まわりの ひかり
   M.glow = new THREE.PointsMaterial({ map: TEX.dot, color: 0xffc070, size: 0.9, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
   M.glowBig = new THREE.PointsMaterial({ map: TEX.dot, color: 0xffb060, size: 2.4, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
@@ -341,6 +366,132 @@ function addGlows(root) {
     o.add(pts);
     o.userData.glowDone = true;
   });
+}
+
+// ---------- 地面に 草・花・小石・道ばたの小物を 自動で散らす ----------
+// 上から1回だけ「地面の種類と高さ」を描いて読み取り、草の上にだけ置く（建物・水・道の上には置かない）
+const SCAN = 180;
+function scanGround(renderer, world, stages) {
+  const stageOf = o => { for (let p = o; p; p = p.parent) { const i = stages.indexOf(p); if (i >= 0) return i + 1; } return 0; };
+  const idMats = new Map();
+  const idMat = (kind, st) => {
+    const k = `${kind}_${st}`;
+    if (!idMats.has(k)) idMats.set(k, new THREE.ShaderMaterial({
+      uniforms: { k: { value: kind }, st: { value: st } },
+      vertexShader: 'varying float vY; void main(){ vec4 wp = modelMatrix * vec4(position, 1.0); vY = wp.y; gl_Position = projectionMatrix * viewMatrix * wp; }',
+      fragmentShader: 'varying float vY; uniform float k; uniform float st; void main(){ gl_FragColor = vec4(k, clamp((vY + 5.0) / 40.0, 0.0, 1.0), st / 16.0, 1.0); }',
+      side: THREE.DoubleSide,
+    }));
+    return idMats.get(k);
+  };
+  const kindOf = m => (m === M.grass ? 1 : (m === M.gravel || m === M.paving) ? 0.5 : 0);
+  const saved = [];
+  const vis = stages.map(g => [g.visible, g.scale.y]);
+  stages.forEach(g => { g.visible = true; g.scale.y = 1; });
+  world.traverse(o => {
+    if (o.isPoints || o.isInstancedMesh || o.isSprite) { saved.push([o, 'hide', o.visible]); o.visible = false; return; }
+    if (!o.isMesh) return;
+    const st = stageOf(o);
+    saved.push([o, 'mat', o.material]);
+    o.material = Array.isArray(o.material) ? o.material.map(m => idMat(kindOf(m), st)) : idMat(kindOf(o.material), st);
+  });
+  const rt = new THREE.WebGLRenderTarget(SCAN, SCAN);
+  const cam = new THREE.OrthographicCamera(-34, 34, 34, -34, 0.1, 300);
+  cam.up.set(0, 0, -1); cam.position.set(0, 120, 0); cam.lookAt(0, 0, 0); cam.updateMatrixWorld();
+  const prevTarget = renderer.getRenderTarget(), prevTone = renderer.toneMapping, prevSpace = renderer.outputColorSpace;
+  renderer.toneMapping = THREE.NoToneMapping;
+  renderer.setRenderTarget(rt);
+  renderer.setClearColor(0x000000, 1);
+  renderer.clear();
+  renderer.render(world, cam);
+  const px = new Uint8Array(SCAN * SCAN * 4);
+  renderer.readRenderTargetPixels(rt, 0, 0, SCAN, SCAN, px);
+  renderer.setRenderTarget(prevTarget); renderer.setClearColor(0x000000, 0); renderer.toneMapping = prevTone; renderer.outputColorSpace = prevSpace;
+  rt.dispose(); idMats.forEach(m => m.dispose());
+  for (const [o, what, v] of saved) { if (what === 'hide') o.visible = v; else o.material = v; }
+  stages.forEach((g, i) => { g.visible = vis[i][0]; g.scale.y = vis[i][1]; });
+  const cell = (cx, cy) => { const i = (cy * SCAN + cx) * 4; return { kind: px[i] > 190 ? 'grass' : px[i] > 60 ? 'path' : 'other', y: (px[i + 1] / 255) * 40 - 5, st: Math.round((px[i + 2] / 255) * 16) }; };
+  return { cell, toX: cx => -34 + ((cx + 0.5) / SCAN) * 68, toZ: cy => 34 - ((cy + 0.5) / SCAN) * 68 };
+}
+function scatterDetails(renderer, world, stages, base) {
+  const scan = scanGround(renderer, world, stages);
+  const grass = [], edges = [];
+  for (let cy = 1; cy < SCAN - 1; cy++) for (let cx = 1; cx < SCAN - 1; cx++) {
+    const c = scan.cell(cx, cy);
+    if (c.kind === 'grass') grass.push([cx, cy, c]);
+    else if (c.kind === 'path') {
+      // 道の はしっこ（となりが草）だけに小物を置く
+      const n = [scan.cell(cx + 1, cy), scan.cell(cx - 1, cy), scan.cell(cx, cy + 1), scan.cell(cx, cy - 1)];
+      if (n.some(q => q.kind === 'grass' && Math.abs(q.y - c.y) < 0.4)) edges.push([cx, cy, c]);
+    }
+  }
+  const groups = new Map(); // stage → { type: [matrix, color] }
+  const put = (st, type, mtx, color) => {
+    if (!groups.has(st)) groups.set(st, {});
+    const g = groups.get(st);
+    (g[type] ||= []).push([mtx, color]);
+  };
+  const j = () => (rnd() - 0.5) * (68 / SCAN);
+  const greens = [0x4f8f3a, 0x6aa646, 0x3f7a30, 0x7cb357], petals = [0xff7aa8, 0xffd23f, 0xffffff, 0xb07cff, 0xff6b4a, 0x7ec8ff];
+  const pickN = (arr, n) => { const out = []; for (let i = 0; i < n && arr.length; i++) out.push(arr[Math.floor(rnd() * arr.length)]); return out; };
+  for (const [cx, cy, c] of pickN(grass, Math.min(2800, Math.floor(grass.length * 0.4)))) {
+    const s = rr(0.7, 1.3);
+    put(c.st, 'tuft', new THREE.Matrix4().compose(V(scan.toX(cx) + j(), c.y, scan.toZ(cy) + j()), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, rnd() * 6, 0)), V(s, s, s)), pick(greens));
+  }
+  for (const [cx, cy, c] of pickN(grass, Math.min(800, Math.floor(grass.length * 0.1)))) {
+    put(c.st, 'flower', new THREE.Matrix4().compose(V(scan.toX(cx) + j(), c.y, scan.toZ(cy) + j()), new THREE.Quaternion(), V(1, rr(0.8, 1.3), 1)), pick(petals));
+  }
+  for (const [cx, cy, c] of pickN(grass, 70)) {
+    const s = rr(0.6, 1.4);
+    put(c.st, 'pebble', new THREE.Matrix4().compose(V(scan.toX(cx) + j(), c.y + 0.03, scan.toZ(cy) + j()), new THREE.Quaternion().setFromEuler(new THREE.Euler(rnd(), rnd() * 6, rnd())), V(s, s * 0.6, s)), 0x9a958c);
+  }
+  for (const [cx, cy, c] of pickN(edges, Math.min(46, Math.floor(edges.length * 0.05)))) {
+    const type = pick(['barrel', 'crate', 'pot', 'pot', 'bench']);
+    put(c.st, type, new THREE.Matrix4().compose(V(scan.toX(cx), c.y, scan.toZ(cy)), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, rnd() * 6, 0)), V(1, 1, 1)), type === 'pot' ? pick(petals) : 0xffffff);
+  }
+  const G = detailGeos();
+  for (const [st, types] of groups) {
+    const parent = st === 0 ? base : stages[st - 1];
+    for (const [type, items] of Object.entries(types)) {
+      for (const [geo, mat, tint] of G[type]) {
+        const im = new THREE.InstancedMesh(geo, mat, items.length);
+        items.forEach(([mtx, color], i) => { im.setMatrixAt(i, mtx); if (tint) im.setColorAt(i, new THREE.Color(color)); });
+        im.castShadow = type !== 'tuft' && type !== 'flower';
+        im.receiveShadow = true;
+        parent.add(im);
+      }
+    }
+  }
+}
+let detailCache = null;
+function detailGeos() {
+  if (detailCache) return detailCache;
+  const blades = [];
+  for (let i = 0; i < 3; i++) { const c = new THREE.ConeGeometry(0.05, rr(0.3, 0.45), 3); c.translate(0, 0.18, 0); c.rotateZ(rr(-0.35, 0.35)); c.rotateY((i / 3) * Math.PI * 2); c.translate(Math.cos(i * 2) * 0.05, 0, Math.sin(i * 2) * 0.05); blades.push(c.toNonIndexed()); }
+  const tuft = mergeGeometries(blades);
+  const head = new THREE.IcosahedronGeometry(0.075, 0); head.translate(0, 0.24, 0);
+  const stem = new THREE.CylinderGeometry(0.012, 0.012, 0.22, 4).toNonIndexed(); stem.translate(0, 0.11, 0);
+  const leafy = new THREE.ConeGeometry(0.06, 0.12, 4).toNonIndexed(); leafy.translate(0, 0.06, 0);
+  const pebble = new THREE.DodecahedronGeometry(0.12, 0);
+  const barrel = new THREE.CylinderGeometry(0.2, 0.17, 0.5, 10); barrel.translate(0, 0.25, 0);
+  const hoops = mergeGeometries([0.1, 0.4].map(y => { const t = new THREE.TorusGeometry(0.2, 0.015, 4, 12); t.rotateX(Math.PI / 2); t.translate(0, y, 0); return t; }));
+  const crate = boxGeo(0.42, 0.42, 0.42); crate.translate(0, 0.21, 0);
+  const pot = new THREE.CylinderGeometry(0.16, 0.11, 0.24, 8); pot.translate(0, 0.12, 0);
+  const potFlowers = new THREE.IcosahedronGeometry(0.17, 0); potFlowers.scale(1, 0.7, 1); potFlowers.translate(0, 0.32, 0);
+  const benchSeat = boxGeo(0.9, 0.06, 0.28); benchSeat.translate(0, 0.28, 0);
+  const benchLegs = mergeGeometries([-0.36, 0.36].map(x => { const b = boxGeo(0.06, 0.28, 0.24).toNonIndexed(); b.translate(x, 0.14, 0); return b; }));
+  const benchBack = boxGeo(0.9, 0.22, 0.05); benchBack.translate(0, 0.45, -0.12);
+  detailCache = {
+    tuft: [[tuft, M.tuft, true]],
+    flower: [[head, M.petalFlower, true], [mergeGeometries([stem, leafy]), M.leafB, false]],
+    pebble: [[pebble, M.rock, false]],
+    barrel: [[barrel, M.wood, false], [hoops, M.iron, false]],
+    crate: [[crate, M.wood, false]],
+    pot: [[pot, M.terracotta, false], [potFlowers, M.petalFlower, true]],
+    bench: [[mergeGeometries([benchSeat.toNonIndexed(), benchBack.toNonIndexed()]), M.wood, false], [benchLegs, M.iron, false]],
+  };
+  for (const list of Object.values(detailCache)) for (const [g] of list) g.userData.shared = true;
+  return detailCache;
 }
 
 // 台の前の なまえプレート
@@ -528,7 +679,7 @@ export function ringWindows(list, cx, cz, r, y, n, phase = 0) {
   }
 }
 const winGeos = {};
-export function windowsMesh(list, { w = 0.3, h = 0.38, arch = false, mat = M.window } = {}) {
+export function windowsMesh(list, { w = 0.3, h = 0.38, arch = false, mat = M.window, frame = 'light', bars = true } = {}) {
   const key = `${w}_${h}_${arch}`;
   if (!winGeos[key]) {
     if (arch) {
@@ -539,11 +690,60 @@ export function windowsMesh(list, { w = 0.3, h = 0.38, arch = false, mat = M.win
       winGeos[key] = g;
     } else winGeos[key] = new THREE.BoxGeometry(w, h, 0.08);
   }
-  const im = new THREE.InstancedMesh(winGeos[key], mat, list.length);
+  // 窓のまわりの枠と、下の台（窓台）
+  const fkey = `${key}_frame`;
+  if (!winGeos[fkey]) {
+    let fr;
+    if (arch) {
+      const W = w + 0.12, H = h + 0.1;
+      const s = new THREE.Shape();
+      s.moveTo(-W / 2, -H / 2); s.lineTo(W / 2, -H / 2); s.lineTo(W / 2, H / 2 - W / 2 + 0.04); s.absarc(0, H / 2 - W / 2 + 0.04, W / 2, 0, Math.PI, false); s.lineTo(-W / 2, -H / 2);
+      fr = new THREE.ExtrudeGeometry(s, { depth: 0.05, bevelEnabled: false, curveSegments: 6 }).toNonIndexed();
+      fr.translate(0, 0, -0.035);
+    } else { fr = new THREE.BoxGeometry(w + 0.12, h + 0.12, 0.05).toNonIndexed(); fr.translate(0, 0, -0.01); }
+    const sill = new THREE.BoxGeometry(w + 0.22, 0.06, 0.14).toNonIndexed(); sill.translate(0, -h / 2 - 0.06, 0.03);
+    winGeos[fkey] = mergeGeometries([fr, sill].map(g => { g.clearGroups(); return g; }));
+    // 十字の さん
+    const v = new THREE.BoxGeometry(0.035, h * 0.92, 0.1).toNonIndexed();
+    const hz = new THREE.BoxGeometry(w * 0.92, 0.035, 0.1).toNonIndexed(); hz.translate(0, arch ? -h * 0.08 : h * 0.05, 0);
+    winGeos[`${key}_bars`] = mergeGeometries([v, hz]);
+    // 日本の お城の 連子窓（たての 格子）
+    winGeos[`${key}_lattice`] = mergeGeometries([-0.3, -0.1, 0.1, 0.3].map(f => { const b = new THREE.BoxGeometry(0.04, h * 0.95, 0.1).toNonIndexed(); b.translate(f * w, 0, 0.01); return b; }));
+  }
+  const g = new THREE.Group();
   const m = new THREE.Matrix4();
-  list.forEach(([x, y, z, ry], i) => { m.compose(V(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, ry, 0)), V(1, 1, 1)); im.setMatrixAt(i, m); });
-  im.castShadow = true;
-  return im;
+  const make = (geo, material, shadow) => {
+    const im = new THREE.InstancedMesh(geo, material, list.length);
+    list.forEach(([x, y, z, ry], i) => { m.compose(V(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, ry, 0)), V(1, 1, 1)); im.setMatrixAt(i, m); });
+    im.castShadow = shadow;
+    im.receiveShadow = true;
+    g.add(im);
+    return im;
+  };
+  make(winGeos[fkey], frame === 'dark' ? M.winFrameDark : M.winFrame, true);
+  make(winGeos[key], mat, true);
+  if (bars === 'lattice') make(winGeos[`${key}_lattice`], M.plaster, false);
+  else if (bars) make(winGeos[`${key}_bars`], M.winBar, false);
+  return g;
+}
+
+// 2点を結ぶ 棒（屋根の すみの 線などに使う）
+export function beam(a, b, r, mat) {
+  const len = a.distanceTo(b);
+  const m = mesh(new THREE.CylinderGeometry(r, r, len, 6), mat);
+  m.position.copy(a).add(b).multiplyScalar(0.5);
+  m.quaternion.setFromUnitVectors(V(0, 1, 0), b.clone().sub(a).normalize());
+  return m;
+}
+// 反り屋根の すみ（隅棟）と、先の かざり瓦
+export function roofHips(parent, { x, z, y, wo, dO, wi, di, rise, up, mat = M.roof, r = 0.07, caps = true }) {
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+    const a = V(x + sx * wo / 2 * 1.03, y + up, z + sz * dO / 2 * 1.03);
+    const b = V(x + sx * wi / 2, y + rise, z + sz * di / 2);
+    const mid = a.clone().lerp(b, 0.5); mid.y -= rise * 0.12;
+    parent.add(beam(a, mid, r, mat), beam(mid, b, r, mat));
+    if (caps) { const c = mesh(new THREE.SphereGeometry(r * 1.9, 8, 6), mat, a.x, a.y + 0.03, a.z); c.scale.set(1, 0.8, 1); parent.add(c); }
+  }
 }
 
 // ---------- 日本のお城の部品 ----------
@@ -562,19 +762,34 @@ export function buildKeep({ x, z, y, tiers, ov = 0.8, rise = 0.75, up = 0.35, wi
     info.push({ ...t, top, base });
     const next = tiers[i + 1];
     const wo = t.w + 2 * ov, dO = t.d + 2 * ov;
+    const hipR = Math.max(0.045, ov * 0.075);
     if (next) {
       roofs.add(mesh(roofGeo(wo, dO, next.w, next.d, rise, { up }), roofMat, x, top - 0.05, z));
       roofs.add(mesh(eaveGeo(wo, dO, t.w, t.d, { up }), M.eave, x, top - 0.05, z));
+      roofHips(roofs, { x, z, y: top - 0.05, wo, dO, wi: next.w, di: next.d, rise, up, mat: roofMat, r: hipR });
       base = top;
     } else {
       const ridgeL = Math.max(0.4, t.w - t.d * 0.75);
       roofs.add(mesh(roofGeo(wo, dO, ridgeL, 0.18, topRise, { up: up * 1.1 }), roofMat, x, top - 0.05, z));
       roofs.add(mesh(eaveGeo(wo, dO, t.w, t.d, { up: up * 1.1 }), M.eave, x, top - 0.05, z));
+      roofHips(roofs, { x, z, y: top - 0.05, wo, dO, wi: ridgeL, di: 0.18, rise: topRise, up: up * 1.1, mat: roofMat, r: hipR });
       roofs.add(mesh(boxGeo(ridgeL + 0.5, 0.22, 0.32), roofMat, x, top + topRise - 0.02, z));
       info.ridge = { y: top + topRise + 0.1, half: (ridgeL + 0.5) / 2 };
     }
   }
-  walls.add(windowsMesh(wins, { w: 0.3 * winScale, h: 0.38 * winScale }));
+  walls.add(windowsMesh(wins, { w: 0.3 * winScale, h: 0.38 * winScale, frame: 'dark', bars: 'lattice' }));
+  // 石落とし（1階の すみが 少し 出っぱった部分）
+  const t0 = tiers[0];
+  if (t0.w > 3) {
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+      const bx = x + sx * (t0.w / 2 - 0.55), bz = z + sz * (t0.d / 2 + 0.16);
+      walls.add(mesh(boxGeo(1.0, 0.9, 0.34), wallMat, bx, y + 0.95, bz));
+      const slope = mesh(boxGeo(1.0, 0.08, 0.42), roofMat, bx, y + 1.42, bz + sz * 0.02);
+      slope.rotation.x = sz * 0.35;
+      walls.add(slope);
+      walls.add(mesh(boxGeo(1.0, 0.06, 0.34), M.darkWood, bx, y + 0.48, bz));
+    }
+  }
   return { walls, roofs, info };
 }
 export function shachihoko(x, y, z, flip, s = 1) {
@@ -890,35 +1105,65 @@ export function ground(g, w, d, x, z, mat = M.grass, y = 0, thick = 1) {
 
 // ---------- 木 ----------
 const mtx = (x, y, z, s) => new THREE.Matrix4().compose(V(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, rnd() * 6, 0)), V(s, s, s));
+// 葉っぱの かたまり（でこぼこした球。となりの面と すき間が できないよう、位置から決まる でこぼこ）
+function leafBlob(r, sy = 1) {
+  const g = new THREE.IcosahedronGeometry(r, 1);
+  const p = g.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+    const k = 1 + 0.16 * Math.sin(x * 9.1 + y * 4.7) * Math.cos(z * 7.3 - y * 3.1) + 0.08 * Math.sin((x + z) * 15.7);
+    p.setXYZ(i, x * k, y * k * sy, z * k);
+  }
+  g.computeVertexNormals();
+  return g;
+}
+// 幹と枝
+function trunkWithBranches(b, m, h, r0, branches) {
+  const t = new THREE.CylinderGeometry(r0 * 0.55, r0, h, 7); t.translate(0, h / 2, 0);
+  b.add(t, 'trunk', m);
+  for (const [ang, tilt, len, y0] of branches) {
+    const br = new THREE.CylinderGeometry(r0 * 0.25, r0 * 0.45, len, 5);
+    br.translate(0, len / 2, 0); br.rotateZ(tilt); br.rotateY(ang); br.translate(0, y0, 0);
+    b.add(br, 'trunk', m);
+  }
+}
 export function pineTree(b, x, y, z, s = 1) {
   const m = mtx(x, y, z, s);
-  const trunk = new THREE.CylinderGeometry(0.12, 0.2, 2.2, 6); trunk.translate(0, 1.1, 0); trunk.rotateZ(0.12);
+  const trunk = new THREE.CylinderGeometry(0.1, 0.2, 2.4, 7); trunk.translate(0, 1.2, 0); trunk.rotateZ(0.14);
   b.add(trunk, 'trunk', m);
-  for (const [bx, by, bz, r] of [[0.2, 2.2, 0, 1.0], [-0.6, 1.6, 0.3, 0.75], [0.7, 1.4, -0.3, 0.7], [0.1, 2.75, 0.1, 0.65]]) {
-    const g = new THREE.DodecahedronGeometry(r, 0); g.scale(1.3, 0.45, 1.1); g.translate(bx, by, bz);
+  // 日本の松：横に広がる 平たい葉の かたまりを 段々に
+  const pads = [[0.25, 2.4, 0, 0.95], [-0.7, 1.75, 0.35, 0.75], [0.8, 1.55, -0.3, 0.7], [0.05, 2.95, 0.1, 0.62], [-0.35, 2.2, -0.6, 0.6], [0.6, 2.1, 0.55, 0.55]];
+  for (const [bx, by, bz, r] of pads) {
+    const g = leafBlob(r, 0.42); g.scale(1.35, 1, 1.15); g.translate(bx, by, bz);
     b.add(g, rnd() < 0.5 ? 'pine' : 'pineB', m);
+    const br = new THREE.CylinderGeometry(0.03, 0.05, Math.hypot(bx, bz) + 0.2, 4); br.rotateZ(Math.PI / 2); br.rotateY(-Math.atan2(bz, bx)); br.translate(bx / 2, by - 0.15, bz / 2);
+    b.add(br, 'trunk', m);
   }
 }
 export function sakuraTree(b, x, y, z, s = 1) {
   const m = mtx(x, y, z, s);
-  const trunk = new THREE.CylinderGeometry(0.12, 0.22, 1.6, 6); trunk.translate(0, 0.8, 0);
-  b.add(trunk, 'trunk', m);
-  for (let i = 0; i < 7; i++) {
-    const a = (i / 7) * Math.PI * 2, r = i === 0 ? 0 : 0.75;
-    const g = new THREE.IcosahedronGeometry(rr(0.55, 0.85), 0);
-    g.translate(Math.cos(a) * r, 2.0 + rr(-0.2, 0.45) + (i === 0 ? 0.4 : 0), Math.sin(a) * r);
-    b.add(g, rnd() < 0.5 ? 'sakuraA' : 'sakuraB', m);
+  trunkWithBranches(b, m, 1.5, 0.2, [[0, 0.7, 1.0, 1.1], [2.1, 0.75, 0.95, 1.2], [4.2, 0.65, 1.0, 1.0]]);
+  // かさのように 広がる 花の かたまり（ピンク2色＋白）
+  const n = 16;
+  for (let i = 0; i < n; i++) {
+    const a = rnd() * Math.PI * 2, rad = Math.sqrt(rnd()) * 1.15;
+    const yy = 2.05 + (1 - rad / 1.15) * 0.55 + rr(-0.15, 0.2);
+    const g = leafBlob(rr(0.38, 0.6), 0.8);
+    g.translate(Math.cos(a) * rad, yy, Math.sin(a) * rad);
+    const r = rnd();
+    b.add(g, r < 0.45 ? 'sakuraA' : r < 0.9 ? 'sakuraB' : 'blossomWhite', m);
   }
 }
 export function roundTree(b, x, y, z, s = 1, leaf = null) {
   const m = mtx(x, y, z, s);
-  const trunk = new THREE.CylinderGeometry(0.1, 0.18, 1.4, 6); trunk.translate(0, 0.7, 0);
-  b.add(trunk, 'trunk', m);
-  for (let i = 0; i < 5; i++) {
-    const a = (i / 5) * Math.PI * 2, r = i === 0 ? 0 : 0.5;
-    const g = new THREE.IcosahedronGeometry(rr(0.55, 0.8), 0);
-    g.translate(Math.cos(a) * r, 1.8 + rr(-0.1, 0.4) + (i === 0 ? 0.35 : 0), Math.sin(a) * r);
-    b.add(g, leaf || (rnd() < 0.5 ? 'leaf' : 'leafB'), m);
+  trunkWithBranches(b, m, 1.3, 0.17, [[0.5, 0.6, 0.8, 0.95], [2.8, 0.6, 0.75, 1.05]]);
+  const n = 13;
+  for (let i = 0; i < n; i++) {
+    const a = rnd() * Math.PI * 2, rad = Math.sqrt(rnd()) * 0.75;
+    const yy = 1.8 + (1 - rad / 0.75) * 0.6 + rr(-0.2, 0.25);
+    const g = leafBlob(rr(0.36, 0.55));
+    g.translate(Math.cos(a) * rad, yy, Math.sin(a) * rad);
+    b.add(g, leaf || pick(['leaf', 'leafB', 'leaf', 'leafLight']), m);
   }
 }
 export function orangeTree(b, x, y, z, s = 1) {
@@ -1029,6 +1274,19 @@ export function person(mat, hat = 'none') {
   const body = mesh(new THREE.ConeGeometry(0.22, 0.72, 8), mat); body.position.y = 0.36;
   const head = mesh(new THREE.SphereGeometry(0.13, 10, 8), M.skin); head.position.y = 0.82;
   g.add(body, head);
+  // 腕と手（歩くと ゆれる）
+  for (const s of [-1, 1]) {
+    const arm = new THREE.Group();
+    arm.position.set(s * 0.13, 0.62, 0);
+    const sleeve = mesh(new THREE.CylinderGeometry(0.04, 0.05, 0.3, 6), mat, 0, -0.15, 0);
+    const hand = mesh(new THREE.SphereGeometry(0.045, 6, 5), M.skin, 0, -0.32, 0);
+    arm.add(sleeve, hand);
+    arm.rotation.z = s * 0.18;
+    arm.userData.swing = s;
+    g.add(arm);
+  }
+  // 足
+  for (const s of [-1, 1]) g.add(mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.1, 5), M.black, s * 0.07, 0.03, 0.02));
   if (hat === 'straw') { const h = mesh(new THREE.ConeGeometry(0.28, 0.16, 10), M.straw); h.position.y = 0.98; g.add(h); }
   else if (hat === 'bearskin') { const h = mesh(new THREE.CylinderGeometry(0.13, 0.15, 0.38, 10), M.bearskin); h.position.y = 1.05; g.add(h); }
   else if (hat === 'cap') { const h = mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.08, 10), M.black); h.position.y = 0.95; g.add(h); }
@@ -1185,6 +1443,8 @@ export class CastleView {
     this.camTarget = [0, 6, 2];
     this.spotR = 18;
     mod.build(ctx);
+    if (mod.details) { try { mod.details(ctx); } catch (e) { console.warn('details', e); } }
+    try { scatterDetails(this.renderer, world, stages, base); } catch (e) { console.warn('scatter', e); }
     addGlows(world);
     if (label) world.add(namePlate(label));
     // 各段階の部品を「下から順」に並べておく（3回に分けて建てるため）
@@ -1212,7 +1472,8 @@ export class CastleView {
   clearWorld() {
     if (!this.world) return;
     this.scene.remove(this.world);
-    this.world.traverse(o => { if (o.geometry && !Object.values(winGeos).includes(o.geometry)) o.geometry.dispose(); });
+    const keep = new Set(Object.values(winGeos));
+    this.world.traverse(o => { if (o.geometry && !keep.has(o.geometry) && !o.geometry.userData.shared) o.geometry.dispose(); });
     this.world = null;
   }
 
@@ -1228,6 +1489,8 @@ export class CastleView {
       w.obj.position.copy(p).add(side);
       w.obj.position.y += Math.abs(Math.sin(t * 8 + w.ph)) * w.bob;
       w.obj.rotation.y = Math.atan2(d.x, d.z) + w.yaw;
+      if (!w.arms) { w.arms = []; w.obj.traverse(o => { if (o.userData.swing) w.arms.push(o); }); }
+      for (const a of w.arms) a.rotation.x = Math.sin(t * 8 + w.ph) * 0.55 * a.userData.swing;
     }
     for (const f of this.flags) {
       if (!f.visible) continue;
@@ -1422,6 +1685,104 @@ export class CastleView {
     }
     this.controls.update(dt);
     this.renderer.render(this.scene, this.camera);
+  }
+}
+
+// ---------- お城ごとの かざりに使う 小物 ----------
+// 白鳥（水の上を ゆっくり進む）
+export function swans(ctx, stage, path, n = 3, y = 0.1) {
+  for (let i = 0; i < n; i++) {
+    const s = new THREE.Group();
+    const body = mesh(new THREE.SphereGeometry(0.28, 10, 8), M.white); body.scale.set(0.75, 0.55, 1.2); s.add(body);
+    const neck = mesh(new THREE.CylinderGeometry(0.04, 0.06, 0.45, 6), M.white, 0, 0.28, 0.24); neck.rotation.x = -0.25; s.add(neck);
+    s.add(mesh(new THREE.SphereGeometry(0.07, 8, 6), M.white, 0, 0.5, 0.3));
+    const beak = mesh(new THREE.ConeGeometry(0.03, 0.12, 5), M.orange, 0, 0.49, 0.4); beak.rotation.x = Math.PI / 2; s.add(beak);
+    ctx.stages[stage].add(s);
+    ctx.addWalker(stage, s, path.map(p => V(p.x, y, p.z)), { u: i / n, speed: 0.006, loop: true, bob: 0.005 });
+  }
+}
+// 水に うかぶ 葉っぱ（スイレン）
+export function lilyPads(parent, x0, z0, w, d, n, y) {
+  const b = new Batch();
+  for (let i = 0; i < n; i++) {
+    const x = x0 + rr(-w / 2, w / 2), z = z0 + rr(-d / 2, d / 2);
+    const g = new THREE.CircleGeometry(rr(0.25, 0.45), 10, 0.3, Math.PI * 2 - 0.3); g.rotateX(-Math.PI / 2);
+    b.geo('leafB', g, x, y, z);
+    if (rnd() < 0.35) b.geo('sakuraA', new THREE.IcosahedronGeometry(0.1, 0), x + 0.1, y + 0.06, z);
+  }
+  b.build(parent);
+}
+// 屋台（色つきの屋根）
+export function stall(parent, x, z, ry, color = 0xd94a3a, y = 0) {
+  const s = sub(parent, x, y, z, ry);
+  for (const [px, pz] of [[-0.8, -0.5], [0.8, -0.5], [-0.8, 0.5], [0.8, 0.5]]) s.add(mesh(boxGeo(0.07, 1.4, 0.07), M.wood, px, 0.7, pz));
+  s.add(mesh(boxGeo(1.7, 0.5, 1.1), M.wood, 0, 0.5, 0.05));
+  const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.8, side: THREE.DoubleSide });
+  const roof = mesh(boxGeo(2.0, 0.06, 1.5), mat, 0, 1.55, 0); roof.rotation.x = -0.25; s.add(roof);
+  const stripe = mesh(boxGeo(2.0, 0.07, 1.5), M.white, 0, 1.56, 0); stripe.rotation.x = -0.25; stripe.scale.set(0.33, 1, 1); s.add(stripe);
+  const goods = new Batch();
+  for (let i = 0; i < 6; i++) goods.geo(pick(['orange', 'sakuraA', 'leafB', 'gold']), new THREE.SphereGeometry(0.1, 6, 4), -0.6 + i * 0.24, 0.82, 0.2);
+  goods.build(s);
+  return s;
+}
+// 空の たこ（ゆらゆら）
+export function kites(ctx, stage, list) {
+  for (const [x, y, z, color] of list) {
+    const k = new THREE.Group();
+    const mat = new THREE.MeshStandardMaterial({ color, side: THREE.DoubleSide, roughness: 0.8 });
+    const shape = new THREE.Shape(); shape.moveTo(0, 0.6); shape.lineTo(0.4, 0); shape.lineTo(0, -0.7); shape.lineTo(-0.4, 0); shape.lineTo(0, 0.6);
+    k.add(mesh(new THREE.ShapeGeometry(shape), mat));
+    const tail = mesh(boxGeo(0.04, 1.2, 0.02), mat, 0, -1.2, 0); k.add(tail);
+    k.position.set(x, y, z);
+    ctx.stages[stage].add(k);
+    const ph = rnd() * 6;
+    ctx.addUpdater(stage, t => { k.rotation.z = Math.sin(t * 1.3 + ph) * 0.25; k.position.y = y + Math.sin(t * 0.9 + ph) * 0.5; tail.rotation.z = Math.sin(t * 3 + ph) * 0.4; });
+  }
+}
+// 噴水の 水しぶき
+export function fountainJet(ctx, stage, x, y, z, h = 1.2, n = 40) {
+  const g = new THREE.BufferGeometry(), p = new Float32Array(n * 3), life = [];
+  for (let i = 0; i < n; i++) life.push(rnd());
+  g.setAttribute('position', new THREE.BufferAttribute(p, 3));
+  const pts = new THREE.Points(g, new THREE.PointsMaterial({ map: TEX.dot, size: 0.22, color: 0xd8f4ff, transparent: true, depthWrite: false, opacity: 0.85 }));
+  ctx.stages[stage].add(pts);
+  const dirs = life.map(() => [rr(-0.35, 0.35), rr(-0.35, 0.35)]);
+  ctx.addUpdater(stage, (t, dt) => {
+    for (let i = 0; i < n; i++) {
+      life[i] = (life[i] + dt * 0.9) % 1;
+      const u = life[i];
+      p[i * 3] = x + dirs[i][0] * u * 1.2; p[i * 3 + 2] = z + dirs[i][1] * u * 1.2;
+      p[i * 3 + 1] = y + h * 4 * u * (1 - u);
+    }
+    g.attributes.position.needsUpdate = true;
+  });
+}
+// 衛兵の小屋
+export function sentryBox(parent, x, y, z, ry = 0) {
+  const s = sub(parent, x, y, z, ry);
+  s.add(mesh(boxGeo(0.7, 1.4, 0.7), M.redCoat, 0, 0.7, 0));
+  s.add(mesh(boxGeo(0.5, 1.1, 0.05), M.black, 0, 0.6, 0.36));
+  const r = new THREE.ConeGeometry(0.6, 0.45, 4); r.rotateY(Math.PI / 4);
+  s.add(mesh(r, M.black, 0, 1.62, 0));
+  return s;
+}
+// 道に そった 旗の列
+export function bannerRow(parent, a, b, n, kind, { h = 2.2, w = 0.8 } = {}) {
+  for (let i = 0; i < n; i++) { const p = a.clone().lerp(b, n === 1 ? 0.5 : i / (n - 1)); flagPole(parent, p.x, p.y, p.z, kind, { h, w }); }
+}
+// 屋根の すみに ならぶ 小さな かざり（紫禁城の 走獣）
+export function roofGuardians(parent, x, z, y, wo, dO, rise, up, n = 4, mat = M.roofYellow) {
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+    for (let i = 0; i < n; i++) {
+      const f = 0.06 + i * 0.07;
+      const px = x + sx * (wo / 2) * (1 - f * 0.9), pz = z + sz * (dO / 2) * (1 - f * 0.9);
+      const py = y + up * (1 - f) * (1 - f) + rise * f * 0.5 + 0.12;
+      const fig = new THREE.Group();
+      fig.add(mesh(new THREE.SphereGeometry(0.07, 6, 5), mat, 0, 0.07, 0));
+      fig.add(mesh(new THREE.SphereGeometry(0.05, 6, 5), mat, 0, 0.16, 0.03));
+      fig.position.set(px, py, pz);
+      parent.add(fig);
+    }
   }
 }
 

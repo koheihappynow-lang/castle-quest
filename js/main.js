@@ -1122,4 +1122,24 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   }, 5000);
 }
 
-render();
+// 開発用：?shot=お城のID で、3Dだけを全画面で表示する（データは保存しない）
+const SHOT = new URLSearchParams(location.search);
+if (SHOT.get('shot')) {
+  (async () => {
+    document.body.dataset.bg = 'castle';
+    const sky = { day: 'day', evening: 'sunset', night: 'night' }[SHOT.get('t') || 'day'];
+    app.innerHTML = `<div class="castle-page" style="height:100vh"><div class="stage-sky"><div class="sky-${sky} on"></div></div><div id="stage" class="stage" style="height:100vh"></div></div>`;
+    const mod = await import('./diorama/engine.js');
+    const v = new mod.CastleView();
+    const c = CASTLE_BY_ID[SHOT.get('shot')];
+    await v.load(c.id, { ja: c.name, en: c.en });
+    v.attach(document.getElementById('stage'));
+    v.controls.autoRotate = false;
+    v.setTime(SHOT.get('t') || 'day');
+    v.setParts(Number(SHOT.get('n') ?? 30), false);
+    if (SHOT.get('cam')) { const [x, y, z, tx, ty, tz] = SHOT.get('cam').split(',').map(Number); v.camera.position.set(x, y, z); v.controls.target.set(tx, ty, tz); v.controls.update(); }
+    document.title = 'ready';
+  })();
+} else {
+  render();
+}

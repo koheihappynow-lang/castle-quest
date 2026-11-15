@@ -160,3 +160,19 @@ export function build(ctx) {
   lightString(g10, [V(17.2, 2.3, -14), V(17.2, 2.3, 14)], { step: 2 });
   void rnd; void person; void pick;
 }
+
+// ---------- 細部の かざり ----------
+import * as E from '../engine.js';
+export function details(ctx) {
+  const [g1, , g3, , , , , , g9, g10] = ctx.stages;
+  E.lilyPads(g1, 0, -15, 26, 2.6, 22, -0.43);
+  E.lilyPads(g1, -15, 0, 2.6, 26, 18, -0.43);
+  // 赤い橋の ちょうちん
+  const lan = [];
+  for (const z of [13.6, 15.2, 16.8]) for (const x of [-1.5, 1.5]) lan.push([x, 1.9, z]);
+  g3.add(E.lanternsMesh(lan, { size: 0.32, sphere: true, mat: E.M.chochin }));
+  // 番兵
+  for (const x of [-3.2, 3.2]) { const p = E.person(E.M.kimono[1], 'straw'); p.position.set(x, 1.5, 13.3); g9.add(p); }
+  E.bannerRow(g10, E.V(-1.75, 0, 19.2), E.V(-1.75, 0, 30.5), 4, 'jp', { h: 2.4, w: 0.6 });
+  E.kites(ctx, 8, [[-15, 21, -16, 0xd83b2f], [15, 23, -20, 0xffc83a]]);
+}

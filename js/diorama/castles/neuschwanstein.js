@@ -155,3 +155,25 @@ export function build(ctx) {
   }
   void merlonsRect;
 }
+
+// ---------- 細部の かざり ----------
+import * as E from '../engine.js';
+export function details(ctx) {
+  const [g1, , , , , g6, g7, g8, , g10] = ctx.stages;
+  const TY = 7.2;
+  // 湖の 白鳥（名前のもとになった 鳥）
+  E.swans(ctx, 0, [E.V(-25, 0, -11), E.V(-11, 0, -11), E.V(-11, 0, -3.5), E.V(-25, 0, -3.5), E.V(-25, 0, -11)], 4, 0.12);
+  // 谷の たき
+  const fallTex = E.TEX.water.clone(); fallTex.needsUpdate = true;
+  const fallMat = new E.THREE.MeshStandardMaterial({ map: fallTex, color: 0xeaf8ff, transparent: true, opacity: 0.8, roughness: 0.2, side: E.THREE.DoubleSide });
+  const fall = E.mesh(new E.THREE.PlaneGeometry(1.4, 8.4), fallMat, 21.2, 4.2, -9.6); fall.castShadow = false; g1.add(fall);
+  ctx.addUpdater(0, (t, dt) => { fallTex.offset.y -= (dt || 0.016) * 0.3; });
+  // 宮殿の かべの 出窓の小塔（オリエル）
+  for (const [x, z] of [[2.7, -0.75], [11.9, -4.0], [11.9, -0.75]]) E.roundTower(g6, { x, z, y: TY + 5.2, r: 0.34, h: 1.8, wall: E.M.limestone, roof: 'cone', roofMat: E.M.slate, roofH: 1.0 });
+  // バルコニーの 手すり
+  for (let i = 0; i < 9; i++) g7.add(E.mesh(E.boxGeo(0.06, 0.45, 0.06), E.M.limestone, 5.8 + i * 0.37, TY + 5.6, 0.1));
+  // 村の 屋台と 旗
+  E.stall(g8, -20.5, 19.5, 0.3, 0xd94a3a);
+  E.stall(g8, -24.5, 21.5, -0.2, 0x3a7bd9);
+  for (const [x, z] of [[-24.2, 20], [-23.5, 15], [-23.1, 10]]) E.flagPole(g10, x, 0, z, 'de', { h: 2.4, w: 0.8 });
+}

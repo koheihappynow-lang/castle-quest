@@ -140,3 +140,27 @@ export function build(ctx) {
   }
   void sub;
 }
+
+// ---------- 細部の かざり ----------
+import * as E from '../engine.js';
+export function details(ctx) {
+  const [, , g3, , , , g7] = ctx.stages;
+  const PY = 5.4, px = -6.5;
+  // プールの 噴水
+  for (const z of [-4.5, -1, 2.5]) E.fountainJet(ctx, 2, px, PY + 0.2, z, 1.0, 26);
+  // デッキチェア
+  const b = new E.Batch();
+  for (const z of [-4, -1.5, 1, 3.5]) {
+    b.box('white', 0.5, 0.08, 1.1, px - 3.2, PY + 0.25, z);
+    b.box('white', 0.5, 0.35, 0.08, px - 3.2, PY + 0.4, z - 0.5, 0, null, -0.4);
+  }
+  b.build(g3);
+  // パラソル
+  for (const [z, col] of [[-2.8, 0xd94a3a], [2.2, 0x2f6fd8]]) {
+    g3.add(E.mesh(new E.THREE.CylinderGeometry(0.03, 0.03, 1.6, 6), E.M.white, px - 3.6, PY + 0.8, z));
+    g3.add(E.mesh(new E.THREE.ConeGeometry(0.9, 0.35, 10), new E.THREE.MeshStandardMaterial({ color: col, roughness: 0.8 }), px - 3.6, PY + 1.65, z));
+  }
+  // 旗
+  E.flagPole(g7, 13, 5.6, 3, 'us', { h: 2.4, w: 1.0 });
+  E.flagPole(g7, -1.5, 5.6, 6.6, 'us', { h: 2.4, w: 1.0 });
+}
