@@ -3,6 +3,11 @@ const KEY = 'castleQuest.v1';
 
 import { DEFAULT_RATES, RATES_DATE } from './castles.js';
 
+// ダイナソークエストの データ（お金は キャッスルクエストと 別の おさいふ）
+export function blankDino() {
+  return { wallet: { yen: 0, dollar: 0, euro: 0, pound: 0, yuan: 0 }, totalYen: 0, owned: {}, order: [], active: null, eggs: 1, pantry: {}, accessories: [] };
+}
+
 function blank() {
   return {
     version: 3,
@@ -26,6 +31,8 @@ function migrate(d) {
     p.castles = p.castles || {};
     p.completed = p.completed || [];
     p.tsurugaBonus = p.tsurugaBonus || 0;
+    const bd = blankDino();
+    p.dino = { ...bd, ...(p.dino || {}), wallet: { ...bd.wallet, ...(p.dino?.wallet || {}) } };
     // v3：1城が10パーツ→30パーツになったので、建てた数を3倍にする
     if (oldVersion < 3) for (const id of Object.keys(p.castles)) p.castles[id] = Math.min(30, p.castles[id] * 3);
   }
@@ -72,6 +79,7 @@ export function createProfile({ name, age, avatar, photo = null }) {
     castles: {},
     completed: [],
     tsurugaBonus: 0,
+    dino: blankDino(),
     review: {},
     history: [],
     recent: [],

@@ -13,16 +13,18 @@ import {
   CASTLES, CASTLE_BY_ID, NORMAL_CASTLES, PARTS_PER_CASTLE, CURRENCIES, PART_PRICE, YEN_PER_LEVEL,
   GHOSTS_PER_TSURUGA_PART, DEFAULT_RATES, RATES_DATE,
 } from './castles.js';
+import { installDino } from './dinoGame.js';
 
 const app = document.getElementById('app');
 const AVATARS = ['🦁', '🐰', '🐻', '🐱', '🐶', '🐼', '🦊', '🐸', '🦄', '🐧', '🐯', '🐨'];
 const LEVEL_NAMES = { 1: '⭐ かんたん', 2: '⭐⭐ ふつう', 3: '⭐⭐⭐ むずかしい' };
-const PLAY_SCREENS = new Set(['home', 'quiz', 'result', 'castles', 'castle', 'exchange', 'collection', 'ghosts']);
+const PLAY_SCREENS = new Set(['home', 'quiz', 'result', 'castles', 'castle', 'exchange', 'collection', 'ghosts', 'dhome', 'deggs', 'hatch', 'dcare', 'dshop', 'dzukan']);
 const HISTORY_MAX = 4000;
 const FOREIGN = ['dollar', 'euro', 'pound', 'yuan'];
 
 const S = {
   screen: 'boot',
+  game: 'castle',   // いま あそんでいる ゲーム（castle / dino）
   quiz: null,
   newProfile: { name: '', age: 5, avatar: AVATARS[0], photo: null },
   pin: { buf: '', mode: 'enter', first: '', next: null, msg: '' },
@@ -39,14 +41,19 @@ const S = {
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmt = n => Math.round(n).toLocaleString('ja-JP');
 const db = () => getDB();
+// おさいふは ゲームごとに 別（キャッスルクエスト / ダイナソークエスト）
+const wallet = p => (S.game === 'dino' ? p.dino.wallet : p.wallet);
+const homeScreen = () => (S.game === 'dino' ? 'dhome' : 'home');
 const rate = cur => (cur === 'yen' ? 1 : db().settings.rates[cur]);
 const money = (cur, n) => cur === 'yen' ? `${fmt(n)}えん` : `${fmt(n)}${CURRENCIES[cur].name}`;
 
 setVoicePrefs(db().settings.voice);
 
 // ---------- 画面の切り替え ----------
+const LEAVE = {};   // 画面を はなれるときの あとかたづけ
 function go(screen, opts = {}) {
   if (S.screen === 'castle' && screen !== 'castle') detachCastle();
+  if (S.screen !== screen) LEAVE[S.screen]?.();
   if (screen !== 'quiz') stopSpeech();
   if (!['parent', 'pin', 'setupPin'].includes(screen)) S.pinOK = false;
   if (screen !== 'castle') S.previewOK = false;
@@ -78,7 +85,7 @@ function toast(msg, ms = 2200) {
 function avatarHTML(p, cls = '') {
   return p.photo ? `<img class="avatar-img ${cls}" src="${p.photo}" alt="">` : `<span class="avatar ${cls}">${p.avatar}</span>`;
 }
-function header(p, { back = 'home' } = {}) {
+function header(p, { back = homeScreen() } = {}) {
   const due = dueIds(p).length;
   return `
   <header class="bar">
@@ -86,7 +93,7 @@ function header(p, { back = 'home' } = {}) {
     <div class="who">${avatarHTML(p, 'sm')}<span class="name">${esc(p.name)}</span></div>
     <div class="stats">
       ${due ? `<span class="chip ghost-chip" data-act="go" data-to="ghosts">👻 ${due}</span>` : ''}
-      <span class="chip coin-chip" id="yenChip" data-act="go" data-to="exchange">💴 <b>${fmt(p.wallet.yen)}</b><small>えん</small></span>
+      <span class="chip coin-chip" id="yenChip" data-act="go" data-to="exchange">💴 <b>${fmt(wallet(p).yen)}</b><small>えん</small></span>
     </div>
   </header>`;
 }
@@ -117,7 +124,7 @@ const SCREENS = {
     <div class="top">
       <div class="top-sparks">${sparks}</div>
       <div class="top-logo">
-        <div class="logo-badge">ENGLISH GAMES FOR KIDS</div>
+        <div class="logo-badge">まなびが、ぼうけんになる。</div>
         <h1 class="logo-main"><span class="l1">Endo</span><span class="l2">Game</span></h1>
         <div class="logo-en">えんどう ゲーム</div>
       </div>
@@ -298,7 +305,7 @@ const SCREENS = {
       </ul>
       <div class="row center">
         <button class="btn" data-act="startQuiz" data-mode="${Q.mode}">もういちど</button>
-        <button class="btn primary" data-act="go" data-to="castles">🏰 おしろへ</button>
+        ${S.game === 'dino' ? '<button class="btn primary" data-act="go" data-to="dcare">🦖 きょうりゅうへ</button>' : '<button class="btn primary" data-act="go" data-to="castles">🏰 おしろへ</button>'}
       </div>
     </div>`;
   },
@@ -388,20 +395,20 @@ const SCREENS = {
     <div class="page narrow">
       <h2>💱 りょうがえじょ</h2>
       <p class="sub">にほんの えんを、せかいの おかねに かえよう！</p>
-      <div class="wallet-card yen"><span class="wc-sign">💴</span><div><div class="wc-name">えん（yen）</div><div class="wc-amt">${fmt(p.wallet.yen)}えん</div></div></div>
+      <div class="wallet-card yen"><span class="wc-sign">💴</span><div><div class="wc-name">えん（yen）</div><div class="wc-amt">${fmt(wallet(p).yen)}えん</div></div></div>
       ${FOREIGN.map(cur => {
         const C = CURRENCIES[cur], r = s.rates[cur], part = PART_PRICE[cur];
-        const can = Math.floor(p.wallet.yen / r);
-        const btn = (n, label) => `<button class="pill ${p.wallet.yen >= n * r ? '' : 'dis'}" data-act="exchange" data-cur="${cur}" data-n="${n}">${label}<small>${fmt(n * r)}えん</small></button>`;
+        const W = wallet(p), can = Math.floor(W.yen / r);
+        const btn = (n, label) => `<button class="pill ${W.yen >= n * r ? '' : 'dis'}" data-act="exchange" data-cur="${cur}" data-n="${n}">${label}<small>${fmt(n * r)}えん</small></button>`;
         return `<div class="wallet-card">
           <span class="wc-sign">${C.sign}</span>
           <div class="wc-main">
             <div class="wc-name">${C.name}（${C.en}） <small>1${C.name} ＝ ${fmt(r)}えん</small></div>
-            <div class="wc-amt">${money(cur, p.wallet[cur])}</div>
+            <div class="wc-amt">${money(cur, W[cur])}</div>
             <div class="wc-note">${C.note}</div>
             <div class="row wrap">
               ${btn(10, `+10${C.name}`)}
-              ${btn(part, `+パーツ1こぶん（${part}${C.name}）`)}
+              ${S.game === 'dino' ? btn(part / 2, `+すみか1こぶん（${part / 2}${C.name}）`) : btn(part, `+パーツ1こぶん（${part}${C.name}）`)}
               ${can > 0 ? btn(can, `ぜんぶ（${fmt(can)}${C.name}）`) : ''}
             </div>
           </div>
@@ -532,7 +539,7 @@ function squarePhoto(file) {
 
 // ---------- 暗証番号（遊ぶ時間などの「せってい」のときだけ） ----------
 function pinPassed() {
-  if (S.pin.next === 'endBreak') { const p = activeProfile(); if (p) { p.breakUntil = 0; p.contSec = 0; save(); } toast('きゅうけいを おわりに しました'); go('home'); return; }
+  if (S.pin.next === 'endBreak') { const p = activeProfile(); if (p) { p.breakUntil = 0; p.contSec = 0; save(); } toast('きゅうけいを おわりに しました'); go(homeScreen()); return; }
   if (S.pin.next === 'preview') { go('castle', { previewing: true }); S.previewOK = true; return; }
   S.pinOK = true; S.parentTab = 'settings'; go('parent');
 }
@@ -594,10 +601,10 @@ function speakQuestion() {
 function addYen(n, kind) {
   const p = activeProfile();
   S.quiz.yen[kind] += n;
-  p.wallet.yen += n;
-  p.totalYen = (p.totalYen || 0) + n;
+  wallet(p).yen += n;
+  if (S.game === 'dino') p.dino.totalYen = (p.dino.totalYen || 0) + n; else p.totalYen = (p.totalYen || 0) + n;
   const chip = document.querySelector('#yenChip b');
-  if (chip) { chip.textContent = fmt(p.wallet.yen); chip.parentElement.classList.remove('pop'); void chip.offsetWidth; chip.parentElement.classList.add('pop'); }
+  if (chip) { chip.textContent = fmt(wallet(p).yen); chip.parentElement.classList.remove('pop'); void chip.offsetWidth; chip.parentElement.classList.add('pop'); }
 }
 function answer(id, btn) {
   const Q = S.quiz;
@@ -625,7 +632,7 @@ function answer(id, btn) {
     if (q.challenge && !q.retry) addYen(500, 'challenge');
     const sb = Q.streak === 3 ? 500 : Q.streak === 5 ? 1000 : Q.streak === 10 ? 3000 : (Q.streak > 10 && Q.streak % 5 === 0) ? 1000 : 0;
     if (sb) { addYen(sb, 'streak'); setTimeout(() => { sfx.bonus(); toast(`🔥 ${Q.streak}れんぞく！ ボーナス +${fmt(sb)}えん`); }, 300); }
-    if (Q.streak === 10 && Math.random() < 0.1) { p.tsurugaBonus = (p.tsurugaBonus || 0) + 1; Q.tsuruga++; setTimeout(() => { sfx.fanfare(); toast('✨ ちょうげきレア！ なぞの おしろの パーツを みつけた！', 3200); }, 900); }
+    if (S.game !== 'dino' && Q.streak === 10 && Math.random() < 0.1) { p.tsurugaBonus = (p.tsurugaBonus || 0) + 1; Q.tsuruga++; setTimeout(() => { sfx.fanfare(); toast('✨ ちょうげきレア！ なぞの おしろの パーツを みつけた！', 3200); }, 900); }
     const before = tsurugaParts(p);
     const res = markCorrect(p, q.wid);
     if (res === 'graduated') {
@@ -697,9 +704,10 @@ function burst(el) {
 function exchange(cur, n) {
   const p = activeProfile();
   const cost = n * rate(cur);
-  if (n <= 0 || p.wallet.yen < cost) { sfx.wrong(); toast('えんが たりないよ'); return false; }
-  p.wallet.yen -= cost;
-  p.wallet[cur] += n;
+  const W = wallet(p);
+  if (n <= 0 || W.yen < cost) { sfx.wrong(); toast('えんが たりないよ'); return false; }
+  W.yen -= cost;
+  W[cur] += n;
   save();
   sfx.coin();
   return true;
@@ -814,7 +822,7 @@ function updateRest() {
     el.dataset.done = '1';
     el.classList.add('done');
     el.textContent = 'おわり！';
-    document.getElementById('restBtns').insertAdjacentHTML('afterbegin', '<button class="btn primary" data-act="go" data-to="home">▶ また あそぶ</button>');
+    document.getElementById('restBtns').insertAdjacentHTML('afterbegin', `<button class="btn primary" data-act="go" data-to="${homeScreen()}">▶ また あそぶ</button>`);
     sfx.bonus();
     sayJa('休憩おわり！また遊ぼう！');
   }
@@ -1047,8 +1055,10 @@ const ACTIONS = {
   pick: d => { sfx.tap(); setActive(d.id); const p = activeProfile(); if (overLimit(p)) go('limit'); else if (onBreak(p)) go('rest'); else { go('games'); sayJa(`${p.name}、なにで あそぶ？`); } },
   playGame: d => {
     sfx.tap();
-    if (d.g === 'castle') { const p = activeProfile(); go('home'); sayJa(`${p.name}、一緒にがんばろう！`); }
-    else location.href = 'dino-proto.html';
+    const p = activeProfile();
+    S.game = d.g;
+    if (d.g === 'castle') { go('home'); sayJa(`${p.name}、一緒にがんばろう！`); }
+    else { go(p.dino.order.length ? 'dhome' : 'deggs'); sayJa(p.dino.order.length ? `${p.name}、恐竜が待ってるよ！` : 'たまごを選んでね！'); }
   },
   age: d => { S.newProfile.name = document.getElementById('pname')?.value || S.newProfile.name; S.newProfile.age = Number(d.v); render(); },
   avatar: d => { S.newProfile.name = document.getElementById('pname')?.value || S.newProfile.name; S.newProfile.avatar = d.v; render(); },
@@ -1071,7 +1081,7 @@ const ACTIONS = {
   replay: () => { const q = S.quiz.qs[S.quiz.i]; say(q.say && q.say.some(x => x.l === 'en') ? q.say.filter(x => x.l === 'en') : [{ t: BY_ID[q.wid].en, l: 'en' }]); },
   sayAfter: () => { const q = S.quiz.qs[S.quiz.i]; sayEn(q.after || BY_ID[q.wid].en); },
   said: () => { sfx.tap(); nextQuestion(); },
-  quitQuiz: () => { if (confirm('やめる？（もらった おかねは そのままだよ）')) go('home'); },
+  quitQuiz: () => { if (confirm('やめる？（もらった おかねは そのままだよ）')) go(homeScreen()); },
   openCastle: d => { sfx.tap(); go('castle', { castleId: d.id, previewing: false }); },
   build: d => build(false),
   exchangeBuild: () => build(true),
@@ -1130,6 +1140,11 @@ const ACTIONS = {
   exportData: () => exportData(),
 };
 
+installDino({
+  S, SCREENS, ACTIONS, AFTER, BG, LEAVE, go, render, db, save, activeProfile, esc, fmt, toast, sfx, say, sayJa, sayEn, stopSpeech,
+  header, dueIds, startQuiz, overLimit, onBreak, rate, money, wallet, exchange, today,
+});
+
 app.addEventListener('click', e => {
   const el = e.target.closest('[data-act]');
   if (!el || el.disabled) return;
@@ -1149,7 +1164,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   let reloaded = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (!hadController || reloaded) return;
-    const tryReload = () => { if (['profiles', 'boot', 'home', 'games'].includes(S.screen)) { reloaded = true; location.reload(); } else setTimeout(tryReload, 3000); };
+    const tryReload = () => { if (['profiles', 'boot', 'home', 'games', 'dhome'].includes(S.screen)) { reloaded = true; location.reload(); } else setTimeout(tryReload, 3000); };
     tryReload();
   });
   // 写真もiPadに保存しておく（オフラインでも出るように）
