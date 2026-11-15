@@ -12,8 +12,8 @@ export const CURRENCIES = {
   pound: { name: 'ポンド', en: 'pound', sign: '💷', symbol: '£', note: 'イギリスの おかね' },
   yuan: { name: 'げん', en: 'yuan', sign: '🧧', symbol: '元', note: 'ちゅうごくの おかね' },
 };
-// 1パーツの ねだん（その国の通貨）。どれも だいたい 12,000えん くらい
-export const PART_PRICE = { yen: 12000, dollar: 75, euro: 70, pound: 60, yuan: 500 };
+// 1パーツの ねだん（その国の通貨）。どれも だいたい 36,000えん くらい（約30問ぶん。1城＝約300問）
+export const PART_PRICE = { yen: 36000, dollar: 225, euro: 205, pound: 170, yuan: 1450 };
 // 正解でもらえる円
 export const YEN_PER_LEVEL = { 1: 1000, 2: 1200, 3: 1500 };
 // 鶴ヶ城：おばけを この数だけ卒業させると 1パーツ
