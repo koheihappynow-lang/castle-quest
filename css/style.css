@@ -191,6 +191,13 @@ h3 { font-size: 1.15rem; }
 .part { width: 34px; height: 34px; border-radius: 10px; background: var(--line); display: grid; place-items: center; font-size: 1.1rem; color: var(--muted); }
 .part.on { background: #ffe8c2; }
 .cp-msg { margin: 8px 0; font-size: 1.15rem; }
+.build-bar { position: relative; height: 18px; border-radius: 999px; background: var(--line); overflow: hidden; margin: 10px auto 4px; max-width: 520px; }
+.bb-fill { height: 100%; background: linear-gradient(90deg, #ffb347, #ff7b39); border-radius: 999px; transition: width .6s; }
+.build-bar i { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(255, 255, 255, .8); }
+.bb-count { font-weight: 800; color: #b25b00; }
+.mini-bar { height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; margin: 8px 10px 2px; }
+.mini-bar i { display: block; height: 100%; background: var(--primary); border-radius: 999px; }
+.mini-count { font-size: .8rem; color: var(--muted); }
 .cp-msg.warn { background: #efe9ff; color: #4b2fc4; border-radius: 16px; padding: 10px; }
 .btn.build { font-size: 1.35rem; }
 .price { font-size: .95rem; opacity: .95; margin-left: 6px; }

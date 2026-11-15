@@ -1088,6 +1088,12 @@ export class CastleView {
     this.camTarget = [0, 6, 2];
     this.spotR = 18;
     mod.build(ctx);
+    // 各段階の部品を「下から順」に並べておく（3回に分けて建てるため）
+    for (const g of stages) {
+      const items = g.children.map(c => { const b = new THREE.Box3().setFromObject(c); return { c, y: b.isEmpty() ? 0 : b.min.y + (b.max.y - b.min.y) * 0.3 }; });
+      items.sort((a, b) => a.y - b.y);
+      g.userData.order = items.map(it => { it.c.userData.s0y = it.c.scale.y; return it.c; });
+    }
     // 旗をなびかせる
     world.traverse(o => { if (o.userData.isFlag) this.flags.push(o); });
     // 鳥・人の動き
@@ -1154,7 +1160,7 @@ export class CastleView {
 
   setTime(mode) {
     this.time = mode;
-    const done = this.parts >= 10;
+    const done = this.parts >= 30;
     const P = {
       day: { sky: 'day', hemi: [0xdcefff, 0x5d7a3d, 1.1], sun: [0xffffff, 2.6, [30, 45, 25]], win: 0, lan: 0.05, cho: 0.1, spot: 0, stars: false, exp: 1.0, glow: 1 },
       evening: { sky: 'evening', hemi: [0xffd7b0, 0x4a3b5a, 0.7], sun: [0xffa66b, 1.9, [-40, 14, 22]], win: 0.6, lan: 0.8, cho: 0.9, spot: done ? 25 : 0, stars: false, exp: 1.0, glow: 0.6 },
@@ -1174,19 +1180,39 @@ export class CastleView {
     this.renderer.toneMappingExposure = P.exp;
   }
 
+  // n = 建てたパーツ数（0〜30）。1つの段階を3回に分けて、下の部品から順に見せる
   setParts(n, animate) {
+    const PER = 3;
     this.parts = n;
     this.previewing = false;
+    this.childAnims = [];
     if (this.sign) this.sign.visible = n === 0;
+    const newest = n > 0 ? Math.ceil(n / PER) - 1 : -1;
     this.stages.forEach((g, i) => {
-      const show = i < n;
-      if (show && !g.visible) {
-        g.visible = true;
-        if (animate && i === n - 1) { g.userData.anim = { t: 0 }; g.scale.set(1, 0.001, 1); this.dust(g); }
-        else { g.scale.set(1, 1, 1); g.userData.anim = null; }
-      } else if (!show) { g.visible = false; g.userData.anim = null; }
+      const k = Math.max(0, Math.min(PER, n - i * PER));
+      const order = g.userData.order || [];
+      g.userData.anim = null;
+      if (k === 0) { g.visible = false; return; }
+      g.visible = true;
+      const isNew = animate && i === newest;
+      if (order.length >= PER) {
+        g.scale.set(1, 1, 1);
+        const cnt = Math.ceil((order.length * k) / PER);
+        const prev = isNew ? Math.ceil((order.length * (k - 1)) / PER) : cnt;
+        order.forEach((c, j) => {
+          c.visible = j < cnt;
+          c.scale.y = c.userData.s0y;
+          if (c.visible && j >= prev) { c.scale.y = 0.001; this.childAnims.push({ c, t: 0 }); }
+        });
+      } else {
+        order.forEach(c => { c.visible = true; c.scale.y = c.userData.s0y; });
+        const to = k / PER;
+        if (isNew) { g.userData.anim = { t: 0, from: (k - 1) / PER, to }; g.scale.set(1, Math.max(0.001, (k - 1) / PER), 1); }
+        else g.scale.set(1, to, 1);
+      }
+      if (isNew) this.dust(g);
     });
-    M.gold.emissive.set(n >= 10 ? 0x6b4a00 : 0x3a2800);
+    M.gold.emissive.set(n >= 30 ? 0x6b4a00 : 0x3a2800);
     this.setTime(this.time);
   }
   // 完成図を見る
@@ -1194,8 +1220,12 @@ export class CastleView {
     if (on) {
       this.previewing = true;
       this.sign.visible = false;
-      this.stages.forEach(g => { g.visible = true; g.scale.set(1, 1, 1); g.userData.anim = null; });
-      const keep = this.parts; this.parts = 10; this.setTime(this.time); this.parts = keep;
+      this.childAnims = [];
+      this.stages.forEach(g => {
+        g.visible = true; g.scale.set(1, 1, 1); g.userData.anim = null;
+        (g.userData.order || []).forEach(c => { c.visible = true; c.scale.y = c.userData.s0y; });
+      });
+      const keep = this.parts; this.parts = 30; this.setTime(this.time); this.parts = keep;
     } else this.setParts(this.parts, false);
   }
 
@@ -1269,7 +1299,17 @@ export class CastleView {
     if (this.stages) {
       for (const g of this.stages) {
         const a = g.userData.anim;
-        if (a) { a.t += dt / 1.3; const k = Math.min(1, a.t); g.scale.set(1, Math.max(0.001, easeOutBack(k)), 1); if (k >= 1) { g.scale.set(1, 1, 1); g.userData.anim = null; } }
+        if (a) {
+          a.t += dt / 1.3; const k = Math.min(1, a.t);
+          g.scale.set(1, Math.max(0.001, a.from + (a.to - a.from) * easeOutBack(k)), 1);
+          if (k >= 1) { g.scale.set(1, a.to, 1); g.userData.anim = null; }
+        }
+      }
+      for (let i = (this.childAnims || []).length - 1; i >= 0; i--) {
+        const ca = this.childAnims[i];
+        ca.t += dt / 1.1; const k = Math.min(1, ca.t);
+        ca.c.scale.y = Math.max(0.001, ca.c.userData.s0y * easeOutBack(k));
+        if (k >= 1) { ca.c.scale.y = ca.c.userData.s0y; this.childAnims.splice(i, 1); }
       }
       for (const u of this.updaters) if (u.stage < 0 || this.stages[u.stage].visible) u.fn(t, dt);
     }

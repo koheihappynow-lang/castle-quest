@@ -1,6 +1,6 @@
 // オフラインでも動くように、ゲームのファイルをiPadに保存しておく
 // ゲームを更新したら VERSION を上げる
-const VERSION = 'cq-v2';
+const VERSION = 'cq-v3';
 const CASTLE_FILES = ['himeji', 'neuschwanstein', 'windsor', 'montsaintmichel', 'edinburgh', 'alhambra', 'chambord', 'hearst', 'forbiddencity', 'pena', 'tsuruga']
   .map(id => `./js/diorama/castles/${id}.js`);
 const LOCAL = [

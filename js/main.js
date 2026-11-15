@@ -85,6 +85,7 @@ function header(p, { back = 'home' } = {}) {
 }
 function picHTML(w, cls = '') {
   if (w.photo) return `<img class="pic photo ${cls}" src="${w.photo}" alt="" draggable="false">`;
+  if (!w.pic) return `<span class="pic ${cls}">🔤</span>`;
   return w.isNum ? `<span class="pic num ${cls}">${w.pic}</span>` : `<span class="pic ${cls}">${w.pic}</span>`;
 }
 
@@ -268,7 +269,7 @@ const SCREENS = {
           return `<button class="col-card ${done ? 'got' : ''} ${c.rare ? 'rare' : ''}" data-act="openCastle" data-id="${c.id}">
             <div class="col-flag">${c.flag}</div>
             <div class="col-name">${c.name}</div>
-            <div class="mini-parts">${Array.from({ length: PARTS_PER_CASTLE }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</div>
+            <div class="mini-bar"><i style="width:${(n / PARTS_PER_CASTLE) * 100}%"></i></div><div class="mini-count">${n} / ${PARTS_PER_CASTLE}</div>
             <div class="col-sub">${done ? '✨ かんせい！' : price}</div>
           </button>`;
         }).join('')}
@@ -320,7 +321,8 @@ const SCREENS = {
       ${S.previewing ? '<div class="preview-banner">✨ かんせいずだよ！ ここまで たてよう ✨</div>' : ''}
       <div class="castle-panel">
         <div class="cp-title">${c.flag} <b>${c.name}</b> <small>${c.en}</small></div>
-        <div class="parts">${Array.from({ length: PARTS_PER_CASTLE }, (_, i) => `<span class="part ${i < n ? 'on' : ''}" title="${c.parts[i]}">${i < n ? '🧱' : '・'}</span>`).join('')}</div>
+        <div class="build-bar"><div class="bb-fill" style="width:${(n / PARTS_PER_CASTLE) * 100}%"></div>${Array.from({ length: 9 }, (_, i) => `<i style="left:${((i + 1) / 10) * 100}%"></i>`).join('')}</div>
+        <div class="bb-count">🧱 ${n} / ${PARTS_PER_CASTLE} パーツ</div>
         ${action}
         ${S.castleMsg ? `<p class="cp-msg">${S.castleMsg}</p>` : ''}
       </div>
@@ -695,11 +697,14 @@ function build(viaExchange = false) {
   if (finished) p.completed.push(c.id);
   save();
   sfx.build();
-  S.castleMsg = `🎉「${partName}」が できたよ！`;
+  const stageName = c.stageNames[Math.floor((n - 1) / 3)];
+  const step = ((n - 1) % 3) + 1;
+  S.castleMsg = step === 3 ? `🎉「${stageName}」が かんせい！` : `🔨「${stageName}」を たてているよ（${step}/3）`;
   S.animatePart = n;
   S.previewing = false;
   render();
-  sayJa(`${partName.replace(/ /g, '')}が、できたよ！`);
+  sayJa(step === 3 ? `${stageName.replace(/ /g, '')}が、できたよ！` : `${stageName.replace(/ /g, '')}を、たてているよ。`);
+  void partName;
   if (finished) setTimeout(() => { sfx.fanfare(); castleView?.celebrate(); showDesc(c.id, true); }, 1800);
   S.castleMsg = '';
 }

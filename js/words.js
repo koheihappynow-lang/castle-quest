@@ -8,6 +8,7 @@ export const CATS = {
   clothes: 'ふく', vehicle: 'のりもの', people: 'ひと', fantasy: 'ふしぎ', weather: 'てんき',
   nature: 'しぜん', home: 'おうち', play: 'あそび', school: 'がっこう', job: 'しごと',
   shape: 'かたち', feeling: 'きもち', action: 'うごき', season: 'きせつ', town: 'まち', money: 'おかね・くに',
+  phrase: 'あいさつ・ことば', time: 'とき', place: 'ばしょ', describe: 'ようす',
 };
 
 // 絵が似ていて混ざると不公平なカテゴリの組み合わせ（選択肢に一緒に出さない）
@@ -74,7 +75,7 @@ const RAW = {
     ['eye', 'め', '👁️', 1], ['ear', 'みみ', '👂', 1], ['nose', 'はな', '👃', 1], ['mouth', 'くち', '👄', 1],
     ['hand', 'て', '✋', 1], ['foot', 'あし', '🦶', 1],
     ['tooth', 'は', '🦷', 2], ['tongue', 'した', '👅', 2], ['finger', 'ゆび', '☝️', 2], ['arm', 'うで', '💪', 2], ['bone', 'ほね', '🦴', 2],
-    ['brain', 'のう', '🧠', 3], ['lungs', 'はい', '🫁', 3], ['heart', 'しんぞう', '🫀', 3], ['footprints', 'あしあと', '👣', 3],
+    ['brain', 'のう', '🧠', 3], ['lungs', 'はいぞう', '🫁', 3], ['heart', 'しんぞう', '🫀', 3], ['footprints', 'あしあと', '👣', 3],
   ],
   clothes: [
     ['hat', 'ぼうし', '👒', 1], ['shoes', 'くつ', '👟', 1], ['T-shirt', 'Tシャツ', '👕', 1],
@@ -161,8 +162,143 @@ const RAW = {
     ['run', 'はしる', '🏃', 2], ['swim', 'およぐ', '🏊', 2], ['walk', 'あるく', '🚶', 2], ['dance', 'おどる', '💃', 2],
     ['sing', 'うたう', '🎤', 2], ['sleep', 'ねる', '🛌', 2],
     ['read', 'よむ', '📚', 3], ['write', 'かく', '✍️', 3], ['climb', 'のぼる', '🧗', 3], ['ride', 'のる', '🚴', 3],
-    ['cry', 'なく', '😭', 3], ['laugh', 'わらう', '😆', 3], ['clap', 'はくしゅする', '👏', 3], ['wave', 'てを ふる', '👋', 3],
+    ['cry', 'なく', '😭', 3], ['laugh', 'わらう', '😆', 3], ['clap', 'はくしゅする', '👏', 3], ['wave', 'てを ふる', null, 3],
     ['think', 'かんがえる', '🤔', 3], ['surf', 'なみのり', '🏄', 3], ['ski', 'スキー', '⛷️', 3], ['eat', 'たべる', '😋', 3],
+  ],
+};
+
+// 日常会話でよく使うことば（2026-11-15 追加）。絵が null の単語は、文字の問題（ひらがな⇔えいご）だけに出る
+const RAW_MORE = {
+  phrase: [
+    ['hello', 'こんにちは', '👋', 1], ['thank you', 'ありがとう', '🙏', 1], ['sorry', 'ごめんなさい', '🙇', 1],
+    ['yes', 'はい', '🙆', 1], ['no', 'いいえ', '🙅', 1], ['good morning', 'おはよう', null, 1], ['good night', 'おやすみ', null, 1],
+    ['goodbye', 'さようなら', null, 1], ['please', 'おねがい', '🥺', 2], ['excuse me', 'すみません', null, 2],
+    ["you're welcome", 'どういたしまして', null, 2], ['nice to meet you', 'はじめまして', '🤝', 2], ['see you', 'またね', null, 2],
+    ['I love you', 'だいすき', '🥰', 2], ['happy birthday', 'おたんじょうび おめでとう', null, 2], ['congratulations', 'おめでとう', '🎉', 2],
+    ['good job', 'よくできました', null, 2], ['help', 'たすけて', '🆘', 2], ['how are you', 'げんき？', null, 3], ["I'm fine", 'げんきです', null, 3],
+    ["what's your name", 'おなまえは？', null, 3], ["I'm hungry", 'おなかが すいた', '🤤', 3], ["I'm thirsty", 'のどが かわいた', null, 3],
+    ['be careful', 'きをつけて', '⚠️', 3], ['wait', 'まって', null, 3], ['hurry up', 'いそいで', null, 3], ['bless you', 'おだいじに', '🤧', 3],
+    ['cheers', 'かんぱい', '🥂', 3], ["let's go", 'いこう', null, 3], ['me too', 'わたしも', null, 3], ['OK', 'いいよ', '👌', 2],
+    ['I see', 'なるほど', null, 3], ['welcome', 'いらっしゃい', null, 3], ['good luck', 'がんばって', null, 3],
+  ],
+  time: [
+    ['morning', 'あさ', '🌄', 1], ['night', 'よる', '🌃', 1], ['breakfast', 'あさごはん', null, 2], ['lunch', 'ひるごはん', null, 2],
+    ['dinner', 'ばんごはん', null, 2], ['today', 'きょう', null, 2], ['tomorrow', 'あした', null, 2], ['yesterday', 'きのう', null, 2],
+    ['birthday', 'たんじょうび', '🎂', 1], ['week', 'しゅう', null, 3], ['weekend', 'しゅうまつ', null, 3], ['afternoon', 'ごご', null, 3],
+    ['evening', 'ゆうがた', null, 3], ['year', 'とし', null, 3], ['hour', 'じかん', null, 3], ['minute', 'ふん', null, 3],
+    ['Monday', 'げつようび', null, 3], ['Tuesday', 'かようび', null, 3], ['Wednesday', 'すいようび', null, 3], ['Thursday', 'もくようび', null, 3],
+    ['Friday', 'きんようび', null, 3], ['Saturday', 'どようび', null, 3], ['Sunday', 'にちようび', null, 3],
+    ['January', 'いちがつ', null, 3], ['February', 'にがつ', null, 3], ['March', 'さんがつ', null, 3], ['April', 'しがつ', null, 3],
+    ['May', 'ごがつ', null, 3], ['June', 'ろくがつ', null, 3], ['July', 'しちがつ', null, 3], ['August', 'はちがつ', null, 3],
+    ['September', 'くがつ', null, 3], ['October', 'じゅうがつ', null, 3], ['November', 'じゅういちがつ', null, 3], ['December', 'じゅうにがつ', null, 3],
+  ],
+  place: [
+    ['park', 'こうえん', '🏞️', 1], ['zoo', 'どうぶつえん', null, 1], ['beach', 'ビーチ', null, 2], ['kitchen', 'だいどころ', null, 2],
+    ['bedroom', 'しんしつ', null, 3], ['living room', 'リビング', null, 3], ['garden', 'にわ', null, 2], ['library', 'としょかん', null, 2],
+    ['supermarket', 'スーパー', '🛒', 2], ['restaurant', 'レストラン', null, 2], ['station', 'えき', '🚉', 2], ['airport', 'くうこう', '🛫', 2],
+    ['playground', 'あそびば', null, 2], ['swimming pool', 'プール', null, 2], ['farm', 'のうじょう', null, 2], ['city', 'まち', '🏙️', 2],
+    ['road', 'みち', '🛣️', 2], ['aquarium', 'すいぞくかん', null, 3], ['museum', 'はくぶつかん', '🏛️', 3], ['shrine', 'じんじゃ', '⛩️', 3],
+    ['hotel', 'ホテル', '🏨', 3], ['apartment', 'マンション', '🏢', 3], ['bus stop', 'バスてい', '🚏', 3], ['gas station', 'ガソリンスタンド', '⛽', 3],
+    ['parking lot', 'ちゅうしゃじょう', '🅿️', 3], ['lighthouse', 'とうだい', null, 3], ['classroom', 'きょうしつ', null, 3], ['bakery', 'パンや', null, 3],
+  ],
+  describe: [
+    ['big', 'おおきい', null, 2], ['small', 'ちいさい', null, 2], ['long', 'ながい', null, 2], ['short', 'みじかい', null, 2],
+    ['new', 'あたらしい', null, 2], ['old', 'ふるい', null, 2], ['fast', 'はやい', null, 2], ['slow', 'おそい', null, 2],
+    ['good', 'いい', null, 2], ['bad', 'わるい', null, 2], ['cute', 'かわいい', null, 2], ['pretty', 'きれい', null, 2],
+    ['strong', 'つよい', null, 2], ['weak', 'よわい', null, 3], ['heavy', 'おもい', null, 3], ['light', 'かるい', null, 3],
+    ['dark', 'くらい', null, 3], ['bright', 'あかるい', null, 3], ['dirty', 'きたない', null, 3], ['easy', 'かんたん', null, 3],
+    ['difficult', 'むずかしい', null, 3], ['delicious', 'おいしい', null, 2], ['many', 'たくさん', null, 3], ['quiet', 'しずか', null, 3],
+    ['loud', 'うるさい', null, 3], ['kind', 'やさしい', null, 3], ['funny', 'おもしろい', null, 3], ['busy', 'いそがしい', null, 3],
+    ['sweet', 'あまい', null, 3], ['sour', 'すっぱい', null, 3], ['spicy', 'からい', null, 3], ['bitter', 'にがい', null, 3],
+    ['soft', 'やわらかい', null, 3], ['hard', 'かたい', null, 3], ['wet', 'ぬれた', null, 3], ['high', 'たかい', null, 3],
+    ['low', 'ひくい', null, 3], ['warm', 'あたたかい', null, 3], ['cool', 'すずしい', null, 3], ['empty', 'からっぽ', null, 3],
+  ],
+  action: [
+    ['go', 'いく', null, 2], ['come', 'くる', null, 2], ['see', 'みる', null, 2], ['listen', 'きく', null, 2], ['talk', 'はなす', null, 2],
+    ['open', 'あける', null, 2], ['close', 'しめる', null, 2], ['wash', 'あらう', null, 2], ['play', 'あそぶ', null, 2], ['sit', 'すわる', null, 2],
+    ['stand', 'たつ', null, 2], ['smile', 'にこにこする', '🙂', 2], ['hug', 'ぎゅっとする', '🫂', 2], ['wake up', 'おきる', '⏰', 2],
+    ['drink', 'のむ', null, 2], ['study', 'べんきょうする', '📝', 3], ['shout', 'さけぶ', '📣', 3], ['throw', 'なげる', null, 3],
+    ['kick', 'ける', null, 3], ['push', 'おす', null, 3], ['pull', 'ひく', null, 3], ['carry', 'はこぶ', null, 3], ['draw', 'えを かく', null, 3],
+    ['count', 'かぞえる', null, 3], ['help', 'てつだう', null, 3], ['give', 'あげる', null, 3], ['buy', 'かう', null, 3], ['make', 'つくる', null, 3],
+    ['build', 'たてる', null, 3], ['brush', 'みがく', null, 3], ['fly', 'そらを とぶ', null, 3], ['catch', 'キャッチする', null, 3],
+    ['like', 'すき', null, 2], ['want', 'ほしい', null, 3], ['know', 'しっている', null, 3], ['finish', 'おわる', null, 3], ['start', 'はじめる', null, 3],
+  ],
+  food: [
+    ['curry', 'カレー', '🍛', 1], ['omelet', 'オムレツ', '🍳', 2], ['bento', 'おべんとう', '🍱', 2], ['French fries', 'フライドポテト', '🍟', 1],
+    ['hot dog', 'ホットドッグ', '🌭', 2], ['soup', 'スープ', '🥣', 2], ['fried chicken', 'からあげ', '🍗', 2], ['pudding', 'プリン', '🍮', 1],
+    ['cupcake', 'カップケーキ', '🧁', 2], ['pie', 'パイ', '🥧', 3], ['taco', 'タコス', '🌮', 3], ['bagel', 'ベーグル', '🥯', 3],
+    ['croissant', 'クロワッサン', '🥐', 3], ['rice cracker', 'せんべい', '🍘', 3], ['dango', 'だんご', '🍡', 3], ['shaved ice', 'かきごおり', '🍧', 2],
+    ['soda', 'ソーダ', '🥤', 2], ['yogurt', 'ヨーグルト', null, 2], ['jam', 'ジャム', null, 3], ['sugar', 'さとう', null, 3], ['tofu', 'とうふ', null, 2],
+    ['toast', 'トースト', null, 2], ['sausage', 'ソーセージ', null, 2], ['coffee', 'コーヒー', null, 3], ['cereal', 'シリアル', null, 3],
+    ['cabbage', 'キャベツ', '🥬', 2], ['lettuce', 'レタス', null, 3], ['sweet potato', 'さつまいも', '🍠', 2], ['ginger', 'しょうが', '🫚', 3],
+    ['beans', 'まめ', '🫘', 3], ['chestnut', 'くり', '🌰', 3], ['olive', 'オリーブ', '🫒', 3], ['persimmon', 'かき', null, 3],
+    ['radish', 'だいこん', null, 3], ['green onion', 'ねぎ', null, 3], ['miso soup', 'みそしる', null, 3], ['ketchup', 'ケチャップ', null, 3],
+  ],
+  home: [
+    ['plate', 'おさら', null, 2], ['bowl', 'おわん', null, 2], ['chopsticks', 'おはし', '🥢', 1], ['glass', 'コップ', null, 2],
+    ['bottle', 'ボトル', '🍼', 2], ['towel', 'タオル', null, 2], ['pillow', 'まくら', null, 2], ['blanket', 'もうふ', null, 3],
+    ['sofa', 'ソファ', '🛋️', 2], ['table', 'テーブル', null, 1], ['desk', 'つくえ', null, 2], ['refrigerator', 'れいぞうこ', null, 3],
+    ['washing machine', 'せんたくき', null, 3], ['shampoo', 'シャンプー', '🧴', 3], ['toilet paper', 'トイレットペーパー', '🧻', 2],
+    ['trash can', 'ごみばこ', '🗑️', 2], ['picture', 'しゃしん', '🖼️', 2], ['stairs', 'かいだん', null, 3], ['roof', 'やね', null, 3],
+    ['curtain', 'カーテン', null, 3], ['fan', 'せんぷうき', null, 3], ['lamp', 'ランプ', '🪔', 3],
+  ],
+  clothes: [
+    ['cap', 'キャップ', '🧢', 1], ['jacket', 'ジャケット', null, 2], ['skirt', 'スカート', null, 2], ['sweater', 'セーター', null, 2],
+    ['pajamas', 'パジャマ', null, 2], ['belt', 'ベルト', null, 3], ['button', 'ボタン', '🔘', 3], ['necktie', 'ネクタイ', '👔', 3],
+    ['sandals', 'サンダル', '🩴', 2], ['apron', 'エプロン', null, 3], ['mask', 'マスク', '😷', 2], ['slippers', 'スリッパ', null, 3],
+  ],
+  body: [
+    ['head', 'あたま', null, 1], ['hair', 'かみのけ', null, 2], ['shoulder', 'かた', null, 2], ['knee', 'ひざ', '🦵', 2],
+    ['toe', 'あしのゆび', null, 3], ['stomach', 'おなか', null, 2], ['back', 'せなか', null, 3], ['neck', 'くび', null, 2],
+    ['elbow', 'ひじ', null, 3], ['cheek', 'ほっぺ', null, 3], ['nail', 'つめ', '💅', 3], ['eyebrow', 'まゆげ', null, 3],
+  ],
+  people: [
+    ['big sister', 'おねえさん', null, 2], ['little sister', 'いもうと', null, 2], ['big brother', 'おにいさん', null, 2],
+    ['little brother', 'おとうと', null, 2], ['aunt', 'おばさん', null, 3], ['uncle', 'おじさん', null, 3], ['cousin', 'いとこ', null, 3],
+    ['friend', 'ともだち', '🧑‍🤝‍🧑', 1], ['child', 'こども', '🧒', 2], ['king', 'おうさま', null, 2], ['queen', 'じょおう', null, 3],
+  ],
+  animal: [
+    ['puppy', 'こいぬ', null, 1], ['kitten', 'こねこ', null, 1], ['chick', 'ひよこ', '🐤', 1], ['rooster', 'おんどり', '🐓', 2],
+    ['polar bear', 'ほっきょくぐま', '🐻‍❄️', 2], ['dragonfly', 'とんぼ', null, 2], ['cricket', 'コオロギ', '🦗', 3], ['beetle', 'かぶとむし', '🪲', 2],
+    ['firefly', 'ほたる', null, 3], ['caterpillar', 'けむし', '🐛', 2], ['seahorse', 'たつのおとしご', null, 3], ['starfish', 'ひとで', null, 2],
+    ['squid', 'いか', null, 2], ['salmon', 'さけ', null, 3], ['walrus', 'セイウチ', null, 3], ['crow', 'カラス', null, 2],
+    ['pigeon', 'はと', '🕊️', 2], ['sparrow', 'すずめ', null, 2], ['woodpecker', 'きつつき', null, 3], ['tanuki', 'たぬき', null, 2],
+    ['ostrich', 'ダチョウ', null, 3], ['llama', 'ラマ', '🦙', 3], ['donkey', 'ロバ', '🫏', 3], ['moose', 'ヘラジカ', '🫎', 3], ['orangutan', 'オランウータン', '🦧', 3],
+  ],
+  vehicle: [
+    ['subway', 'ちかてつ', '🚇', 2], ['streetcar', 'ろめんでんしゃ', '🚋', 3], ['cable car', 'ロープウェイ', '🚡', 3], ['ferry', 'フェリー', '⛴️', 3],
+    ['racing car', 'レーシングカー', '🏎️', 2], ['crane', 'クレーン', '🏗️', 3], ['submarine', 'せんすいかん', null, 3],
+    ['hot air balloon', 'ききゅう', null, 3], ['excavator', 'ショベルカー', null, 2], ['bulldozer', 'ブルドーザー', null, 3],
+  ],
+  nature: [
+    ['river', 'かわ', null, 1], ['lake', 'みずうみ', null, 2], ['pond', 'いけ', null, 2], ['sky', 'そら', null, 1], ['grass', 'くさ', '🌿', 2],
+    ['cave', 'どうくつ', null, 3], ['waterfall', 'たき', null, 2], ['sand', 'すな', null, 2], ['sunset', 'ゆうひ', '🌇', 2], ['sunrise', 'あさひ', '🌅', 3],
+    ['planet', 'わくせい', '🪐', 3], ['space', 'うちゅう', '🌌', 3],
+  ],
+  weather: [
+    ['typhoon', 'たいふう', '🌀', 3], ['storm', 'あらし', '⛈️', 3],
+  ],
+  school: [
+    ['student', 'せいと', '🧑‍🎓', 2], ['blackboard', 'こくばん', null, 2], ['eraser', 'けしゴム', null, 2], ['glue', 'のり', null, 3],
+    ['pencil case', 'ふでばこ', null, 3], ['textbook', 'きょうかしょ', null, 3], ['homework', 'しゅくだい', null, 3], ['test', 'テスト', null, 3],
+    ['abacus', 'そろばん', '🧮', 3], ['globe', 'ちきゅうぎ', null, 3], ['calculator', 'でんたく', null, 3],
+  ],
+  job: [
+    ['nurse', 'かんごし', null, 3], ['dentist', 'はいしゃ', null, 3], ['baker', 'パンやさん', null, 3], ['carpenter', 'だいく', null, 3],
+    ['mechanic', 'せいびし', '🧑‍🔧', 3], ['judge', 'さいばんかん', '🧑‍⚖️', 3], ['vet', 'じゅうい', null, 3], ['bus driver', 'バスの うんてんしゅ', null, 3],
+  ],
+  play: [
+    ['blocks', 'つみき', null, 1], ['swing', 'ぶらんこ', null, 1], ['slide', 'すべりだい', '🛝', 1], ['jump rope', 'なわとび', null, 2],
+    ['baseball', 'やきゅう', '⚾', 2], ['basketball', 'バスケットボール', '🏀', 2], ['tennis', 'テニス', '🎾', 2], ['volleyball', 'バレーボール', '🏐', 3],
+    ['bowling', 'ボウリング', '🎳', 3], ['video game', 'ゲーム', '🎮', 1], ['card', 'カード', '🃏', 2], ['chess', 'チェス', '♟️', 3],
+    ['bubbles', 'シャボンだま', '🫧', 1], ['magic', 'てじな', '🎩', 3], ['music', 'おんがく', '🎵', 2], ['song', 'うた', '🎶', 2],
+    ['movie', 'えいが', '🎬', 2], ['party', 'パーティー', '🥳', 2], ['picnic', 'ピクニック', null, 3], ['doll', 'にんぎょう', null, 2],
+  ],
+  moneyMore: [
+    ['wallet', 'さいふ', '👛', 2], ['price', 'ねだん', '🏷️', 3],
+  ],
+  townMore: [
+    ['crosswalk', 'おうだんほどう', '🚸', 3], ['fire station', 'しょうぼうしょ', null, 3], ['police station', 'けいさつしょ', null, 3],
   ],
   season: [
     ['spring', 'はる', '🌸', 3], ['summer', 'なつ', '🏖️', 3], ['fall', 'あき', '🍂', 3], ['winter', 'ふゆ', '☃️', 3],
@@ -181,10 +317,14 @@ const RAW = {
 };
 
 export const WORDS = [];
-for (const [cat, rows] of Object.entries(RAW)) {
-  for (const [en, ja, pic, lv] of rows) {
-    const id = `${cat}:${en}`;
-    WORDS.push({ id, en, ja, pic, lv, cat, isNum: /^\d+$/.test(pic), photo: PHOTOS[id]?.src || null });
+for (const raw of [RAW, RAW_MORE]) {
+  for (const [key, rows] of Object.entries(raw)) {
+    const cat = key.replace(/More$/, '');
+    for (const [en, ja, pic, lv] of rows) {
+      const id = `${cat}:${en}`;
+      const photo = PHOTOS[id]?.src || null;
+      WORDS.push({ id, en, ja, pic, lv, cat, isNum: /^\d+$/.test(pic || ''), photo, hasPic: !!(photo || pic) });
+    }
   }
 }
 export const BY_ID = Object.fromEntries(WORDS.map(w => [w.id, w]));

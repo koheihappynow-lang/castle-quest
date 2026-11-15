@@ -5,7 +5,7 @@ import { DEFAULT_RATES, RATES_DATE } from './castles.js';
 
 function blank() {
   return {
-    version: 2,
+    version: 3,
     profiles: [],
     activeId: null,
     settings: { pinHash: null, limitMin: 0, reviewGate: 30, rates: { ...DEFAULT_RATES }, ratesDate: RATES_DATE, voice: { en: '', ja: '', rate: 1 } },
@@ -14,6 +14,7 @@ function blank() {
 
 // 古いデータ（コイン）を新しい形（円のおさいふ）に直す
 function migrate(d) {
+  const oldVersion = d.version || 1;
   const b = blank();
   d = { ...b, ...d, settings: { ...b.settings, ...(d.settings || {}) } };
   d.settings.rates = { ...DEFAULT_RATES, ...(d.settings.rates || {}) };
@@ -25,8 +26,10 @@ function migrate(d) {
     p.castles = p.castles || {};
     p.completed = p.completed || [];
     p.tsurugaBonus = p.tsurugaBonus || 0;
+    // v3：1城が10パーツ→30パーツになったので、建てた数を3倍にする
+    if (oldVersion < 3) for (const id of Object.keys(p.castles)) p.castles[id] = Math.min(30, p.castles[id] * 3);
   }
-  d.version = 2;
+  d.version = 3;
   return d;
 }
 

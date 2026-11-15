@@ -1,5 +1,7 @@
 // お城と通貨のデータ
-export const PARTS_PER_CASTLE = 10;
+// 1城は30パーツ（3Dの10段階を、それぞれ3回に分けて建てる）
+export const PARTS_PER_CASTLE = 30;
+export const STEPS_PER_STAGE = 3;
 
 // 為替レート（1単位が何円か。5円単位）。2026-11-13ごろの相場をもとにした初期値。おうちのひとメニューで変更できる
 export const DEFAULT_RATES = { dollar: 160, euro: 175, pound: 210, yuan: 25 };
@@ -12,12 +14,12 @@ export const CURRENCIES = {
   pound: { name: 'ポンド', en: 'pound', sign: '💷', symbol: '£', note: 'イギリスの おかね' },
   yuan: { name: 'げん', en: 'yuan', sign: '🧧', symbol: '元', note: 'ちゅうごくの おかね' },
 };
-// 1パーツの ねだん（その国の通貨）。どれも だいたい 36,000えん くらい（約30問ぶん。1城＝約300問）
-export const PART_PRICE = { yen: 36000, dollar: 225, euro: 205, pound: 170, yuan: 1450 };
+// 1パーツの ねだん（その国の通貨）。どれも だいたい 12,000えん くらい（約10問ぶん。30パーツで1城＝約300問）
+export const PART_PRICE = { yen: 12000, dollar: 75, euro: 70, pound: 60, yuan: 500 };
 // 正解でもらえる円
 export const YEN_PER_LEVEL = { 1: 1000, 2: 1200, 3: 1500 };
 // 鶴ヶ城：おばけを この数だけ卒業させると 1パーツ
-export const GHOSTS_PER_TSURUGA_PART = 5;
+export const GHOSTS_PER_TSURUGA_PART = 2;
 
 const LAST = 'かんせい！ ライトアップ';
 export const CASTLES = [
@@ -99,5 +101,10 @@ export const CASTLES = [
     parts: ['とちと おほり', 'いしがき', 'あかい はし', 'やぐら', 'てんしゅの かべ', 'あかい やね', 'しゃちほこ', 'さくらと ちゃしつ', 'あかべこと ひとびと', LAST],
   },
 ];
+// 10段階の名前 → 30パーツの名前（例：「いしがき 1/3」）
+for (const c of CASTLES) {
+  c.stageNames = c.parts;
+  c.parts = c.stageNames.flatMap(n => [1, 2, 3].map(k => `${n} ${k}/3`));
+}
 export const CASTLE_BY_ID = Object.fromEntries(CASTLES.map(c => [c.id, c]));
 export const NORMAL_CASTLES = CASTLES.filter(c => !c.rare);

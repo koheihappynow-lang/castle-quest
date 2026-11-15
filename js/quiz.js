@@ -41,7 +41,9 @@ function pickWeighted(obj) {
   return Number(entries[0][0]);
 }
 
-function pickWord(level, avoid, challenge) {
+function pickWord(level, avoid0, challenge) {
+  // かんたん（4歳）は絵の問題だけなので、絵のない ことば は出さない
+  const avoid = level === 1 ? new Set([...avoid0, ...WORDS.filter(w => !w.hasPic).map(w => w.id)]) : avoid0;
   let pool;
   if (challenge) {
     const lv = Math.min(3, level + 1);
@@ -52,7 +54,8 @@ function pickWord(level, avoid, challenge) {
     pool = WORDS.filter(w => w.lv === lv && !avoid.has(w.id));
     if (!pool.length) pool = WORDS.filter(w => ww[w.lv] && !avoid.has(w.id));
   }
-  if (!pool.length) pool = WORDS.filter(w => w.lv <= Math.max(level, 1));
+  if (!pool.length) pool = WORDS.filter(w => w.lv <= Math.max(level, 1) && !avoid.has(w.id));
+  if (!pool.length) pool = WORDS.filter(w => w.lv <= Math.max(level, 1) && (level > 1 || w.hasPic));
   return pool[rand(pool.length)];
 }
 
@@ -61,16 +64,12 @@ function distractors(word, type, level, challenge) {
   const okBase = w => w.id !== word.id
     && w.en.toLowerCase() !== word.en.toLowerCase()
     && w.ja !== word.ja
-    && w.pic !== word.pic
-    && !excluded(w.cat, word.cat);
+    && !(w.pic && w.pic === word.pic)
+    && !excluded(w.cat, word.cat)
+    && (!showsPic || w.hasPic);
   // 絵の選択肢は「写真どうし」「絵文字どうし」でそろえる（写真だけ目立って答えがわかる、を防ぐ）
   const ok = w => okBase(w)
     && (!showsPic || !!w.photo === !!word.photo)
-    && w.id !== word.id
-    && w.en.toLowerCase() !== word.en.toLowerCase()
-    && w.ja !== word.ja
-    && w.pic !== word.pic
-    && !excluded(w.cat, word.cat)
     // 数字の問題で、絵の選択肢が数字ばかりにならないよう、数字どうしは同じカテゴリの時だけ
     && (!showsPic || w.isNum === word.isNum || w.cat !== 'number');
   const maxLv = Math.max(level, word.lv);
@@ -79,10 +78,10 @@ function distractors(word, type, level, challenge) {
   const same = shuffle(WORDS.filter(w => ok(w) && w.cat === word.cat && w.lv <= maxLv));
   const other = shuffle(WORDS.filter(w => ok(w) && w.cat !== word.cat && w.lv <= maxLv));
   const out = [];
-  const seen = new Set([word.en.toLowerCase(), word.ja, word.pic]);
+  const seen = new Set([word.en.toLowerCase(), word.ja, word.pic].filter(Boolean));
   const take = w => {
-    if (seen.has(w.en.toLowerCase()) || seen.has(w.ja) || seen.has(w.pic)) return false;
-    seen.add(w.en.toLowerCase()); seen.add(w.ja); seen.add(w.pic);
+    if (seen.has(w.en.toLowerCase()) || seen.has(w.ja) || (w.pic && seen.has(w.pic))) return false;
+    seen.add(w.en.toLowerCase()); seen.add(w.ja); if (w.pic) seen.add(w.pic);
     out.push(w);
     return true;
   };
@@ -94,7 +93,9 @@ function distractors(word, type, level, challenge) {
 }
 
 export function makeQuestion(word, level, opts = {}) {
-  const type = opts.type || pickWeighted(TYPE_WEIGHTS[level]);
+  let type = opts.type || pickWeighted(TYPE_WEIGHTS[level]);
+  // 絵も写真もない ことば は、文字の問題（ひらがな⇔えいご）だけ
+  if (!word.hasPic && type <= 3) type = Math.random() < 0.5 ? 4 : 5;
   const ds = distractors(word, type, level, !!opts.challenge);
   const options = shuffle([word, ...ds]).map(w => w.id);
   return { wid: word.id, type, options, challenge: !!opts.challenge, review: !!opts.review, retry: !!opts.retry };
