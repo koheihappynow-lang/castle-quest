@@ -199,22 +199,31 @@ const SCREENS = {
     const p = activeProfile();
     const Q = S.quiz;
     const q = Q.qs[Q.i];
-    const w = BY_ID[q.wid];
     const total = Q.qs.length;
-    const promptHTML = {
-      1: `<div class="q-pic">${picHTML(w, 'xl')}</div><p class="q-text">これは えいごで なんて いう？</p>`,
-      2: `<div class="q-word">${esc(w.en)}</div><p class="q-text">は どれかな？</p>`,
-      3: `<button class="listen-btn" data-act="replay">🔊</button><p class="q-text">よく きいてね！ どれかな？</p>`,
-      4: `<div class="q-word ja">「${esc(w.ja)}」</div><p class="q-text">は えいごで どれ？</p>`,
-      5: `<div class="q-word">${esc(w.en)}</div><p class="q-text">は にほんごで どれ？</p>`,
-    }[q.type];
+    const P = q.prompt || {};
+    const sentenceHTML = s => esc(s).replace('___', '<span class="blank">？</span>');
+    const promptHTML = [
+      `<div class="q-type">${TYPE_NAMES[q.type]}</div>`,
+      P.pic ? `<div class="q-pic">${picHTML(BY_ID[P.pic], 'xl')}</div>` : '',
+      P.emojiRow ? `<div class="q-emoji">${esc(P.emojiRow)}</div>` : '',
+      P.big ? `<div class="q-letter">${esc(P.big)}</div>` : '',
+      P.listen ? '<button class="listen-btn" data-act="replay">🔊</button>' : '',
+      P.word ? `<div class="q-word ${P.ja ? 'ja' : ''}">${esc(P.word)}</div>${P.sub ? `<div class="q-sub">（${esc(P.sub)}）</div>` : ''}` : '',
+      P.sentence ? `<div class="q-sentence">${P.listenSentence || q.type === 10 || q.type === 13 ? `<button class="say-mini" data-act="replay">🔊</button>` : ''}${sentenceHTML(P.sentence)}</div>` : '',
+      P.hintJa && !P.pic ? `<div class="q-sub">ヒント：${esc(P.hintJa)}</div>` : '',
+      `<p class="q-text">${esc(P.text || '')}</p>`,
+    ].join('');
     const letters = ['A', 'B', 'C', 'D'];
     const opts = q.options.map((id, k) => {
-      const o = BY_ID[id];
       let inner;
-      if (q.type === 2 || q.type === 3) inner = picHTML(o, 'opt-pic');
-      else if (q.type === 5) inner = `<span class="opt-text ja">${esc(o.ja)}</span>`;
-      else inner = `<span class="opt-text">${esc(o.en)}</span><span class="opt-say" data-act="sayOpt" data-id="${id}">🔊</span>`;
+      if (id.startsWith('txt:')) inner = `<span class="opt-text">${esc(id.slice(4))}</span>`;
+      else {
+        const o = BY_ID[id];
+        if (q.optMode === 'pic') inner = picHTML(o, 'opt-pic');
+        else if (q.optMode === 'letter') inner = `<span class="opt-letterbig">${esc(o.en)}</span><span class="opt-say" data-act="sayOpt" data-id="${id}">🔊</span>`;
+        else if (q.optMode === 'ja') inner = `<span class="opt-text ja">${esc(o.ja)}</span>`;
+        else inner = `<span class="opt-text">${esc(o.en)}</span><span class="opt-say" data-act="sayOpt" data-id="${id}">🔊</span>`;
+      }
       return `<button class="opt" data-act="answer" data-id="${id}"><span class="opt-letter">${letters[k]}</span>${inner}</button>`;
     }).join('');
     const tags = [
@@ -532,15 +541,7 @@ function startQuiz(mode) {
 }
 function speakQuestion() {
   const q = S.quiz.qs[S.quiz.i];
-  const w = BY_ID[q.wid];
-  const parts = {
-    1: [{ t: 'これは英語でなんて言う？', l: 'ja' }],
-    2: [{ t: w.en, l: 'en' }, { t: 'は、どれかな？', l: 'ja' }],
-    3: [{ t: 'よく聞いてね。', l: 'ja' }, { t: w.en, l: 'en' }],
-    4: [{ t: `${w.ja}は、英語でどれ？`, l: 'ja' }],
-    5: [{ t: w.en, l: 'en' }, { t: 'は、日本語でどれ？', l: 'ja' }],
-  }[q.type];
-  setTimeout(() => say(parts), 250);
+  setTimeout(() => say(q.say || []), 250);
 }
 function addYen(n, kind) {
   const p = activeProfile();
@@ -557,11 +558,13 @@ function answer(id, btn) {
   const p = activeProfile();
   const q = Q.qs[Q.i];
   const w = BY_ID[q.wid];
-  const ok = id === q.wid;
+  const ans = q.answer || q.wid;
+  const ok = id === ans;
+  const ansObj = ans.startsWith('txt:') ? w : BY_ID[ans];
   p.history.push({ d: today(), ts: Date.now(), w: q.wid, ty: q.type, c: id, ok, m: Q.mode, r: q.retry ? 1 : 0, ch: q.challenge ? 1 : 0 });
   if (p.history.length > HISTORY_MAX) p.history.splice(0, p.history.length - HISTORY_MAX);
   if (!q.retry) p.recent = [...(p.recent || []).filter(x => x !== q.wid), q.wid].slice(-50);
-  document.querySelectorAll('.opt').forEach(b => { b.disabled = true; if (b.dataset.id === q.wid) b.classList.add('right'); });
+  document.querySelectorAll('.opt').forEach(b => { b.disabled = true; if (b.dataset.id === ans) b.classList.add('right'); });
 
   if (ok) {
     btn.classList.add('right', 'bounce');
@@ -583,9 +586,10 @@ function answer(id, btn) {
       if (tsurugaParts(p) > before) { Q.tsuruga++; setTimeout(() => { sfx.fanfare(); toast('✨ ちょうげきレア！ なぞの おしろの パーツを みつけた！', 3200); }, 2400); }
     }
     save();
-    setTimeout(() => sayEn(w.en), 350);
+    const after = q.after || w.en;
+    setTimeout(() => sayEn(after), 350);
     burst(btn);
-    setTimeout(nextQuestion, 1500);
+    setTimeout(nextQuestion, Math.min(3500, 1500 + after.length * 45));
   } else {
     btn.classList.add('wrong', 'shake');
     sfx.wrong();
@@ -596,14 +600,16 @@ function answer(id, btn) {
     document.getElementById('feedback').innerHTML = `
       <div class="feedback-card">
         <p>せいかいは…</p>
-        <div class="fb-answer">${picHTML(w, 'fb-pic')}<div><div class="fb-en">${esc(w.en)}</div><div class="fb-ja">${esc(w.ja)}</div></div></div>
+        <div class="fb-answer">${picHTML(ansObj, 'fb-pic')}<div><div class="fb-en">${esc(ansObj.en)}</div><div class="fb-ja">${esc(ansObj.ja)}</div></div></div>
+        ${q.after && q.after !== ansObj.en ? `<p class="fb-sentence">${esc(q.after)}</p>` : ''}
         <p class="fb-say">いっしょに いってみよう！</p>
         <div class="row center">
-          <button class="btn" data-act="sayWord" data-id="${w.id}">🔊 もういちど きく</button>
+          <button class="btn" data-act="sayAfter">🔊 もういちど きく</button>
           <button class="btn primary" data-act="said">🗣️ いえた！</button>
         </div>
       </div>`;
-    setTimeout(() => say([{ t: '正解は、', l: 'ja' }, { t: w.en, l: 'en' }, { t: '一緒に言ってみよう。', l: 'ja' }, { t: w.en, l: 'en' }]), 400);
+    const line = q.after || ansObj.en;
+    setTimeout(() => say([{ t: '正解は、', l: 'ja' }, { t: ansObj.en, l: 'en' }, { t: '一緒に言ってみよう。', l: 'ja' }, { t: line, l: 'en' }]), 400);
   }
 }
 function nextQuestion() {
@@ -885,7 +891,7 @@ function statsHTML() {
   const hard = Object.entries(p.review).filter(([id]) => BY_ID[id]).sort((a, b) => b[1].wrong - a[1].wrong).slice(0, 10);
   const totalMin = Math.round(Object.values(p.play).reduce((s, v) => s + v, 0) / 60);
   const fmtTime = ts => { const d = new Date(ts); return `${today(d)} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
-  const optLabel = (id, ty) => { const w = BY_ID[id]; if (!w) return id; return ty === 5 ? w.ja : (ty === 2 || ty === 3) ? `${w.pic}（${w.en}）` : w.en; };
+  const optLabel = (id, ty) => { if (id.startsWith('txt:')) return id.slice(4); const w = BY_ID[id]; if (!w) return id; return ty === 5 ? w.ja : [2, 3, 8, 13].includes(ty) ? `${w.pic || ''}（${w.en}）` : w.en; };
   return `
     <div class="row wrap">${ps.map(x => `<button class="pill ${x.id === p.id ? 'on' : ''}" data-act="statsFor" data-id="${x.id}">${esc(x.name)}</button>`).join('')}</div>
     <div class="kpis">
@@ -964,7 +970,8 @@ const ACTIONS = {
   answer: (d, el) => answer(d.id, el),
   sayOpt: (d, el, e) => { e.stopPropagation(); sayEn(BY_ID[d.id].en); },
   sayWord: d => sayEn(BY_ID[d.id].en),
-  replay: () => sayEn(BY_ID[S.quiz.qs[S.quiz.i].wid].en),
+  replay: () => { const q = S.quiz.qs[S.quiz.i]; say(q.say && q.say.some(x => x.l === 'en') ? q.say.filter(x => x.l === 'en') : [{ t: BY_ID[q.wid].en, l: 'en' }]); },
+  sayAfter: () => { const q = S.quiz.qs[S.quiz.i]; sayEn(q.after || BY_ID[q.wid].en); },
   said: () => { sfx.tap(); nextQuestion(); },
   quitQuiz: () => { if (confirm('やめる？（もらった おかねは そのままだよ）')) go('home'); },
   openCastle: d => { sfx.tap(); go('castle', { castleId: d.id, previewing: false }); },

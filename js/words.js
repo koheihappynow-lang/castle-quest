@@ -1,5 +1,6 @@
 // キャッスルクエスト 単語データ
 import { PHOTOS } from './photos.js';
+import { LETTER_JA } from './sentences.js';
 // 形式: [英語, ひらがな/カタカナ, 絵(絵文字 or 数字), レベル(1-3)]
 // レベル 1=かんたん(4歳) 2=ふつう(5歳) 3=むずかしい(6-7歳)
 
@@ -8,7 +9,7 @@ export const CATS = {
   clothes: 'ふく', vehicle: 'のりもの', people: 'ひと', fantasy: 'ふしぎ', weather: 'てんき',
   nature: 'しぜん', home: 'おうち', play: 'あそび', school: 'がっこう', job: 'しごと',
   shape: 'かたち', feeling: 'きもち', action: 'うごき', season: 'きせつ', town: 'まち', money: 'おかね・くに',
-  phrase: 'あいさつ・ことば', time: 'とき', place: 'ばしょ', describe: 'ようす',
+  phrase: 'あいさつ・ことば', time: 'とき', place: 'ばしょ', describe: 'ようす', letter: 'アルファベット',
 };
 
 // 絵が似ていて混ざると不公平なカテゴリの組み合わせ（選択肢に一緒に出さない）
@@ -327,7 +328,14 @@ for (const raw of [RAW, RAW_MORE]) {
     }
   }
 }
-export const BY_ID = Object.fromEntries(WORDS.map(w => [w.id, w]));
+// アルファベット（大文字・小文字の問題用。ふつうの単語の問題には出さない）
+export const LETTERS = [];
+for (const L of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+  const ja = LETTER_JA[L];
+  LETTERS.push({ id: `letter:${L}`, en: L, ja: `${ja}（おおもじ）`, pic: L, lv: 1, cat: 'letter', isNum: true, photo: null, hasPic: true, letter: true });
+  LETTERS.push({ id: `letter:${L.toLowerCase()}`, en: L.toLowerCase(), ja: `${ja}（こもじ）`, pic: L.toLowerCase(), lv: 1, cat: 'letter', isNum: true, photo: null, hasPic: true, letter: true });
+}
+export const BY_ID = Object.fromEntries([...WORDS, ...LETTERS].map(w => [w.id, w]));
 
 export function excluded(catA, catB) {
   return EXCLUDE.some(([a, b]) => (a === catA && b === catB) || (a === catB && b === catA));
