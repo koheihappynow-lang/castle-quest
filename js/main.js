@@ -288,6 +288,7 @@ const SCREENS = {
           const n = built(p, c.id), done = p.completed.includes(c.id);
           const price = c.rare ? `👻 パーツ ${tsurugaParts(p) - n}こ` : `${CURRENCIES[c.currency].sign} ${money(c.currency, PART_PRICE[c.currency])}`;
           return `<button class="col-card ${done ? 'got' : ''} ${c.rare ? 'rare' : ''}" data-act="openCastle" data-id="${c.id}">
+            ${done ? `<img class="col-card-img" src="cards/${c.id}.jpg" alt="" onerror="this.remove()">` : ''}
             <div class="col-flag">${c.flag}</div>
             <div class="col-name">${c.name}</div>
             <div class="mini-bar"><i style="width:${(n / PARTS_PER_CASTLE) * 100}%"></i></div><div class="mini-count">${n} / ${PARTS_PER_CASTLE}</div>
@@ -669,7 +670,7 @@ async function attachCastle() {
     const mod = await engineP;
     if (!document.getElementById('stage')) return;
     if (!castleView) castleView = new mod.CastleView();
-    await castleView.load(c.id);
+    await castleView.load(c.id, { ja: c.name, en: c.en });
     if (!document.getElementById('stage')) return;
     castleView.attach(el);
     castleView.setTime(S.castleTime);
@@ -734,7 +735,8 @@ function showDesc(id, first = false) {
   m.className = 'modal';
   m.innerHTML = `
     <div class="modal-card">
-      ${first ? '<div class="stars">🎉 かんせい！ 🎉</div>' : ''}
+      ${first ? '<div class="stars">🎉 かんせい！ きねんカードを ゲット！ 🎉</div>' : ''}
+      <img class="card-art ${first ? 'reveal' : ''}" src="cards/${c.id}.jpg" alt="" onerror="this.remove()">
       <h2>${c.flag} ${c.name}</h2>
       <p class="desc">${esc(c.desc)}</p>
       <p class="line">🔤 <b>${esc(c.line)}</b> <button class="icon-btn sm" data-act="sayLine">🔊</button></p>

@@ -395,6 +395,19 @@ body[data-bg="hub"] .big-btn.quiz { min-height: 150px; }
 .castle-page .preview-banner { position: absolute; }
 .castle-panel { background: rgba(255, 255, 255, .93); backdrop-filter: blur(6px); }
 
+/* ===== 完成記念カード ===== */
+.col-card { position: relative; overflow: hidden; }
+.col-card-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+.col-card-img ~ * { position: relative; z-index: 1; }
+.col-card-img ~ .col-flag, .col-card-img ~ .mini-bar, .col-card-img ~ .mini-count { display: none; }
+.col-card-img ~ .col-name, .col-card-img ~ .col-sub { background: rgba(255, 255, 255, .88); border-radius: 10px; display: inline-block; padding: 2px 8px; margin-top: 70px; }
+.col-card-img ~ .col-sub { margin-top: 4px; }
+.col-card.got { border: 4px solid #ffd23f; box-shadow: 0 0 0 3px rgba(255, 210, 63, .35), var(--shadow); }
+.modal-card { max-width: 760px; }
+.card-art { display: block; width: 100%; border-radius: 18px; margin: 6px 0 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, .3); border: 4px solid #ffd23f; }
+.card-art.reveal { animation: cardIn 1.2s cubic-bezier(.2, 1.3, .4, 1) both; }
+@keyframes cardIn { from { transform: rotateY(90deg) scale(.6); opacity: 0; } }
+
 /* ===== 新しい問題の種類 ===== */
 .q-type { font-size: .8rem; font-weight: 800; color: #7b3fe4; background: #f1eaff; padding: 3px 12px; border-radius: 999px; margin-bottom: 8px; }
 .q-emoji { font-size: clamp(1.6rem, 4.5vw, 2.4rem); letter-spacing: .05em; line-height: 1.3; margin: 4px 0 8px; word-break: break-all; }

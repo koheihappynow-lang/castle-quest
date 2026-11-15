@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 export { THREE };
 
@@ -274,8 +275,92 @@ function star(g, x, y, r) {
   g.closePath(); g.fill();
 }
 
+// でこぼこ（ノーマルマップ）を、色の明るさから作る
+function normalFrom(tex, strength = 2) {
+  const src = tex.image;
+  const w = src.width, h = src.height;
+  const d = src.getContext('2d').getImageData(0, 0, w, h).data;
+  const lum = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i++) lum[i] = (d[i * 4] * 0.3 + d[i * 4 + 1] * 0.59 + d[i * 4 + 2] * 0.11) / 255;
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d'); const out = g.createImageData(w, h);
+  const at = (x, y) => lum[((y + h) % h) * w + ((x + w) % w)];
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const dx = (at(x + 1, y) - at(x - 1, y)) * strength, dy = (at(x, y + 1) - at(x, y - 1)) * strength;
+    const len = Math.hypot(dx, dy, 1);
+    const i = (y * w + x) * 4;
+    out.data[i] = ((-dx / len) * 0.5 + 0.5) * 255; out.data[i + 1] = ((dy / len) * 0.5 + 0.5) * 255; out.data[i + 2] = ((1 / len) * 0.5 + 0.5) * 255; out.data[i + 3] = 255;
+  }
+  g.putImageData(out, 0, 0);
+  const n = new THREE.CanvasTexture(c);
+  n.wrapS = n.wrapT = THREE.RepeatWrapping;
+  n.repeat.copy(tex.repeat);
+  n.colorSpace = THREE.NoColorSpace;
+  return n;
+}
+function addRelief() {
+  const plan = [
+    ['stone', 'stone', 3], ['stoneGrey', 'stone', 3], ['stoneWarm', 'stone', 3], ['ashlar', 'ashlar', 2.2], ['ashlarGrey', 'ashlar', 2.2],
+    ['ashlarWarm', 'ashlar', 2.2], ['brick', 'brick', 2.5], ['roof', 'roof', 2.5], ['roofRed', 'roofRed', 2.5], ['roofYellow', 'roofYellow', 2],
+    ['slate', 'slate', 2.5], ['terracotta', 'terracotta', 2.5], ['wood', 'wood', 1.5], ['board', 'wood', 1.5], ['paving', 'paving', 2],
+    ['gravel', 'gravel', 1.2], ['houseGrey', 'ashlar', 2], ['plaster', 'plaster', 0.6], ['limestone', 'plaster', 0.6], ['cream', 'plaster', 0.6],
+  ];
+  const cache = {};
+  for (const [m, t, s] of plan) {
+    if (!M[m] || !TEX[t]) continue;
+    const key = `${t}_${s}`;
+    cache[key] ||= normalFrom(TEX[t], s);
+    M[m].normalMap = cache[key];
+    M[m].normalScale = new THREE.Vector2(0.9, 0.9);
+    M[m].needsUpdate = true;
+  }
+  // 金・ガラス瓦・水は、まわりの景色が うつりこむように
+  M.gold.envMapIntensity = 1.6; M.roofYellow.envMapIntensity = 1.2; M.water.envMapIntensity = 1.4; M.copper.envMapIntensity = 1.2;
+  // 夜の あかりの まわりの ひかり
+  M.glow = new THREE.PointsMaterial({ map: TEX.dot, color: 0xffc070, size: 0.9, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
+  M.glowBig = new THREE.PointsMaterial({ map: TEX.dot, color: 0xffb060, size: 2.4, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
+}
+
 let inited = false;
-export function initAssets() { if (inited) return; makeTextures(); makeMaterials(); inited = true; }
+export function initAssets() { if (inited) return; makeTextures(); makeMaterials(); addRelief(); inited = true; }
+
+// あかり（窓・ちょうちん）の位置に ひかりの粒をつける
+function addGlows(root) {
+  const v = new THREE.Vector3(), m4 = new THREE.Matrix4();
+  root.traverse(o => {
+    if (!o.isInstancedMesh || o.userData.glowDone) return;
+    const mat = o.material;
+    const big = mat === M.lantern || mat === M.chochin;
+    if (mat !== M.window && !big) return;
+    const pos = new Float32Array(o.count * 3);
+    for (let i = 0; i < o.count; i++) { o.getMatrixAt(i, m4); v.setFromMatrixPosition(m4); pos[i * 3] = v.x; pos[i * 3 + 1] = v.y; pos[i * 3 + 2] = v.z; }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const pts = new THREE.Points(g, big ? M.glowBig : M.glow);
+    pts.frustumCulled = false;
+    o.add(pts);
+    o.userData.glowDone = true;
+  });
+}
+
+// 台の前の なまえプレート
+function namePlate(label) {
+  const c = document.createElement('canvas'); c.width = 1024; c.height = 128;
+  const g = c.getContext('2d');
+  const gr = g.createLinearGradient(0, 0, 0, 128); gr.addColorStop(0, '#5a3a22'); gr.addColorStop(1, '#3a2414');
+  g.fillStyle = gr; g.fillRect(0, 0, 1024, 128);
+  g.strokeStyle = '#d4a645'; g.lineWidth = 6; g.strokeRect(8, 8, 1008, 112);
+  const tg = g.createLinearGradient(0, 30, 0, 100); tg.addColorStop(0, '#fff2b0'); tg.addColorStop(1, '#e0a62a');
+  g.fillStyle = tg; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.font = '900 54px "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif';
+  g.fillText(`${label.ja}`, 512, 52);
+  g.font = '700 30px "Times New Roman", serif';
+  g.fillText(label.en.toUpperCase().split('').join(' '), 512, 100);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(22, 2.75), new THREE.MeshStandardMaterial({ map: t, roughness: 0.5, metalness: 0.2 }));
+  m.position.set(0, -2.6, 34.03);
+  return m;
+}
 
 // ---------- 形の道具 ----------
 export function rectPt(w, d, side, t) {
@@ -1027,6 +1112,11 @@ export class CastleView {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.scene = new THREE.Scene();
+    // まわりの光（やわらかい反射のため）
+    const pmrem = new THREE.PMREMGenerator(this.renderer);
+    this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    pmrem.dispose();
+    this.scene.fog = new THREE.Fog(0xd6e6f2, 80, 200);
     this.camera = new THREE.PerspectiveCamera(38, 1, 0.5, 600);
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     Object.assign(this.controls, { enableDamping: true, enablePan: false, minDistance: 16, maxDistance: 100, maxPolarAngle: 1.38, autoRotate: true, autoRotateSpeed: 0.35 });
@@ -1047,6 +1137,11 @@ export class CastleView {
     // 土台（ジオラマの木の台）
     this.scene.add(mesh(boxGeo(68, 3, 68), M.board, 0, -2.6, 0));
     this.scene.add(mesh(boxGeo(69, 0.4, 69), M.darkWood, 0, -4.1, 0));
+    // 台のふちの 金の かざり
+    for (const [w, d, x, z] of [[68.3, 0.18, 0, 34.05], [68.3, 0.18, 0, -34.05], [0.18, 68.3, 34.05, 0], [0.18, 68.3, -34.05, 0]]) {
+      this.scene.add(mesh(boxGeo(w, 0.18, d), M.gold, x, -1.15, z));
+      this.scene.add(mesh(boxGeo(w, 0.12, d), M.gold, x, -3.85, z));
+    }
     this.fx = [];
     this.clock = new THREE.Clock();
     this.time = 'day';
@@ -1055,7 +1150,7 @@ export class CastleView {
     this.ro = new ResizeObserver(() => this.resize());
   }
 
-  async load(id) {
+  async load(id, label) {
     if (this.id === id && this.world) return;
     const mod = await BUILDERS[id]();
     this.clearWorld();
@@ -1090,6 +1185,8 @@ export class CastleView {
     this.camTarget = [0, 6, 2];
     this.spotR = 18;
     mod.build(ctx);
+    addGlows(world);
+    if (label) world.add(namePlate(label));
     // 各段階の部品を「下から順」に並べておく（3回に分けて建てるため）
     for (const g of stages) {
       const items = g.children.map(c => { const b = new THREE.Box3().setFromObject(c); return { c, y: b.isEmpty() ? 0 : b.min.y + (b.max.y - b.min.y) * 0.3 }; });
@@ -1164,7 +1261,7 @@ export class CastleView {
     this.time = mode;
     const done = this.parts >= 30;
     const P = {
-      day: { sky: 'day', hemi: [0xdcefff, 0x5d7a3d, 1.1], sun: [0xffffff, 2.6, [30, 45, 25]], win: 0, lan: 0.05, cho: 0.1, spot: 0, stars: false, exp: 1.0, glow: 1 },
+      day: { sky: 'day', hemi: [0xdcefff, 0x5d7a3d, 0.55], sun: [0xfff4e0, 3.4, [30, 40, 25]], win: 0, lan: 0.05, cho: 0.1, spot: 0, stars: false, exp: 1.0, glow: 1 },
       evening: { sky: 'evening', hemi: [0xffd7b0, 0x4a3b5a, 0.7], sun: [0xffa66b, 1.9, [-40, 14, 22]], win: 0.6, lan: 0.8, cho: 0.9, spot: done ? 25 : 0, stars: false, exp: 1.0, glow: 0.6 },
       night: { sky: 'night', hemi: [0x5a6ea8, 0x1a1f33, 0.35], sun: [0x9fb4ff, 0.55, [-20, 40, -30]], win: 2.2, lan: 3, cho: 3, spot: done ? 90 : 0, stars: true, exp: 1.15, glow: 0.25 },
     }[mode];
@@ -1180,6 +1277,10 @@ export class CastleView {
     this.spots.forEach(s => { s.intensity = P.spot; });
     this.stars.visible = false;
     this.renderer.toneMappingExposure = P.exp;
+    const env = { day: [0.45, 0xd6e6f2, 0], evening: [0.3, 0xf2b98a, 0.55], night: [0.1, 0x1c2a52, 1] }[mode];
+    this.scene.environmentIntensity = env[0];
+    this.scene.fog.color.set(env[1]);
+    M.glow.opacity = env[2]; M.glowBig.opacity = env[2];
   }
 
   // n = 建てたパーツ数（0〜30）。1つの段階を3回に分けて、下の部品から順に見せる

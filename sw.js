@@ -1,7 +1,7 @@
 // オフラインでも動くように、ゲームのファイルをiPadに保存しておく
 // ・ネットにつながっているときは、いつも最新のプログラムを取りにいく（更新がすぐ反映される）
 // ・つながっていないときは、保存しておいたものを使う
-const VERSION = 'cq-v6';
+const VERSION = 'cq-v7';
 const BG_FILES = ['hero', 'title', 'hub', 'study', 'select', 'build-day', 'build-sunset', 'build-night', 'exchange', 'ghosts', 'workshop']
   .map(n => `./bg/${n}.jpg`);
 const CASTLE_FILES = ['himeji', 'neuschwanstein', 'windsor', 'montsaintmichel', 'edinburgh', 'alhambra', 'chambord', 'hearst', 'forbiddencity', 'pena', 'tsuruga']
@@ -16,6 +16,7 @@ const CDN = [
   'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js',
   'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/controls/OrbitControls.js',
   'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/utils/BufferGeometryUtils.js',
+  'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/environments/RoomEnvironment.js',
 ];
 
 self.addEventListener('install', e => {
