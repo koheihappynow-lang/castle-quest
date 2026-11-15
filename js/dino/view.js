@@ -100,6 +100,12 @@ function accessoryMesh(id) {
   }
   return g;
 }
+// すみかの 背景（ChatGPTで 作った 360度の 絵）。rot：絵の 向き、fog：もやの 色、ground：遠くの 地面、grass：島の 草の 色
+export const HABITATS = {
+  jungle: { src: 'bg/habitat-jungle.jpg', name: 'ジャングル', icon: '🌴', rot: Math.PI, fog: 0x8fa77a, ground: 0x5e4a30, grass: 0xd8e8b0 },
+  volcano: { src: 'bg/habitat-volcano.jpg', name: 'かざん', icon: '🌋', rot: Math.PI, fog: 0xa89484, ground: 0x4a3c34, grass: 0xc8c49a },
+  coast: { src: 'bg/habitat-coast.jpg', name: 'うみべ', icon: '🌊', rot: Math.PI, fog: 0xc6dde4, ground: 0xcdb98e, grass: 0xf0e8b8 },
+};
 const ACC_ANCHOR = { ribbon: 'head', cap: 'head', crown: 'head', flower: 'head', glasses: 'head', scarf: 'neck', bell: 'neck', cape: 'back' };
 
 export class DinoView {
@@ -151,19 +157,60 @@ export class DinoView {
 
     const world = new THREE.Group(); s.add(world); this.world = world;
     const grassMat = M.grass.clone(); grassMat.map = TEX.grass.clone(); grassMat.map.repeat.set(5, 5); grassMat.map.needsUpdate = true;
+    this.grassMat = grassMat; this.skyTex = t; this.roomEnv = s.environment; this.pm = pm;
     const top = mesh(new THREE.CircleGeometry(11, 64), grassMat); top.rotation.x = -Math.PI / 2; top.castShadow = false; world.add(top);
-    world.add(mesh(new THREE.CylinderGeometry(11, 10.2, 1.6, 64, 1, true), M.mud, 0, -0.8, 0));
+    this.islandSide = mesh(new THREE.CylinderGeometry(11, 10.2, 1.6, 64, 1, true), M.mud, 0, -0.8, 0); world.add(this.islandSide);
+    // 360度の 背景の ときに 地平線まで つづく 地面
+    this.farGround = mesh(new THREE.CircleGeometry(70, 64), new THREE.MeshStandardMaterial({ color: 0x6b5236, roughness: 1 }), 0, -0.03, 0);
+    this.farGround.rotation.x = -Math.PI / 2; this.farGround.castShadow = false; this.farGround.visible = false; world.add(this.farGround);
     const b = new Batch();
     for (const [x, z, sc] of [[-8.6, -5.4, 1.25], [-6.2, -8.0, 1.0], [8.2, -5.8, 1.15], [9.2, 1.0, 0.95], [-9.3, 0.6, 1.1], [-2.4, -9.6, 1.2], [3.4, -9.4, 0.9], [8.0, 5.6, 1.0], [-8.0, 5.8, 1.05]]) palm(b, x, 0, z, sc);
     for (const [x, z, sc] of [[-9.6, -2.6, 1.3], [7.0, -8.0, 1.0], [0.4, -10.0, 1.2]]) roundTree(b, x, 0, z, sc);
-    b.build(world);
-    // 火山と 山
-    const volc = mesh(new THREE.CylinderGeometry(2.2, 9, 9, 24, 4), std(0x7b5e4c, { roughness: 0.95, flatShading: true }), -10, 3.6, -26); volc.castShadow = false; s.add(volc);
-    const lava = new THREE.Mesh(new THREE.CircleGeometry(2.1, 24), new THREE.MeshBasicMaterial({ color: 0xff7a2a })); lava.rotation.x = -Math.PI / 2; lava.position.set(-10, 8.12, -26); s.add(lava);
+    this.outer = new THREE.Group(); world.add(this.outer); b.build(this.outer);
+    // 火山と 山（360度の 背景が あるときは かくす）
+    const far = new THREE.Group(); s.add(far); this.far = far;
+    const volc = mesh(new THREE.CylinderGeometry(2.2, 9, 9, 24, 4), std(0x7b5e4c, { roughness: 0.95, flatShading: true }), -10, 3.6, -26); volc.castShadow = false; far.add(volc);
+    const lava = new THREE.Mesh(new THREE.CircleGeometry(2.1, 24), new THREE.MeshBasicMaterial({ color: 0xff7a2a })); lava.rotation.x = -Math.PI / 2; lava.position.set(-10, 8.12, -26); far.add(lava);
     this.smokeN = 26; this.smokeP = new Float32Array(this.smokeN * 3); this.smokeL = Array.from({ length: this.smokeN }, () => Math.random());
     this.smokeG = new THREE.BufferGeometry(); this.smokeG.setAttribute('position', new THREE.BufferAttribute(this.smokeP, 3));
-    s.add(new THREE.Points(this.smokeG, new THREE.PointsMaterial({ map: TEX.dot, size: 4.5, color: 0xf2f2f2, transparent: true, opacity: 0.55, depthWrite: false })));
-    for (const [x, z, r, h] of [[14, -30, 9, 7], [26, -24, 8, 5], [-26, -22, 9, 6], [4, -36, 10, 8]]) { const m = mesh(new THREE.ConeGeometry(r, h, 9), M.mountainGrey ?? M.mountain, x, h / 2 - 0.5, z); m.castShadow = false; s.add(m); }
+    far.add(new THREE.Points(this.smokeG, new THREE.PointsMaterial({ map: TEX.dot, size: 4.5, color: 0xf2f2f2, transparent: true, opacity: 0.55, depthWrite: false })));
+    for (const [x, z, r, h] of [[14, -30, 9, 7], [26, -24, 8, 5], [-26, -22, 9, 6], [4, -36, 10, 8]]) { const m = mesh(new THREE.ConeGeometry(r, h, 9), M.mountainGrey ?? M.mountain, x, h / 2 - 0.5, z); m.castShadow = false; far.add(m); }
+  }
+
+  // ---------- 360度の 背景（ジャングル・火山・うみべ） ----------
+  setHabitat(name) {
+    const H = HABITATS[name];
+    this.habitat = name;
+    if (!H) { // もとの 空に もどす
+      this.scene.background = this.skyTex; this.scene.environment = this.roomEnv; this.scene.environmentIntensity = 0.45;
+      this.scene.fog.color.set(0xcfeaf2); this.scene.fog.near = 30; this.scene.fog.far = 70;
+      this.far.visible = true; this.islandSide.visible = true; this.outer.visible = true; this.farGround.visible = false; this.grassMat.color.set(0xffffff);
+      return;
+    }
+    this.texCache ||= {};
+    const apply = tex => {
+      if (this.habitat !== name) return;
+      this.scene.background = tex;
+      this.scene.backgroundRotation.set(0, H.rot, 0);
+      this.scene.backgroundIntensity = H.bright ?? 1;
+      this.envCache ||= {};
+      this.envCache[name] ||= this.pm.fromEquirectangular(tex).texture;
+      this.scene.environment = this.envCache[name];
+      this.scene.environmentRotation.set(0, H.rot, 0);
+      this.scene.environmentIntensity = 0.8;
+      this.scene.fog.color.set(H.fog); this.scene.fog.near = 40; this.scene.fog.far = 120;
+      // 島の まわりは 360度の 絵の 地面が そのまま 見える
+      this.far.visible = false; this.islandSide.visible = false; this.outer.visible = false;
+      this.farGround.visible = false;
+      this.grassMat.color.set(H.grass);
+    };
+    if (this.texCache[name]) { apply(this.texCache[name]); return; }
+    new THREE.TextureLoader().load(H.src, tex => {
+      tex.mapping = THREE.EquirectangularReflectionMapping;
+      tex.colorSpace = THREE.SRGBColorSpace;
+      this.texCache[name] = tex;
+      apply(tex);
+    });
   }
 
   // ---------- すみか（10だんかい × 3） ----------
@@ -444,7 +491,7 @@ export class DinoView {
       if (f.s.material.opacity !== undefined && f.s.isSprite) f.s.material.opacity = 1 - f.life / f.max;
       if (f.life > f.max || f.s.position.y < -1) { this.scene.remove(f.s); this.floaters.splice(i, 1); }
     }
-    for (let i = 0; i < this.smokeN; i++) {
+    if (this.far.visible) for (let i = 0; i < this.smokeN; i++) {
       this.smokeL[i] = (this.smokeL[i] + dt * 0.08) % 1; const u = this.smokeL[i];
       this.smokeP[i * 3] = -10 + Math.sin(i * 7.1) * u * 2 + u * 4; this.smokeP[i * 3 + 1] = 8.5 + u * 9; this.smokeP[i * 3 + 2] = -26 + Math.cos(i * 3.3) * u * 2;
     }

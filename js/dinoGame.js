@@ -27,6 +27,9 @@ const REQUESTS = [
   { id: 'wear', act: 'wear', on: true, en1: 'My {acc}, please!', en: 'Put on my {acc}, please!', ja: '{accJa}を つけて！', hint: '{accIcon}', need: (dd, v, m) => dd.accessories.some(a => !m.wearing.includes(a)) },
   { id: 'off', act: 'wear', on: false, en1: 'No {acc}, please!', en: 'Take off my {acc}, please!', ja: '{accJa}を はずして！', hint: '{accIcon}', need: (dd, v, m) => m.wearing.length > 0 },
 ];
+// すみかの 背景（はじめの きまり。おせわの がめんで かえられる）
+const HABITAT_OF = { spinosaurus: 'coast', pteranodon: 'coast' };
+const HAB_LIST = [['jungle', '🌴', 'ジャングル'], ['volcano', '🌋', 'かざん'], ['coast', '🌊', 'うみべ']];
 const TALK_YEN = 300, TALK_MAX = 10;   // 1日に 10かいまで おこづかい
 
 // フクイラプトル（超レア）：おばけを 20ぴき ともだちに すると たまごが あらわれる
@@ -79,6 +82,7 @@ export function installDino(api) {
     </div>`;
   };
   const hungry = m => m.fedOn !== today();
+  const habitatOf = (m, id) => m.habitat || HABITAT_OF[id] || 'jungle';
 
   // ---------- たまごを えらぶ ----------
   SCREENS.deggs = () => {
@@ -125,6 +129,7 @@ export function installDino(api) {
     <div class="castle-page dino-page">
       <div id="dstage" class="stage"><div class="stage-loading">🦖 じゅんびちゅう…</div></div>
       ${d.order.length > 1 ? `<div class="d-switch">${d.order.map(id => `<button class="pill ${id === d.active ? 'on' : ''}" data-act="switchDino" data-id="${id}">${ICON[id]} ${DINO_BY_ID[id].name}</button>`).join('')}</div>` : ''}
+      <div class="d-hab">${HAB_LIST.map(([k, i, n]) => `<button class="pill ${habitatOf(mine(p), d.active) === k ? 'on' : ''}" data-act="habitat" data-v="${k}" aria-label="${n}">${i}</button>`).join('')}</div>
       <div class="d-bubble" id="dbubble" hidden></div>
       <div class="castle-panel d-panel" id="dpanel">${panelHTML(p)}</div>
     </div>`;
@@ -331,6 +336,7 @@ export function installDino(api) {
       }
       if (viewDinoId !== d.active) { view.setDino(d.active, { growth: m.growth, accessories: m.wearing, name: DINO_BY_ID[d.active].name }); viewDinoId = d.active; }
       else { view.setGrowth(m.growth); view.setAccessories(m.wearing); }
+      if (view.habitat !== habitatOf(m, d.active)) view.setHabitat(habitatOf(m, d.active));
       view.setHome(m.home || 0, S.homeAnim === (m.home || 0));
       if (!view.framed) { view.frame(); view.framed = true; }
       S.homeAnim = null;
@@ -451,6 +457,13 @@ export function installDino(api) {
       go('dcare');
     },
     dinoDesc: d => { sfx.tap(); showDinoDesc(d.id); },
+    habitat: d => {
+      const m = mine(); m.habitat = d.v; save(); sfx.tap();
+      view?.setHabitat(d.v);
+      document.querySelectorAll('.d-hab .pill').forEach(b => b.classList.toggle('on', b.dataset.v === d.v));
+      const h = HAB_LIST.find(x => x[0] === d.v); toast(`${h[1]} ${h[2]}に おひっこし！`);
+      sayEn({ jungle: 'The jungle!', volcano: 'The volcano!', coast: 'The beach!' }[d.v]);
+    },
     reqSay: () => { if (S.dreq) sayEn(S.dreq.text); },
     reqHint: () => { if (!S.dreq) return; showBubble(true); sayJa(S.dreq.ja); },
     reqClose: () => { S.dreq = null; showBubble(); schedReq(30000); },
