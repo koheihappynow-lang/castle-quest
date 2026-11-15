@@ -314,6 +314,87 @@ h3 { font-size: 1.15rem; }
 .howto { padding-left: 1.3em; line-height: 1.9; }
 .warn-card { background: #fff4e5; border: 2px solid #ffb35c; }
 
+/* ===== 背景画像（画面ごと） ===== */
+body::before { content: ''; position: fixed; inset: 0; z-index: -1; background-size: cover; background-position: center; background-color: #bfe3ff; }
+body[data-bg="hero"]::before { background-image: url(../bg/hero.jpg); background-position: center 35%; }
+body[data-bg="hub"]::before { background-image: linear-gradient(rgba(255, 255, 255, .10), rgba(255, 255, 255, .25)), url(../bg/hub.jpg); }
+body[data-bg="study"]::before { background-image: linear-gradient(rgba(255, 255, 255, .15), rgba(255, 255, 255, .30)), url(../bg/study.jpg); }
+body[data-bg="title"]::before { background-image: linear-gradient(rgba(255, 255, 255, .10), rgba(255, 255, 255, .25)), url(../bg/title.jpg); }
+body[data-bg="select"]::before { background-image: linear-gradient(rgba(255, 255, 255, .10), rgba(255, 255, 255, .25)), url(../bg/select.jpg); }
+body[data-bg="exchange"]::before { background-image: linear-gradient(rgba(255, 255, 255, .10), rgba(255, 255, 255, .25)), url(../bg/exchange.jpg); }
+body[data-bg="ghosts"]::before { background-image: linear-gradient(rgba(255, 255, 255, .05), rgba(255, 255, 255, .20)), url(../bg/ghosts.jpg); }
+body[data-bg="workshop"]::before { background-image: linear-gradient(rgba(255, 255, 255, .15), rgba(255, 255, 255, .30)), url(../bg/workshop.jpg); }
+body[data-bg="build-night"]::before { background-image: url(../bg/build-night.jpg); }
+body[data-bg="castle"]::before { background: #1d2b4a; }
+
+/* 画像の上でも文字が読みやすいように */
+.page > h2, .page > h3, .page > .sub, .page.narrow > h2, .limit p {
+  display: inline-block; background: rgba(255, 255, 255, .88); padding: 6px 16px; border-radius: 16px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .12); backdrop-filter: blur(4px);
+}
+.page > .sub { display: block; width: fit-content; max-width: 100%; }
+body[data-bg="hub"] .home-grid { max-width: 760px; margin: 18px auto 0; }
+body[data-bg="hub"] .big-btn { min-height: 130px; opacity: .96; }
+body[data-bg="hub"] .big-btn.quiz { min-height: 150px; }
+.big-btn { box-shadow: 0 6px 0 rgba(0, 0, 0, .18), 0 12px 28px rgba(0, 0, 0, .22); border: 3px solid rgba(255, 255, 255, .55); }
+.big-btn .bt { text-shadow: 0 2px 0 rgba(0, 0, 0, .18); }
+.col-card, .ghost-card, .wallet-card, .card, .kpi, .prompt, .opt, .breakdown { backdrop-filter: blur(3px); }
+.col-card, .ghost-card { background: rgba(255, 255, 255, .92); }
+
+/* ===== トップページ ===== */
+.top { position: relative; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; }
+.top::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(20, 10, 50, .35) 0%, rgba(20, 10, 50, 0) 28%, rgba(20, 10, 50, 0) 55%, rgba(20, 10, 50, .65) 100%); }
+.top > * { position: relative; z-index: 1; }
+.top-logo { text-align: center; padding: calc(24px + env(safe-area-inset-top)) 16px 0; animation: logoIn 1s cubic-bezier(.2, 1.4, .4, 1) both; }
+@keyframes logoIn { from { transform: translateY(-40px) scale(.85); opacity: 0; } }
+.logo-badge {
+  display: inline-block; font: 800 .8rem/1 "Arial Rounded MT Bold", sans-serif; letter-spacing: .2em; color: #fff;
+  background: linear-gradient(90deg, #7b3fe4, #e2479c); padding: 7px 16px; border-radius: 999px; box-shadow: 0 4px 14px rgba(0, 0, 0, .3);
+}
+.logo-main { font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif; margin: 6px 0 0; line-height: 1; font-weight: 900; font-size: clamp(2.1rem, 6.2vw, 4.4rem); letter-spacing: .02em; animation: logoFloat 4s ease-in-out infinite; white-space: nowrap; }
+.logo-main span {
+  display: inline-block;
+  background: linear-gradient(180deg, #fffbe0 0%, #ffe066 35%, #ffb21f 60%, #ff7a00 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  -webkit-text-stroke: 2.5px #6b2c00;
+  filter: drop-shadow(0 4px 0 #6b2c00) drop-shadow(0 10px 22px rgba(0, 0, 0, .55));
+}
+@media (max-width: 560px) { .logo-main { white-space: normal; font-size: 2.6rem; } .logo-main .l2 { display: block; } }
+@keyframes logoFloat { 50% { transform: translateY(-6px); } }
+.logo-en { margin-top: 8px; font: 900 clamp(.9rem, 2.4vw, 1.2rem)/1 "Arial Rounded MT Bold", sans-serif; letter-spacing: .5em; color: #fff; text-shadow: 0 2px 8px rgba(0, 0, 0, .6); }
+.top > .top-sparks { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+.top-sparks i { position: absolute; bottom: -10px; width: 8px; height: 8px; border-radius: 50%; background: radial-gradient(#fff, #ffd23f 40%, rgba(255, 210, 63, 0) 70%); animation: rise linear infinite; opacity: 0; }
+@keyframes rise { 10% { opacity: 1; } 100% { transform: translateY(-100vh) scale(.4); opacity: 0; } }
+.top-bottom { padding: 0 16px calc(18px + env(safe-area-inset-bottom)); text-align: center; }
+.top-call { color: #fff; font-weight: 900; font-size: 1.25rem; text-shadow: 0 2px 6px rgba(0, 0, 0, .7); margin: 0 0 12px; }
+.top-profiles { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }
+.top-card {
+  min-width: 150px; padding: 14px 18px; border-radius: 22px; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  background: rgba(255, 255, 255, .86); backdrop-filter: blur(8px); border: 3px solid rgba(255, 220, 120, .95);
+  box-shadow: 0 8px 0 rgba(107, 44, 0, .35), 0 14px 30px rgba(0, 0, 0, .35); animation: glow 2.4s ease-in-out infinite;
+}
+.top-card:active { transform: translateY(4px); box-shadow: 0 3px 0 rgba(107, 44, 0, .35); }
+.top-card .avatar { font-size: 2.6rem; }
+.top-card.add { background: rgba(255, 255, 255, .55); border-style: dashed; animation: none; }
+.top-card.add.big { background: linear-gradient(180deg, #ffb347, #ff7b39); color: #fff; border: 3px solid #fff; animation: glow 1.8s ease-in-out infinite; padding: 18px 34px; }
+.top-card.add.big .pname { font-size: 1.5rem; text-shadow: 0 2px 0 rgba(0, 0, 0, .2); }
+@keyframes glow { 50% { box-shadow: 0 8px 0 rgba(107, 44, 0, .35), 0 0 30px rgba(255, 215, 90, .95); } }
+.top .parent-link { margin: 14px auto 0; color: #fff; text-shadow: 0 1px 4px rgba(0, 0, 0, .8); background: rgba(0, 0, 0, .25); border-radius: 999px; }
+
+/* ===== お城の建築：朝・夕・夜の背景 ===== */
+.stage-sky { position: absolute; inset: 0 0 auto 0; height: 100%; }
+.stage-sky > div { position: absolute; inset: 0; background-size: cover; background-position: center 60%; opacity: 0; transition: opacity .8s; }
+.stage-sky > div.on { opacity: 1; }
+.sky-day { background-image: url(../bg/build-day.jpg); }
+.sky-sunset { background-image: url(../bg/build-sunset.jpg); }
+.sky-night { background-image: url(../bg/build-night.jpg); }
+.castle-page { position: relative; }
+.castle-page .stage { position: relative; z-index: 1; }
+.castle-page .castle-panel, .castle-page .time-switch, .castle-page .preview-btn, .castle-page .preview-banner { z-index: 2; position: relative; }
+.castle-page .time-switch, .castle-page .preview-btn { position: absolute; }
+.castle-page .preview-banner { position: absolute; }
+.castle-panel { background: rgba(255, 255, 255, .93); backdrop-filter: blur(6px); }
+
 /* 写真 */
 img.pic.photo { display: block; object-fit: cover; border-radius: 18px; background: #f2f2f2; box-shadow: 0 2px 8px rgba(0, 0, 0, .12); }
 img.pic.photo.xl { width: min(240px, 52vw); height: min(240px, 52vw); border-radius: 26px; }

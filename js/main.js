@@ -54,8 +54,15 @@ function go(screen, opts = {}) {
   Object.assign(S, opts);
   render();
 }
+// 画面ごとの背景画像（bg/ フォルダ）
+const BG = {
+  boot: 'hero', profiles: 'hero', newProfile: 'workshop', setupPin: 'workshop', pin: 'workshop', parent: 'workshop',
+  home: 'hub', quiz: 'study', result: 'title', castles: 'select', collection: 'select', castle: 'castle',
+  exchange: 'exchange', ghosts: 'ghosts', limit: 'build-night',
+};
 function render() {
   const fn = SCREENS[S.screen] || SCREENS.profiles;
+  document.body.dataset.bg = BG[S.screen] || 'hub';
   app.innerHTML = fn();
   window.scrollTo(0, 0);
   AFTER[S.screen]?.();
@@ -96,7 +103,7 @@ function tsurugaFound(p) { return tsurugaParts(p) > 0 || built(p, 'tsuruga') > 0
 
 // ---------- 画面 ----------
 const SCREENS = {
-  boot: () => `<div class="boot-center"><div class="logo">🏯</div></div>`,
+  boot: () => `<div class="boot-center"></div>`,
 
   setupPin: () => pinPad({
     title: db().settings.pinHash ? 'あたらしい ばんごう' : 'あんしょうばんごうを きめる',
@@ -105,25 +112,30 @@ const SCREENS = {
 
   profiles: () => {
     const ps = db().profiles;
+    const sparks = Array.from({ length: 18 }, (_, i) => `<i style="left:${(i * 53) % 100}%;animation-delay:${(i * 0.37) % 4}s;animation-duration:${4 + (i % 5)}s"></i>`).join('');
     return `
-    <div class="page">
-      <div class="title-wrap">
-        <div class="logo">🏯</div>
-        <h1 class="game-title">キャッスルクエスト</h1>
-        <p class="sub">えいごで せかいの おしろを たてよう！</p>
+    <div class="top">
+      <div class="top-sparks">${sparks}</div>
+      <div class="top-logo">
+        <div class="logo-badge">ENGLISH × CASTLE ADVENTURE</div>
+        <h1 class="logo-main"><span class="l1">キャッスル</span><span class="l2">クエスト</span></h1>
+        <div class="logo-en">CASTLE QUEST</div>
       </div>
-      <div class="profile-grid">
-        ${ps.map(p => `
-          <button class="profile-card" data-act="pick" data-id="${p.id}">
-            ${avatarHTML(p)}
-            <span class="pname">${esc(p.name)}</span>
-            <span class="plevel">${LEVEL_NAMES[p.level]}</span>
-          </button>`).join('')}
-        <button class="profile-card add" data-act="go" data-to="newProfile">
-          <span class="avatar">＋</span><span class="pname">あたらしく つくる</span>
-        </button>
+      <div class="top-bottom">
+        <p class="top-call">${ps.length ? '⚔️ ぼうけんしゃを えらんでね ⚔️' : '⚔️ ぼうけんを はじめよう ⚔️'}</p>
+        <div class="top-profiles">
+          ${ps.map(p => `
+            <button class="top-card" data-act="pick" data-id="${p.id}">
+              ${avatarHTML(p)}
+              <span class="pname">${esc(p.name)}</span>
+              <span class="plevel">${LEVEL_NAMES[p.level]}</span>
+            </button>`).join('')}
+          <button class="top-card add ${ps.length ? '' : 'big'}" data-act="go" data-to="newProfile">
+            <span class="avatar">＋</span><span class="pname">${ps.length ? 'あたらしく つくる' : 'ぼうけんしゃを つくる'}</span>
+          </button>
+        </div>
+        <button class="parent-link" data-act="parent">⚙️ おうちのひと</button>
       </div>
-      <button class="parent-link" data-act="parent">⚙️ おうちのひと</button>
     </div>`;
   },
 
@@ -313,6 +325,7 @@ const SCREENS = {
     return `
     ${header(p, { back: 'castles' })}
     <div class="castle-page">
+      <div class="stage-sky">${['day', 'sunset', 'night'].map(k => `<div class="sky-${k} ${({ day: 'day', sunset: 'evening', night: 'night' })[k] === S.castleTime ? 'on' : ''}"></div>`).join('')}</div>
       <div id="stage" class="stage"><div class="stage-loading">🏗️ じゅんびちゅう…</div></div>
       <div class="time-switch">
         ${[['day', '☀️'], ['evening', '🌇'], ['night', '🌙']].map(([k, i]) => `<button class="pill ${S.castleTime === k ? 'on' : ''}" data-act="time" data-v="${k}">${i}</button>`).join('')}
@@ -969,7 +982,12 @@ const ACTIONS = {
     document.querySelector('.preview-banner')?.remove();
     if (S.previewing) document.querySelector('.castle-page').insertAdjacentHTML('beforeend', '<div class="preview-banner">✨ かんせいずだよ！ ここまで たてよう ✨</div>');
   },
-  time: d => { S.castleTime = d.v; castleView?.setTime(d.v); document.querySelectorAll('.time-switch .pill').forEach(b => b.classList.toggle('on', b.dataset.v === d.v)); },
+  time: d => {
+    S.castleTime = d.v; castleView?.setTime(d.v);
+    document.querySelectorAll('.time-switch .pill').forEach(b => b.classList.toggle('on', b.dataset.v === d.v));
+    const sky = { day: 'day', evening: 'sunset', night: 'night' }[d.v];
+    document.querySelectorAll('.stage-sky > div').forEach(el => el.classList.toggle('on', el.classList.contains('sky-' + sky)));
+  },
   readDesc: d => showDesc(d.id),
   parent: d => {
     if (d.next === 'extend') { askPin('extend'); return; }

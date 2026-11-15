@@ -1018,7 +1018,9 @@ const BUILDERS = {
 export class CastleView {
   constructor() {
     initAssets();
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: false });
+    // 背景は画面の後ろの画像（朝・夕・夜）を見せるので、3Dの背景はすき通しにする
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: false });
+    this.renderer.setClearColor(0x000000, 0);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -1166,7 +1168,7 @@ export class CastleView {
       evening: { sky: 'evening', hemi: [0xffd7b0, 0x4a3b5a, 0.7], sun: [0xffa66b, 1.9, [-40, 14, 22]], win: 0.6, lan: 0.8, cho: 0.9, spot: done ? 25 : 0, stars: false, exp: 1.0, glow: 0.6 },
       night: { sky: 'night', hemi: [0x5a6ea8, 0x1a1f33, 0.35], sun: [0x9fb4ff, 0.55, [-20, 40, -30]], win: 2.2, lan: 3, cho: 3, spot: done ? 90 : 0, stars: true, exp: 1.15, glow: 0.25 },
     }[mode];
-    this.scene.background = this.skies[P.sky];
+    this.scene.background = null;
     this.hemi.color.set(P.hemi[0]); this.hemi.groundColor.set(P.hemi[1]); this.hemi.intensity = P.hemi[2];
     this.sun.color.set(P.sun[0]); this.sun.intensity = P.sun[1]; this.sun.position.set(...P.sun[2]);
     M.window.emissiveIntensity = P.win;
@@ -1176,7 +1178,7 @@ export class CastleView {
     for (const k of ['limestone', 'cream']) M[k].emissive.setScalar(0.13 * P.glow);
     M.houseWhite.emissive.setScalar(0.15 * P.glow);
     this.spots.forEach(s => { s.intensity = P.spot; });
-    this.stars.visible = P.stars;
+    this.stars.visible = false;
     this.renderer.toneMappingExposure = P.exp;
   }
 

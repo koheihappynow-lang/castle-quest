@@ -1,13 +1,15 @@
 // オフラインでも動くように、ゲームのファイルをiPadに保存しておく
 // ゲームを更新したら VERSION を上げる
-const VERSION = 'cq-v3';
+const VERSION = 'cq-v4';
+const BG_FILES = ['hero', 'title', 'hub', 'study', 'select', 'build-day', 'build-sunset', 'build-night', 'exchange', 'ghosts', 'workshop']
+  .map(n => `./bg/${n}.jpg`);
 const CASTLE_FILES = ['himeji', 'neuschwanstein', 'windsor', 'montsaintmichel', 'edinburgh', 'alhambra', 'chambord', 'hearst', 'forbiddencity', 'pena', 'tsuruga']
   .map(id => `./js/diorama/castles/${id}.js`);
 const LOCAL = [
   './', './index.html', './manifest.webmanifest', './css/style.css',
   './js/main.js', './js/store.js', './js/words.js', './js/quiz.js', './js/review.js',
   './js/speech.js', './js/sfx.js', './js/castles.js', './js/photos.js', './js/diorama/engine.js', ...CASTLE_FILES,
-  './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png',
+  './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', ...BG_FILES,
 ];
 const CDN = [
   'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js',

@@ -2,3 +2,6 @@ node_modules/
 *.log
 .DS_Store
 Thumbs.db
+# 背景画像の元ファイル（大きいので公開しない。ゲームでは bg/ の縮小版を使う）
+assets/
+ChatGPT*.png
