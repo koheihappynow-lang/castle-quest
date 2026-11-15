@@ -56,7 +56,7 @@ function go(screen, opts = {}) {
 }
 // 画面ごとの背景画像（bg/ フォルダ）
 const BG = {
-  boot: 'hero', profiles: 'hero', newProfile: 'workshop', setupPin: 'workshop', pin: 'workshop', parent: 'workshop',
+  boot: 'hero', profiles: 'hero', games: 'hero', newProfile: 'workshop', setupPin: 'workshop', pin: 'workshop', parent: 'workshop',
   home: 'hub', quiz: 'study', result: 'title', castles: 'select', collection: 'select', castle: 'castle',
   exchange: 'exchange', ghosts: 'ghosts', limit: 'build-night', rest: 'build-sunset',
 };
@@ -117,12 +117,12 @@ const SCREENS = {
     <div class="top">
       <div class="top-sparks">${sparks}</div>
       <div class="top-logo">
-        <div class="logo-badge">ENGLISH × CASTLE ADVENTURE</div>
-        <h1 class="logo-main"><span class="l1">キャッスル</span><span class="l2">クエスト</span></h1>
-        <div class="logo-en">CASTLE QUEST</div>
+        <div class="logo-badge">ENGLISH GAMES FOR KIDS</div>
+        <h1 class="logo-main"><span class="l1">Endo</span><span class="l2">Game</span></h1>
+        <div class="logo-en">えんどう ゲーム</div>
       </div>
       <div class="top-bottom">
-        <p class="top-call">${ps.length ? '⚔️ ぼうけんしゃを えらんでね ⚔️' : '⚔️ ぼうけんを はじめよう ⚔️'}</p>
+        <p class="top-call">${ps.length ? '⭐ だれが あそぶ？ ⭐' : '⭐ あそぶ ひとを つくろう ⭐'}</p>
         <div class="top-profiles">
           ${ps.map(p => `
             <button class="top-card" data-act="pick" data-id="${p.id}">
@@ -135,6 +135,34 @@ const SCREENS = {
           </button>
         </div>
         <button class="parent-link" data-act="parent">⚙️ おうちのひと</button>
+      </div>
+    </div>`;
+  },
+
+  games: () => {
+    const p = activeProfile();
+    if (!p) return SCREENS.profiles();
+    const doneN = p.completed.length;
+    return `
+    <div class="games">
+      <header class="games-head">
+        <button class="icon-btn" data-act="go" data-to="profiles" aria-label="もどる">⬅️</button>
+        <div class="who">${avatarHTML(p, 'sm')}<span class="name">${esc(p.name)}</span></div>
+      </header>
+      <h2 class="games-title">どの ゲームで あそぶ？</h2>
+      <div class="game-cards">
+        <button class="game-card castle" data-act="playGame" data-g="castle">
+          <span class="gc-art" style="background-image:url(cards/himeji.jpg)"></span>
+          <span class="gc-name">キャッスルクエスト</span>
+          <span class="gc-sub">えいごで せかいの おしろを たてよう</span>
+          <span class="gc-badge">🏰 かんせい ${doneN}</span>
+        </button>
+        <button class="game-card dino" data-act="playGame" data-g="dino">
+          <span class="gc-art dino-art"><span>🦖</span></span>
+          <span class="gc-name">ダイナソークエスト</span>
+          <span class="gc-sub">えいごで きょうりゅうを そだてよう</span>
+          <span class="gc-badge soon">🥚 もうすぐ できるよ（おためし）</span>
+        </button>
       </div>
     </div>`;
   },
@@ -172,7 +200,7 @@ const SCREENS = {
     const doneN = p.completed.length;
     const total = NORMAL_CASTLES.length + (tsurugaFound(p) ? 1 : 0);
     return `
-    ${header(p, { back: 'profiles' })}
+    ${header(p, { back: 'games' })}
     <div class="page">
       <div class="home-grid">
         <button class="big-btn quiz" data-act="startQuiz" data-mode="normal">
@@ -445,6 +473,9 @@ const SCREENS = {
 const AFTER = {
   boot: () => {
     requestPersist();
+    // ほかの ゲームから もどってきたときは、ゲームを えらぶ画面へ
+    const p = activeProfile();
+    if (location.hash === '#games' && p && !overLimit(p) && !onBreak(p)) { history.replaceState(null, '', location.pathname); go('games'); return; }
     go('profiles');
   },
   newProfile: () => {
@@ -1013,7 +1044,12 @@ function exportData() {
 // ---------- タップ操作 ----------
 const ACTIONS = {
   go: d => { sfx.tap(); go(d.to, { previewing: false }); },
-  pick: d => { sfx.tap(); setActive(d.id); const p = activeProfile(); if (overLimit(p)) go('limit'); else if (onBreak(p)) go('rest'); else { go('home'); sayJa(`${p.name}、一緒にがんばろう！`); } },
+  pick: d => { sfx.tap(); setActive(d.id); const p = activeProfile(); if (overLimit(p)) go('limit'); else if (onBreak(p)) go('rest'); else { go('games'); sayJa(`${p.name}、なにで あそぶ？`); } },
+  playGame: d => {
+    sfx.tap();
+    if (d.g === 'castle') { const p = activeProfile(); go('home'); sayJa(`${p.name}、一緒にがんばろう！`); }
+    else location.href = 'dino-proto.html';
+  },
   age: d => { S.newProfile.name = document.getElementById('pname')?.value || S.newProfile.name; S.newProfile.age = Number(d.v); render(); },
   avatar: d => { S.newProfile.name = document.getElementById('pname')?.value || S.newProfile.name; S.newProfile.avatar = d.v; render(); },
   clearPhoto: () => { S.newProfile.photo = null; render(); },
@@ -1113,7 +1149,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   let reloaded = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (!hadController || reloaded) return;
-    const tryReload = () => { if (['profiles', 'boot', 'home'].includes(S.screen)) { reloaded = true; location.reload(); } else setTimeout(tryReload, 3000); };
+    const tryReload = () => { if (['profiles', 'boot', 'home', 'games'].includes(S.screen)) { reloaded = true; location.reload(); } else setTimeout(tryReload, 3000); };
     tryReload();
   });
   // 写真もiPadに保存しておく（オフラインでも出るように）

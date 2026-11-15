@@ -1,7 +1,7 @@
 {
-  "name": "キャッスルクエスト",
-  "short_name": "キャッスルクエスト",
-  "description": "えいごで せかいの おしろを たてよう！",
+  "name": "EndoGame（えんどうゲーム）",
+  "short_name": "EndoGame",
+  "description": "えいごで あそぼう！",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

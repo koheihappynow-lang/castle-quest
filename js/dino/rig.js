@@ -1,0 +1,200 @@
+// AIで作った 恐竜の 3D（GLB）に、あとから 骨を 入れて 動かす
+// 使い方：const dino = await loadGLBDino('assets/dino/trex.glb', TREX_RIG);
+// cfg の 座標は「しっぽの先 x=0 → 頭の先 x=length、足の うら y=0、からだの まんなか z=0」に そろえた 単位
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DinoBase } from './dinoBase.js';
+import { GrowthLook, addFluffWeights } from './look.js';
+
+const V = (x, y, z = 0) => new THREE.Vector3(x, y, z);
+const sstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+
+export async function loadGLBDino(url, cfg) {
+  const gltf = await new GLTFLoader().loadAsync(url);
+  return new GLBDino(gltf.scene, cfg);
+}
+
+// 点 p と 線分 a-b の いちばん 近い ところ（f：0〜1）と きょり
+function segInfo(p, a, b) {
+  const ab = b.clone().sub(a), t = Math.max(0, Math.min(1, p.clone().sub(a).dot(ab) / ab.lengthSq()));
+  return { f: t, d: a.clone().addScaledVector(ab, t).distanceTo(p) };
+}
+// 折れ線の どの 区間に いちばん 近いか
+function polyInfo(p, pts) {
+  let best = { i: 0, f: 0, d: Infinity };
+  for (let i = 0; i < pts.length - 1; i++) { const s = segInfo(p, pts[i], pts[i + 1]); if (s.d < best.d) best = { i, f: s.f, d: s.d }; }
+  return best;
+}
+
+export class GLBDino extends DinoBase {
+  constructor(scene, cfg) {
+    super(cfg);
+    this.cfgRig = cfg;
+    const L = cfg.length || 10;
+    // 1. 向きと 大きさを そろえる
+    scene.updateMatrixWorld(true);
+    const norm = new THREE.Matrix4().makeRotationY(cfg.yaw || 0);
+    const box = new THREE.Box3();
+    const parts = [];
+    scene.traverse(o => {
+      if (!o.isMesh) return;
+      const g = o.geometry.clone();
+      g.applyMatrix4(o.matrixWorld); g.applyMatrix4(norm);
+      g.deleteAttribute('skinIndex'); g.deleteAttribute('skinWeight');
+      g.computeBoundingBox(); box.union(g.boundingBox);
+      parts.push({ g, mat: o.material });
+    });
+    const s = L / (box.max.x - box.min.x);
+    const fix = new THREE.Matrix4().makeScale(s, s, s).premultiply(new THREE.Matrix4().makeTranslation(-box.min.x * s, -box.min.y * s, -((box.min.z + box.max.z) / 2) * s));
+    for (const p of parts) { p.g.applyMatrix4(fix); if (!p.g.attributes.normal) p.g.computeVertexNormals(); }
+
+    // 2. 骨を つくる
+    const sp = cfg.spine.map(q => V(q[0], q[1]));
+    const H = cfg.hip, K = sp.length;
+    const bones = sp.map(() => new THREE.Bone());
+    sp.forEach((p, i) => {
+      const par = i === H ? null : i < H ? i + 1 : i - 1;
+      if (par === null) bones[i].position.copy(p);
+      else { bones[i].position.copy(p).sub(sp[par]); bones[par].add(bones[i]); }
+    });
+    const all = [...bones];
+    const addBone = (parentIdx, parentPos, pos) => { const b = new THREE.Bone(); b.position.copy(pos).sub(parentPos); (typeof parentIdx === 'number' ? all[parentIdx] : parentIdx).add(b); all.push(b); return all.length - 1; };
+    // 足（左右）
+    const legDefs = [];
+    for (const side of [-1, 1]) {
+      const c = cfg.legs, z = c.hip[2] * side;
+      const pts = [V(c.hip[0], c.hip[1], z), V(c.knee[0], c.knee[1], z), V(c.ankle[0], c.ankle[1], z), V(c.toe[0], c.toe[1], z)];
+      const iHip = addBone(H, sp[H], pts[0]);
+      const iKnee = addBone(all[iHip], pts[0], pts[1]);
+      const iAnk = addBone(all[iKnee], pts[1], pts[2]);
+      const iFoot = addBone(all[iAnk], pts[2], pts[3]);
+      legDefs.push({ side, pts, idx: [iHip, iKnee, iAnk, iFoot] });
+    }
+    // うで（あれば）
+    const armDefs = [];
+    if (cfg.arms) {
+      const c = cfg.arms, near = polyInfo(V(c.shoulder[0], c.shoulder[1]), sp).i + 1;
+      for (const side of [-1, 1]) {
+        const z = c.shoulder[2] * side;
+        const pts = [V(c.shoulder[0], c.shoulder[1], z), V(c.hand[0], c.hand[1], z)];
+        const iSh = addBone(near, sp[near], pts[0]);
+        armDefs.push({ side, pts, idx: [iSh] });
+      }
+    }
+    // あご（あれば）
+    let jawIdx = -1;
+    const headPos = sp[K - 1];
+    if (cfg.jaw) jawIdx = addBone(K - 1, headPos, V(cfg.jaw.pivot[0], cfg.jaw.pivot[1]));
+
+    // 3. 皮ふの どこが どの 骨に ついていくか（近い 骨ほど 強く）
+    // こしが まんなか（原点）に くるように ずらす
+    const inner = new THREE.Group(); inner.position.x = -sp[H].x; this.group.add(inner);
+    inner.add(bones[H]);
+    this.group.updateMatrixWorld(true);
+    const skeleton = new THREE.Skeleton(all);   // 骨の 位置が きまってから 作る
+    this.meshes = [];
+    for (const { g, mat } of parts) {
+      const pos = g.attributes.position, n = pos.count;
+      const si = new Uint16Array(n * 4), sw = new Float32Array(n * 4);
+      const v = new THREE.Vector3();
+      for (let k = 0; k < n; k++) {
+        v.fromBufferAttribute(pos, k);
+        const flat = V(v.x, v.y);
+        const spi = polyInfo(flat, sp);
+        const ws = [];
+        const f = sstep(0, 1, spi.f);
+        let spineW = 1;
+        // 足
+        for (const L2 of legDefs) {
+          if (v.z * L2.side < -0.05 || v.y > L2.pts[0].y + 0.25) continue;
+          const li = polyInfo(v, L2.pts);
+          const dSpine = spi.d;
+          const w = sstep(0.9, 0.45, li.d / Math.max(0.001, dSpine));
+          if (w <= 0) continue;
+          const seg = li.i, lf = li.f;
+          const a = L2.idx[seg], b = L2.idx[Math.min(3, seg + 1)];
+          const blend = sstep(0.75, 1, lf);
+          ws.push([a, w * (1 - blend)], [b, w * blend]);
+          spineW = Math.min(spineW, 1 - w);
+        }
+        // うで
+        for (const A of armDefs) {
+          if (v.z * A.side < 0) continue;
+          const ai = segInfo(v, A.pts[0], A.pts[1]);
+          const w = sstep(0.8, 0.4, ai.d / Math.max(0.001, spi.d));
+          if (w <= 0) continue;
+          ws.push([A.idx[0], w]); spineW = Math.min(spineW, 1 - w);
+        }
+        // あご
+        if (jawIdx >= 0) {
+          const j = cfg.jaw, x0 = j.pivot[0], y0 = j.pivot[1], x1 = j.tip[0], y1 = j.tip[1];
+          if (v.x > x0 - 0.05) {
+            const lineY = y0 + (y1 - y0) * Math.min(1, Math.max(0, (v.x - x0) / (x1 - x0)));
+            const w = sstep(0.04, -0.04, v.y - lineY) * sstep(x0 - 0.05, x0 + 0.15, v.x);
+            if (w > 0) { ws.push([jawIdx, w * spineW]); spineW *= 1 - w; }
+          }
+        }
+        ws.push([Math.min(K - 1, spi.i), spineW * (1 - f)], [Math.min(K - 1, spi.i + 1), spineW * f]);
+        ws.sort((a, b) => b[1] - a[1]);
+        const top = ws.slice(0, 4), sum = top.reduce((s2, x) => s2 + x[1], 0) || 1;
+        top.forEach(([bi, w], m) => { si[k * 4 + m] = bi; sw[k * 4 + m] = w / sum; });
+      }
+      g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(si, 4));
+      g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sw, 4));
+      const m = new THREE.SkinnedMesh(g, mat.clone());
+      m.castShadow = true; m.receiveShadow = true; m.frustumCulled = false;
+      inner.add(m);
+      this.meshes.push(m);
+    }
+    this.group.updateMatrixWorld(true);
+    for (const m of this.meshes) m.bind(skeleton, m.matrixWorld);
+
+    // 4. 動きの 役わり（DinoBase が つかう）
+    this.bones = bones;
+    const neckFrom = cfg.neckFrom ?? K - 3;
+    const neck = []; for (let i = neckFrom; i < K; i++) neck.push(i);
+    const tail = []; for (let i = H - 1; i >= 0; i--) tail.push(i);
+    this.rig = { hip: H, hipRestY: sp[H].y, neck, yaw: neck.slice(-2), tail };
+    this.head = bones[K - 1];
+    this.jaw = jawIdx >= 0 ? all[jawIdx] : null;
+    this.jawMul = cfg.jawMul ?? 0.5;   // 1まいの 皮ふ なので、口は 大きく 開けすぎない
+    this.legs = legDefs.map(d => ({ hip: all[d.idx[0]], knee: all[d.idx[1]], ank: all[d.idx[2]], foot: all[d.idx[3]], s: d.side }));
+    this.arms = armDefs.map(d => ({ sh: all[d.idx[0]] }));
+    this.snoutLocal = V(cfg.snout[0], cfg.snout[1]).sub(headPos);
+    // 5. 産毛と 色
+    if (cfg.fluff !== false) {
+      // 毛は 大きな 部品（体・頭）だけに はやす（歯や つめには はやさない）
+      const maxV = Math.max(...this.meshes.map(m => m.geometry.attributes.position.count));
+      const big = this.meshes.filter(m => m.geometry.attributes.position.count >= maxV * 0.15);
+      for (const m of big) addFluffWeights(m.geometry, { neckX: cfg.neckX ?? 0.75 });
+      this.look = new GrowthLook({ skinMaterials: this.meshes.map(m => m.material), fluffMeshes: big, fluffLen: cfg.fluffLen ?? 0.14, density: cfg.fluffDensity ?? 46, spotScale: cfg.spotScale ?? 2.6, layers: 12 });
+    }
+  }
+}
+
+// ---------- プログラム製ティラノを「GLBのかわり」に使って 骨入れを ためす ----------
+// （本物の GLB が とどくまでの テスト用）
+export function bakeStatic(obj) {
+  const scene = new THREE.Group();
+  obj.updateMatrixWorld(true);
+  obj.traverse(o => {
+    if (!o.isMesh || o.userData.fluffShell) return;
+    const g = o.geometry.clone();
+    g.deleteAttribute('skinIndex'); g.deleteAttribute('skinWeight'); g.deleteAttribute('fluffW');
+    g.applyMatrix4(o.matrixWorld);
+    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: !!g.attributes.color, color: g.attributes.color ? 0xffffff : (o.material.color?.getHex() ?? 0xffffff), roughness: 0.7 }));
+    scene.add(m);
+  });
+  return scene;
+}
+// プログラム製ティラノの 骨の 位置（しっぽの先 x=0）
+export const PROTO_TREX_RIG = {
+  length: 10.29, hip: 7, neckFrom: 10,
+  spine: [[0, 1.85], [0.9, 2.0], [1.8, 2.2], [2.7, 2.4], [3.6, 2.56], [4.5, 2.68], [5.4, 2.76], [6.2, 2.8], [7.0, 2.78], [7.75, 2.72], [8.35, 2.8], [8.75, 3.02], [9.05, 3.22]],
+  legs: { hip: [6.25, 2.45, 0.5], knee: [6.63, 1.4], ankle: [6.13, 0.5], toe: [6.31, 0.08] },
+  arms: { shoulder: [8.0, 2.37, 0.42], hand: [8.4, 1.95] },
+  jaw: { pivot: [9.03, 2.99], tip: [10.15, 2.88] },
+  snout: [10.15, 2.8],
+  neckX: 0.9,
+  scale: [0.17, 0.58], headScale: [1, 1], eyeScale: [1, 1],
+};

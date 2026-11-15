@@ -1,6 +1,8 @@
 // ティラノサウルス（プログラムで作る試作）
 // 体は「背骨にそった輪切り」をつないで作り、骨（ボーン）を入れて動かす
 import * as THREE from 'three';
+import { GrowthLook, addFluffWeights } from './look.js';
+import { DinoBase } from './dinoBase.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const UP = V(0, 1, 0);
@@ -145,15 +147,9 @@ const JAW_KEYS = [[0.33, 0.16], [0.33, 0.17], [0.29, 0.15], [0.25, 0.13], [0.21,
 
 function keyCurve(keys) { return new THREE.CatmullRomCurve3(keys.map(k => V(k[0], k[1], k[2] || 0)), false, 'catmullrom', 0.5); }
 
-export class TRex {
+export class TRex extends DinoBase {
   constructor() {
-    this.group = new THREE.Group();
-    this.growth = 0.5;
-    this.actions = [];
-    this.walking = false;
-    this.walkPhase = 0;
-    this.blinkAt = 2;
-    this.onEvent = () => {};
+    super({ scale: [0.17, 0.58], headScale: [1.75, 1.3], eyeScale: [1.55, 1] });
     const nmap = scaleNormalMap();
     this.skinMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.72, normalMap: nmap, normalScale: new THREE.Vector2(0.4, 0.4) });
     const lmap = nmap.clone(); lmap.repeat.set(2, 1.5); lmap.needsUpdate = true;
@@ -192,7 +188,13 @@ export class TRex {
     this.buildHead();
     this.legs = [-1, 1].map(s => this.buildLeg(s));
     this.arms = [-1, 1].map(s => this.buildArm(s));
+    // 動かす 骨の 役わり
+    this.rig = { hip: HIP, hipRestY: SPINE[HIP][1], neck: [10, 11, 12], yaw: [11, 12], tail: [6, 5, 4, 3, 2, 1, 0] };
     this.group.traverse(o => { if (o.isMesh) { o.castShadow = true; } });
+    // 産毛と 色（育つと 変わる）
+    addFluffWeights(this.body.geometry, { neckX: 0.9 });
+    addFluffWeights(this.skull.geometry, { neckX: 0.05 });
+    this.look = new GrowthLook({ skinMaterials: [this.skinMat, this.legMat], fluffMeshes: [this.body, this.skull], fluffLen: 0.16, density: 46, spotScale: 2.6, layers: 12 });
   }
 
   buildHead() {
@@ -209,7 +211,8 @@ export class TRex {
       prof: hProf,
       color: (t, ys, out) => skinColor(t, ys, out, 0),
     });
-    head.add(new THREE.Mesh(skull, this.skinMat));
+    this.skull = new THREE.Mesh(skull, this.skinMat);
+    head.add(this.skull);
     // 口の中（上あご）
     const roof = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 8), this.mouthMat);
     roof.scale.set(0.55, 0.025, 0.2); roof.position.set(0.65, -0.205, 0); head.add(roof);
@@ -293,121 +296,5 @@ export class TRex {
       claw.position.copy(WR).add(tip).add(V(0.02, -0.04, 0)); el.add(claw);
     }
     return { sh, el };
-  }
-
-  // 大きさ（0 = あかちゃん、1 = おとな）
-  setGrowth(g) {
-    this.growth = Math.min(1, Math.max(0, g));
-    const k = this.growth;
-    this.group.scale.setScalar(lerp(0.17, 0.58, k));
-    this.head.scale.setScalar(1.3 + 0.45 * (1 - k));
-    this.eyeScale = 1 + 0.55 * (1 - k);
-  }
-  stage() {
-    const g = this.growth;
-    return g < 0.25 ? 'あかちゃん' : g < 0.5 ? 'こども' : g < 0.8 ? 'わかもの' : 'おとな';
-  }
-
-  play(type, opts = {}) {
-    const dur = { pet: 1.9, feed: 3.4, roar: 2.6 }[type];
-    this.actions = this.actions.filter(a => a.type !== type);
-    const a = { type, t: 0, dur, fired: {}, ...opts };
-    if (type === 'feed') a.reach = this.findReach(opts.foodY ?? 0.15);
-    this.actions.push(a);
-    return a;
-  }
-  busy() { return this.actions.length > 0; }
-
-  // えさを食べる姿勢で、口がどこに来るか
-  pose(p) {
-    const b = this.bones;
-    b[HIP].rotation.z = p.pitch;
-    b[HIP].position.y = SPINE[HIP][1] + p.bob;
-    for (const i of [10, 11, 12]) b[i].rotation.z = p.neckZ / 3;
-    b[12].rotation.y = p.neckY;
-    b[11].rotation.y = p.neckY * 0.5;
-    this.head.rotation.x = p.roll;
-    this.jaw.rotation.z = -p.jaw;
-    for (let i = 0; i < HIP; i++) {
-      const k = HIP - 1 - i;
-      b[i].rotation.y = p.tailAmp * Math.sin(p.tt * p.tailSpeed - k * 0.55);
-      b[i].rotation.z = p.tailLift / HIP + 0.012 * Math.sin(p.tt * 0.8 - k * 0.4);
-    }
-    for (const L of this.legs) {
-      const ph = p.walk ? p.wphase + (L.s > 0 ? Math.PI : 0) : 0;
-      const sw = p.walk ? Math.sin(ph) : 0, lift = p.walk ? Math.max(0, Math.cos(ph)) : 0;
-      L.hip.rotation.z = 0.36 * sw * p.walk - p.pitch * 0.25;
-      L.knee.rotation.z = -0.5 * lift * p.walk;
-      L.ank.rotation.z = (-0.36 * sw * 0.6 + 0.45 * lift) * p.walk;
-      L.foot.rotation.z = -(L.hip.rotation.z + L.knee.rotation.z + L.ank.rotation.z) * 0.9;
-    }
-    for (const A of this.arms) { A.sh.rotation.z = p.arm; A.el.rotation.z = p.arm * 0.6; }
-  }
-  basePose(tt) {
-    return {
-      tt, pitch: 0, bob: 0.02 * Math.sin(tt * 2.1), neckZ: 0.05 * Math.sin(tt * 0.6), neckY: 0.22 * Math.sin(tt * 0.37) + 0.08 * Math.sin(tt * 0.93),
-      roll: 0, jaw: 0.015 + 0.015 * Math.sin(tt * 2.1), tailAmp: 0.05, tailSpeed: 1.3, tailLift: 0, walk: 0, wphase: 0, arm: 0.08 * Math.sin(tt * 1.7),
-    };
-  }
-  findReach(foodY) {
-    const save = this.group.position.y;
-    let lo = 0, hi = 1.6, best = 1;
-    const snout = V();
-    for (let it = 0; it < 14; it++) {
-      const e = (lo + hi) / 2;
-      const p = this.basePose(0); p.pitch = -0.42 * e; p.neckZ = -0.7 * e; p.tailLift = 0.25 * e; p.neckY = 0;
-      this.pose(p);
-      this.group.updateMatrixWorld(true);
-      this.head.localToWorld(snout.copy(this.snoutLocal));
-      best = e;
-      if (snout.y > foodY) lo = e; else hi = e;
-    }
-    this.group.position.y = save;
-    return { e: best, snout: snout.clone() };
-  }
-
-  update(tt, dt) {
-    const p = this.basePose(tt);
-    if (this.walking && !this.actions.length) {
-      this.walkPhase += dt * 5.2;
-      p.walk = 1; p.wphase = this.walkPhase;
-      p.bob += 0.06 * Math.abs(Math.cos(this.walkPhase));
-      p.tailAmp = 0.09; p.tailSpeed = 2.6; p.neckY *= 0.4;
-    }
-    let hop = 0, eyeSquint = 1;
-    for (const a of this.actions) {
-      a.t += dt;
-      const t = a.t;
-      if (a.type === 'pet') {
-        const e = env(t, 0, 0.2, 1.5, a.dur);
-        hop = 0.5 * Math.abs(Math.sin(t * 7.5)) * (t < 1.25 ? 1 : 0);
-        p.roll = 0.28 * Math.sin(t * 5) * e;
-        p.tailAmp = lerp(p.tailAmp, 0.3, e); p.tailSpeed = lerp(p.tailSpeed, 11, e);
-        p.neckZ += 0.2 * e; p.arm += 0.5 * e * Math.abs(Math.sin(t * 7.5));
-        eyeSquint = lerp(1, 0.25, e);
-        p.jaw = lerp(p.jaw, 0.25, e);
-      } else if (a.type === 'feed') {
-        const e = env(t, 0.1, 0.8, 2.6, a.dur) * a.reach.e;
-        p.pitch = -0.42 * e; p.neckZ = -0.7 * e; p.tailLift = 0.25 * e; p.neckY *= (1 - Math.min(1, e * 2));
-        if (t > 0.6 && t < 0.85) p.jaw = 0.5 * sstep(0.6, 0.8, t);
-        else if (t >= 0.85 && t < 2.5) p.jaw = 0.22 * (0.5 - 0.5 * Math.cos((t - 0.85) * 15));
-        if (t > 0.88 && !a.fired.bite) { a.fired.bite = 1; this.onEvent('bite'); }
-        if (t > 2.6) eyeSquint = lerp(1, 0.3, env(t, 2.6, 2.8, 3.2, a.dur));
-      } else if (a.type === 'roar') {
-        const e = env(t, 0, 0.45, 1.9, a.dur);
-        p.pitch = 0.1 * e; p.neckZ = 0.4 * e; p.jaw = 0.8 * e; p.neckY = p.neckY * (1 - e) + 0.06 * Math.sin(t * 38) * e;
-        p.tailAmp = lerp(p.tailAmp, 0.12, e); p.tailLift = -0.15 * e; p.arm += 0.4 * e;
-        if (t > 0.3 && !a.fired.roar) { a.fired.roar = 1; this.onEvent('roar'); }
-      }
-    }
-    const finished = this.actions.filter(a => a.t >= a.dur);
-    this.actions = this.actions.filter(a => a.t < a.dur);
-    finished.forEach(a => this.onEvent('done', a));
-    this.pose(p);
-    this.group.position.y = hop * this.group.scale.y;
-    // まばたき
-    let blink = 1;
-    if (tt > this.blinkAt) { const k = tt - this.blinkAt; blink = k < 0.14 ? 0.12 : 1; if (k > 0.14) this.blinkAt = tt + 2 + Math.random() * 3.5; }
-    for (const eg of this.eyes) { eg.scale.set(this.eyeScale, this.eyeScale * Math.min(blink, eyeSquint), this.eyeScale); }
   }
 }

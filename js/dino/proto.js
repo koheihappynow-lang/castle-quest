@@ -4,6 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { initAssets, M, TEX, Batch, palm, roundTree, rr, setSeed } from '../diorama/engine.js';
 import { TRex } from './trex.js';
+import { GLBDino, loadGLBDino, bakeStatic, PROTO_TREX_RIG } from './rig.js';
 
 const Q = new URLSearchParams(location.search);
 const SHOT = Q.has('shot');
@@ -115,7 +116,12 @@ const eggMat = new THREE.MeshStandardMaterial({ color: 0xf4ead2, roughness: 0.55
 for (const [x, z, r] of [[-0.18, 0.05, 0.3], [0.22, -0.1, -0.2]]) { const e = mesh(new THREE.SphereGeometry(0.24, 20, 14), eggMat, x, 0.3, z); e.scale.set(1, 1.3, 1); e.rotation.z = r; nest.add(e); }
 
 // ---------- ティラノサウルス ----------
-const rex = new TRex();
+// ?rigtest=1 → 骨入れの テスト（プログラム製ティラノを いったん ただの 形にしてから、骨を 入れなおす）
+// ?glb=ファイル名 → models/ の GLB を 読みこむ（cfg は rig.js）
+let rex;
+if (Q.has('glb')) rex = await loadGLBDino(`models/${Q.get("glb")}`, PROTO_TREX_RIG);
+else if (Q.has('rigtest')) { const src = new TRex(); rex = new GLBDino(bakeStatic(src.group), PROTO_TREX_RIG); }
+else rex = new TRex();
 rex.group.rotation.y = -0.45;
 world.add(rex.group);
 let growth = Q.has('g') ? Number(Q.get('g')) : 0.5;
@@ -129,6 +135,9 @@ function refreshUI() {
   $('grow').value = growth;
 }
 refreshUI();
+let dragging = false;
+$('grow').addEventListener('pointerdown', () => { dragging = true; });
+$('grow').addEventListener('change', () => { dragging = false; });
 $('grow').addEventListener('input', e => { growth = shownGrowth = Number(e.target.value); rex.setGrowth(growth); refreshUI(); });
 
 // ---------- 音（その場で つくる） ----------
@@ -201,7 +210,7 @@ function growUp(amount) {
   const before = rex.stage();
   growth = Math.min(1, growth + amount);
   refreshUI();
-  setTimeout(() => { if (rex.stage() !== before) { burst(starTex, headPos(), 14, 0.6); chirp(700, 1400, 0.3, 'triangle', 0.15); chirp(900, 1800, 0.3, 'triangle', 0.12, 0.25); } }, 900);
+  setTimeout(() => { if (rex.stage() !== before) { chirp(700, 1400, 0.3, 'triangle', 0.15); chirp(900, 1800, 0.3, 'triangle', 0.12, 0.25); } }, 900);
 }
 
 // ---------- ボタン ----------
@@ -229,7 +238,7 @@ addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; cam
 
 // ---------- 動かす ----------
 const clock = new THREE.Clock();
-let tt = 0, walkA = 0;
+let tt = 0, walkA = 0, lastStage = null, flashT = -1;
 const freezeAt = Q.has('freeze') ? Number(Q.get('freeze')) : Infinity;
 const runAct = () => ({ feed, pet, roar: () => rex.play('roar') }[Q.get('act')]?.());
 if (Q.get('act') && !SHOT) setTimeout(runAct, 300);
@@ -239,6 +248,10 @@ function step(dt) {
     tt += dt;
     // 大きくなるのは ゆっくり
     if (Math.abs(shownGrowth - growth) > 0.0005) { shownGrowth += (growth - shownGrowth) * Math.min(1, dt * 1.5); rex.setGrowth(shownGrowth); }
+    const st = rex.stage();
+    if (lastStage && st !== lastStage && !dragging) { flashT = 0; burst(starTex, headPos(), 16, 0.6); }
+    lastStage = st;
+    if (flashT >= 0) { flashT += dt; rex.look.flash(Math.max(0, Math.sin(Math.min(1, flashT / 1.2) * Math.PI)) * 0.85); if (flashT > 1.2) { flashT = -1; rex.look.flash(0); } }
     if (rex.walking && !rex.busy()) {
       walkA += dt * 0.28 / Math.max(0.5, rex.group.scale.x / 0.58) * (rex.group.scale.x / 0.58);
       const R = 2.6;
