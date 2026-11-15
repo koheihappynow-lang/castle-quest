@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>モデル確認（開発用）</title>
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/" } }</script>
+<style>html,body{margin:0;height:100%;background:#fff;overflow:hidden}</style>
+</head>
+<body>
+<script type="module">
+// 開発用：GLB を 真横・真上から 方眼つきで 見る（骨の 位置を きめるため）
+// ?m=trex-adult&view=side|top|front|persp&yaw=角度(度)&norm=1（rig と 同じ 正規化：しっぽ x=0、足 y=0、長さ L）&L=10.29
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+const Q = new URLSearchParams(location.search);
+const r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+r.setSize(innerWidth, innerHeight); document.body.appendChild(r.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0xffffff);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x888888, 2.2));
+const gltf = await new GLTFLoader().loadAsync(`models/${Q.get('m') || 'trex-adult'}.glb`);
+const obj = gltf.scene;
+obj.traverse(m => { if (m.material) { m.material.metalness = 0; m.material.roughness = 0.85; m.material.metalnessMap = null; } });
+obj.rotation.y = THREE.MathUtils.degToRad(Number(Q.get('yaw') || 0));
+const root = new THREE.Group(); root.add(obj); scene.add(root);
+root.updateMatrixWorld(true);
+let box = new THREE.Box3().setFromObject(obj);
+if (Q.get('norm')) {
+  const L = Number(Q.get('L') || 10.29), s = L / (box.max.x - box.min.x);
+  root.scale.setScalar(s);
+  root.position.set(-box.min.x * s, -box.min.y * s, -((box.min.z + box.max.z) / 2) * s);
+  root.updateMatrixWorld(true); box = new THREE.Box3().setFromObject(obj);
+}
+const size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
+const view = Q.get('view') || 'side';
+const span = Math.max(size.x, size.y, size.z) * 0.6;
+const asp = innerWidth / innerHeight;
+const cam = view === 'persp' ? new THREE.PerspectiveCamera(35, asp, 0.01, 1000) : new THREE.OrthographicCamera(-span * asp, span * asp, span, -span, -1000, 1000);
+if (view === 'side') cam.position.set(c.x, c.y, c.z + 100);
+if (view === 'top') { cam.position.set(c.x, c.y + 100, c.z); cam.up.set(0, 0, -1); }
+if (view === 'front') cam.position.set(c.x + 100, c.y, c.z);
+if (view === 'persp') cam.position.set(c.x + span * 1.6, c.y + span * 0.8, c.z + span * 2.2);
+cam.lookAt(c);
+// 方眼（1目もり）
+const step = Number(Q.get('step') || (Q.get('norm') ? 0.5 : 0.05));
+const grid = new THREE.Group(); scene.add(grid);
+const mat = new THREE.LineBasicMaterial({ color: 0x99bbff, transparent: true, opacity: 0.6 });
+const mat2 = new THREE.LineBasicMaterial({ color: 0xff6666 });
+const ext = span * 3;
+const lines = [];
+for (let a = -ext; a <= ext; a += step) {
+  const a0 = Math.round(a / step) * step;
+  if (view === 'side') { lines.push([[a0, -ext, 0], [a0, ext, 0]], [[-ext, a0, 0], [ext, a0, 0]]); }
+  if (view === 'top') { lines.push([[a0, 0, -ext], [a0, 0, ext]], [[-ext, 0, a0], [ext, 0, a0]]); }
+  if (view === 'front') { lines.push([[0, a0, -ext], [0, a0, ext]], [[0, -ext, a0], [0, ext, a0]]); }
+}
+for (const [p, q] of lines) { const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...p), new THREE.Vector3(...q)]); const isAxis = Math.abs(p[0]) < 1e-6 && Math.abs(q[0]) < 1e-6 || Math.abs(p[1]) < 1e-6 && Math.abs(q[1]) < 1e-6; grid.add(new THREE.Line(g, isAxis ? mat2 : mat)); }
+if (view !== 'persp') grid.renderOrder = -1;
+r.render(scene, cam);
+document.title = `ready ${size.x.toFixed(3)} ${size.y.toFixed(3)} ${size.z.toFixed(3)} | min ${box.min.toArray().map(v => v.toFixed(3))} max ${box.max.toArray().map(v => v.toFixed(3))}`;
+console.log(document.title);
+</script>
+</body>
+</html>

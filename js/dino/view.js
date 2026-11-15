@@ -4,6 +4,13 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { initAssets, M, TEX, Batch, palm, roundTree, rr, setSeed } from '../diorama/engine.js';
 import { TRex } from './trex.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { GLBDino, TREX_ADULT_RIG, TREX_BABY_RIG } from './rig.js';
+
+// AIで 作った 3Dモデル（ある 恐竜だけ）。swapAt：この そだち（0〜1）から おとなの モデルに かわる
+const GLB_MODELS = { trex: { baby: ['models/trex-baby.glb', TREX_BABY_RIG], adult: ['models/trex-adult.glb', TREX_ADULT_RIG], swapAt: 0.55 } };
+const glbCache = {};
+const loadGLB = url => (glbCache[url] ||= new GLTFLoader().loadAsync(url));
 import { stageOf } from '../dinos.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -327,15 +334,19 @@ export class DinoView {
   }
 
   // ---------- 恐竜 ----------
-  setDino(id, { growth = 0, accessories = [], name = '' } = {}) {
+  async setDino(id, { growth = 0, accessories = [], name = '' } = {}) {
     if (this.dino) this.world.remove(this.dino.group);
-    // いまは ティラノだけ（ほかの 恐竜は 3Dが できたら ここで 切りかえる）
-    this.dino = new TRex();
-    this.dino.group.rotation.y = -0.45;
-    this.dino.onEvent = ev => {
-      if (ev === 'bite') { this.food && (this.food.userData.eaten = 0.0001); for (let i = 0; i < 4; i++) chirp(220, 140, 0.07, 'square', 0.06, i * 0.22); }
-      if (ev === 'roar') roarSound(this.dino.growth);
-    };
+    this.models = null;
+    const G = GLB_MODELS[id];
+    if (G && !this.noGLB) {
+      try {
+        const [b, a] = await Promise.all([loadGLB(G.baby[0]), loadGLB(G.adult[0])]);
+        this.models = { baby: new GLBDino(b.scene, G.baby[1]), adult: new GLBDino(a.scene, G.adult[1]), swapAt: G.swapAt };
+      } catch (e) { console.warn('GLB', e); this.models = null; }
+    }
+    // AIモデルが ないときは プログラム製の ティラノ
+    this.dino = this.models ? (growth / 100 >= this.models.swapAt ? this.models.adult : this.models.baby) : new TRex();
+    this.wireDino();
     this.world.add(this.dino.group);
     this.growth = this.shown = growth / 100;
     this.dino.setGrowth(this.shown);
@@ -344,12 +355,36 @@ export class DinoView {
     if (name) this.setSign(name);
     this.walkA = 0;
   }
+  // あかちゃんの モデル ⇔ おとなの モデル を 入れかえる
+  swapModel(next) {
+    const cur = this.dino;
+    if (!next || next === cur) return;
+    next.group.position.copy(cur.group.position); next.group.rotation.copy(cur.group.rotation);
+    next.walking = cur.walking; next.walkPhase = cur.walkPhase;
+    this.world.remove(cur.group); this.world.add(next.group);
+    this.dino = next; this.wireDino();
+    next.setGrowth(this.shown);
+    this.setAccessories(this.accList || []);
+  }
+  wireDino() {
+    this.dino.group.rotation.y = this.dino.group.rotation.y || -0.45;
+    this.dino.onEvent = ev => {
+      if (ev === 'bite') { this.food && (this.food.userData.eaten = 0.0001); for (let i = 0; i < 4; i++) chirp(220, 140, 0.07, 'square', 0.06, i * 0.22); }
+      if (ev === 'roar') roarSound(this.dino.growth);
+    };
+  }
   setGrowth(g100) { this.growth = g100 / 100; }
   setAccessories(list) {
     const d = this.dino; if (!d) return;
     (this.accMeshes || []).forEach(m => m.parent?.remove(m));
-    const anchors = { head: d.head, neck: d.bones[11], back: d.bones[8] };
-    this.accMeshes = list.map(id => { const m = accessoryMesh(id); m.traverse(o => { o.castShadow = true; }); anchors[ACC_ANCHOR[id]].add(m); return m; });
+    this.accList = [...list];
+    const anchors = d.anchors || { head: d.head, neck: d.bones[11], back: d.bones[8] };
+    this.accMeshes = list.map(id => {
+      const m = accessoryMesh(id); m.traverse(o => { o.castShadow = true; });
+      const where = ACC_ANCHOR[id], fit = d.accFit?.[where];
+      if (fit) { const w = new THREE.Group(); w.position.set(...fit.pos); w.scale.setScalar(fit.scale); w.add(m); anchors[where].add(w); return w; }
+      anchors[where].add(m); return m;
+    });
   }
 
   pet() { if (!this.dino || this.dino.busy()) return false; this.dino.play('pet'); this.burst(this.heart, this.headPos(), 6, 0.45 * this.sizeK()); chirp(700, 1300, 0.14); chirp(900, 1500, 0.14, 'sine', 0.12, 0.18); return true; }
@@ -452,10 +487,11 @@ export class DinoView {
     const d = this.dino;
     if (d) {
       if (Math.abs(this.shown - this.growth) > 0.0005) { this.shown += (this.growth - this.shown) * Math.min(1, dt * 1.5); d.setGrowth(this.shown); }
+      if (this.models) { const want = this.shown >= this.models.swapAt ? this.models.adult : this.models.baby; if (want !== d && !d.busy()) { this.swapModel(want); return; } }
       const st = d.stage();
       if (st !== this.lastStage) { this.flashT = 0; this.burst(this.star, this.headPos(), 16, 0.6); chirp(700, 1400, 0.3, 'triangle', 0.15); chirp(900, 1800, 0.3, 'triangle', 0.12, 0.25); this.onStageUp(stageOf(this.shown * 100)); setTimeout(() => this.frame(), 1500); }
       this.lastStage = st;
-      if (this.flashT >= 0) { this.flashT += dt; d.look.flash(Math.max(0, Math.sin(Math.min(1, this.flashT / 1.2) * Math.PI)) * 0.85); if (this.flashT > 1.2) { this.flashT = -1; d.look.flash(0); } }
+      if (this.flashT >= 0) { this.flashT += dt; d.look?.flash(Math.max(0, Math.sin(Math.min(1, this.flashT / 1.2) * Math.PI)) * 0.85); if (this.flashT > 1.2) { this.flashT = -1; d.look?.flash(0); } }
       if (d.walking && !d.busy()) {
         this.walkA += dt * 0.28;
         const R = 2.6;

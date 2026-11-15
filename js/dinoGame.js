@@ -334,7 +334,7 @@ export function installDino(api) {
         view.onTapDino = () => ACTIONS.petDino();
         view.onStageUp = st => { toast(`🎉 ${DINO_BY_ID[activeProfile().dino.active].name}が「${st.name}」に なった！`, 3000); setTimeout(() => sayEn(`I am ${st.en === 'adult' ? 'an' : 'a'} ${st.en} now!`), 600); };
       }
-      if (viewDinoId !== d.active) { view.setDino(d.active, { growth: m.growth, accessories: m.wearing, name: DINO_BY_ID[d.active].name }); viewDinoId = d.active; }
+      if (viewDinoId !== d.active) { viewDinoId = d.active; await view.setDino(d.active, { growth: m.growth, accessories: m.wearing, name: DINO_BY_ID[d.active].name }); if (!document.getElementById("dstage")) return; }
       else { view.setGrowth(m.growth); view.setAccessories(m.wearing); }
       if (view.habitat !== habitatOf(m, d.active)) view.setHabitat(habitatOf(m, d.active));
       view.setHome(m.home || 0, S.homeAnim === (m.home || 0));

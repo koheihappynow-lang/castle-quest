@@ -62,8 +62,10 @@ export class GLBDino extends DinoBase {
     // 足（左右）
     const legDefs = [];
     for (const side of [-1, 1]) {
-      const c = cfg.legs, z = c.hip[2] * side;
-      const pts = [V(c.hip[0], c.hip[1], z), V(c.knee[0], c.knee[1], z), V(c.ankle[0], c.ankle[1], z), V(c.toe[0], c.toe[1], z)];
+      // cfg.legsLR = { L: {hip,knee,ankle,toe}, R: {...} }（z は +が L）／ cfg.legs = 左右おなじ
+      const c = cfg.legsLR ? cfg.legsLR[side > 0 ? 'L' : 'R'] : cfg.legs;
+      const zOf = q => (cfg.legsLR ? (q[2] ?? c.hip[2]) : c.hip[2] * side);
+      const pts = [V(c.hip[0], c.hip[1], zOf(c.hip)), V(c.knee[0], c.knee[1], zOf(c.knee)), V(c.ankle[0], c.ankle[1], zOf(c.ankle)), V(c.toe[0], c.toe[1], zOf(c.toe))];
       const iHip = addBone(H, sp[H], pts[0]);
       const iKnee = addBone(all[iHip], pts[0], pts[1]);
       const iAnk = addBone(all[iKnee], pts[1], pts[2]);
@@ -106,7 +108,7 @@ export class GLBDino extends DinoBase {
         let spineW = 1;
         // 足
         for (const L2 of legDefs) {
-          if (v.z * L2.side < -0.05 || v.y > L2.pts[0].y + 0.25) continue;
+          if (v.z * L2.side < -0.05 || v.y > L2.pts[0].y + (cfg.legTop ?? 0.25)) continue;
           const li = polyInfo(v, L2.pts);
           const dSpine = spi.d;
           const w = sstep(0.9, 0.45, li.d / Math.max(0.001, dSpine));
@@ -141,7 +143,9 @@ export class GLBDino extends DinoBase {
       }
       g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(si, 4));
       g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sw, 4));
-      const m = new THREE.SkinnedMesh(g, mat.clone());
+      const mm = mat.clone();
+      if (mm.isMeshStandardMaterial) { mm.metalness = 0; mm.metalnessMap = null; mm.roughness = cfg.roughness ?? 0.85; mm.roughnessMap = null; mm.color.multiplyScalar(cfg.bright ?? 1); }
+      const m = new THREE.SkinnedMesh(g, mm);
       m.castShadow = true; m.receiveShadow = true; m.frustumCulled = false;
       inner.add(m);
       this.meshes.push(m);
@@ -161,13 +165,15 @@ export class GLBDino extends DinoBase {
     this.legs = legDefs.map(d => ({ hip: all[d.idx[0]], knee: all[d.idx[1]], ank: all[d.idx[2]], foot: all[d.idx[3]], s: d.side }));
     this.arms = armDefs.map(d => ({ sh: all[d.idx[0]] }));
     this.snoutLocal = V(cfg.snout[0], cfg.snout[1]).sub(headPos);
+    this.anchors = { head: this.head, neck: bones[cfg.neckFrom ?? K - 3], back: bones[Math.min(K - 1, H + 1)] };
+    this.accFit = cfg.acc || {};
     // 5. 産毛と 色
     if (cfg.fluff !== false) {
       // 毛は 大きな 部品（体・頭）だけに はやす（歯や つめには はやさない）
       const maxV = Math.max(...this.meshes.map(m => m.geometry.attributes.position.count));
       const big = this.meshes.filter(m => m.geometry.attributes.position.count >= maxV * 0.15);
       for (const m of big) addFluffWeights(m.geometry, { neckX: cfg.neckX ?? 0.75 });
-      this.look = new GrowthLook({ skinMaterials: this.meshes.map(m => m.material), fluffMeshes: big, fluffLen: cfg.fluffLen ?? 0.14, density: cfg.fluffDensity ?? 46, spotScale: cfg.spotScale ?? 2.6, layers: 12 });
+      this.look = new GrowthLook({ colorShift: cfg.colorShift ?? false, skinMaterials: this.meshes.map(m => m.material), fluffMeshes: big, fluffLen: cfg.fluffLen ?? 0.14, density: cfg.fluffDensity ?? 46, spotScale: cfg.spotScale ?? 2.6, layers: 12 });
     }
   }
 }
@@ -197,4 +203,36 @@ export const PROTO_TREX_RIG = {
   snout: [10.15, 2.8],
   neckX: 0.9,
   scale: [0.17, 0.58], headScale: [1, 1], eyeScale: [1, 1],
+};
+
+// ---------- AIで 作った ティラノ（TRELLIS.2） ----------
+export const TREX_ADULT_RIG = {
+  length: 10.29, yaw: Math.PI / 2, hip: 6, neckFrom: 8,
+  spine: [[0.1, 2.57], [1.0, 2.72], [2.0, 2.72], [3.0, 2.64], [4.0, 2.6], [5.1, 2.62], [6.4, 2.75], [7.3, 2.85], [8.0, 3.05], [8.45, 3.35], [8.85, 3.45]],
+  legsLR: {
+    L: { hip: [6.3, 2.4, 0.55], knee: [5.95, 1.55, 0.6], ankle: [5.3, 1.1, 0.6], toe: [5.25, 0.15, 0.62] },
+    R: { hip: [6.6, 2.4, -0.5], knee: [6.75, 1.6, -0.55], ankle: [6.38, 0.95, -0.58], toe: [6.72, 0.15, -0.62] },
+  },
+  legTop: 0.15,
+  arms: { shoulder: [7.85, 2.5, 0.42], hand: [8.25, 1.85] },
+  jaw: { pivot: [8.9, 3.05], tip: [10.2, 3.02] }, jawMul: 0.45,
+  snout: [10.25, 3.05],
+  neckX: 0.8, fluffLen: 0.1, bright: 1.45,
+  scale: [0.17, 0.58], headScale: [1, 1], eyeScale: [1, 1],
+  acc: { head: { pos: [-0.25, 0.0, 0], scale: 1.35 }, neck: { pos: [0, 0, 0], scale: 1.15 }, back: { pos: [0, 0.35, 0], scale: 1.1 } },
+};
+export const TREX_BABY_RIG = {
+  length: 10, yaw: Math.PI / 2, hip: 5, neckFrom: 7,
+  spine: [[0.1, 2.78], [1.2, 2.86], [2.4, 2.74], [3.5, 2.66], [4.6, 2.62], [5.6, 2.75], [6.4, 3.1], [7.0, 3.6], [7.4, 4.0], [7.8, 4.3]],
+  legsLR: {
+    L: { hip: [5.5, 2.6, 0.8], knee: [5.3, 1.6, 0.85], ankle: [4.65, 0.9, 0.9], toe: [4.75, 0.15, 0.95] },
+    R: { hip: [5.8, 2.6, -0.85], knee: [5.75, 1.6, -0.9], ankle: [5.4, 0.9, -0.95], toe: [5.7, 0.15, -1.0] },
+  },
+  legTop: 0.1,
+  arms: { shoulder: [6.9, 3.2, 0.55], hand: [7.3, 2.3] },
+  jaw: { pivot: [8.2, 3.9], tip: [9.9, 3.85] }, jawMul: 0.35,
+  snout: [9.95, 3.9],
+  neckX: 0.7, fluffLen: 0.14, bright: 1.2,
+  scale: [0.2, 0.4], headScale: [1, 1], eyeScale: [1, 1],
+  acc: { head: { pos: [-0.5, 0.05, 0], scale: 2.1 }, neck: { pos: [0, -0.1, 0], scale: 1.8 }, back: { pos: [0, 0.6, 0], scale: 1.6 } },
 };

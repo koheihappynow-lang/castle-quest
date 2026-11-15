@@ -91,12 +91,12 @@ function shellMaterial(base, uniforms, layer, layers) {
 
 // target：毛を はやす メッシュ（SkinnedMesh も OK）。size：毛の ながさ（モデルの 大きさ に あわせる）
 export class GrowthLook {
-  constructor({ skinMaterials = [], fluffMeshes = [], fluffLen = 0.12, density = 26, spotScale = 3, layers = 10 }) {
+  constructor({ skinMaterials = [], fluffMeshes = [], fluffLen = 0.12, density = 26, spotScale = 3, layers = 10, colorShift = true }) {
     this.u = {
       uDark: { value: 0 }, uSpots: { value: 1 }, uSpotScale: { value: spotScale }, uFlash: { value: 0 },
       uFluff: { value: 1 }, uLen: { value: fluffLen }, uDensity: { value: density },
     };
-    for (const m of skinMaterials) lookMaterial(m, this.u);
+    if (colorShift) for (const m of skinMaterials) lookMaterial(m, this.u);
     this.shells = [];
     for (const target of fluffMeshes) {
       if (!target.geometry.attributes.fluffW) addFluffWeights(target.geometry);
