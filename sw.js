@@ -1,6 +1,7 @@
 // オフラインでも動くように、ゲームのファイルをiPadに保存しておく
-// ゲームを更新したら VERSION を上げる
-const VERSION = 'cq-v4';
+// ・ネットにつながっているときは、いつも最新のプログラムを取りにいく（更新がすぐ反映される）
+// ・つながっていないときは、保存しておいたものを使う
+const VERSION = 'cq-v5';
 const BG_FILES = ['hero', 'title', 'hub', 'study', 'select', 'build-day', 'build-sunset', 'build-night', 'exchange', 'ghosts', 'workshop']
   .map(n => `./bg/${n}.jpg`);
 const CASTLE_FILES = ['himeji', 'neuschwanstein', 'windsor', 'montsaintmichel', 'edinburgh', 'alhambra', 'chambord', 'hearst', 'forbiddencity', 'pena', 'tsuruga']
@@ -18,20 +19,39 @@ const CDN = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll([...LOCAL, ...CDN])).then(() => self.skipWaiting()));
+  // ブラウザの一時保存（古いファイル）を使わず、必ず新しく取りにいく
+  e.waitUntil(caches.open(VERSION)
+    .then(c => Promise.all([...LOCAL, ...CDN].map(u => fetch(new Request(u, { cache: 'reload' })).then(r => r.ok && c.put(u, r)).catch(() => {}))))
+    .then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== VERSION && !k.startsWith('cq-photos')).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
-// 保存したものをすぐ使い、裏で新しいものを取りにいく
+
+const isCode = url => /\.(html|js|css|webmanifest)$/.test(url.pathname) || url.pathname.endsWith('/');
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  const url = new URL(e.request.url);
   e.respondWith(caches.open(VERSION).then(async cache => {
     const hit = await cache.match(e.request, { ignoreSearch: true });
-    const net = fetch(e.request).then(res => {
+    // プログラム（同じサイトのhtml/js/css）は、ネット優先
+    if (url.origin === location.origin && isCode(url)) {
+      try {
+        const res = await fetch(e.request, { cache: 'no-cache' });
+        if (res.ok) cache.put(e.request, res.clone());
+        return res;
+      } catch (err) {
+        return hit || Response.error();
+      }
+    }
+    // 画像・写真・3Dの部品は、保存したものを先に使う（速い）
+    if (hit) return hit;
+    try {
+      const res = await fetch(e.request);
       if (res.ok) cache.put(e.request, res.clone());
       return res;
-    }).catch(() => hit);
-    return hit || net;
+    } catch (err) {
+      return Response.error();
+    }
   }));
 });

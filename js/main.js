@@ -1032,7 +1032,18 @@ document.addEventListener('pointerdown', () => { unlockSpeech(); sfx.unlock(); }
 
 // ホーム画面に置いたとき、オフラインでも動くようにする（本番のみ）
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
-  navigator.serviceWorker.register('./sw.js').catch(e => console.warn('sw', e));
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(reg => {
+    // アプリに戻ってきたときにも、新しい版がないか確かめる
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(() => {}); });
+  }).catch(e => console.warn('sw', e));
+  // 新しい版が届いたら、トップ画面にいるときだけ1回読み直す（遊んでいる途中はじゃましない）
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || reloaded) return;
+    const tryReload = () => { if (['profiles', 'boot', 'home'].includes(S.screen)) { reloaded = true; location.reload(); } else setTimeout(tryReload, 3000); };
+    tryReload();
+  });
   // 写真もiPadに保存しておく（オフラインでも出るように）
   setTimeout(() => {
     caches?.open('cq-photos-v1').then(c => c.addAll(Object.values(PHOTOS).map(p => p.src))).catch(() => {});
