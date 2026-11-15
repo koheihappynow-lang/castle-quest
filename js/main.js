@@ -49,6 +49,7 @@ function go(screen, opts = {}) {
   if (S.screen === 'castle' && screen !== 'castle') detachCastle();
   if (screen !== 'quiz') stopSpeech();
   if (!['parent', 'pin', 'setupPin'].includes(screen)) S.pinOK = false;
+  if (screen !== 'castle') S.previewOK = false;
   S.screen = screen;
   Object.assign(S, opts);
   render();
@@ -315,7 +316,7 @@ const SCREENS = {
       <div class="time-switch">
         ${[['day', '☀️'], ['evening', '🌇'], ['night', '🌙']].map(([k, i]) => `<button class="pill ${S.castleTime === k ? 'on' : ''}" data-act="time" data-v="${k}">${i}</button>`).join('')}
       </div>
-      ${done ? '' : `<button class="preview-btn ${S.previewing ? 'on' : ''}" data-act="preview">${S.previewing ? '🔙 もどる' : '🖼️ かんせいず'}</button>`}
+      ${done ? '' : `<button class="preview-btn ${S.previewing ? 'on' : ''}" data-act="preview">${S.previewing ? '🔙 もどる' : '🖼️ かんせいず 🔒'}</button>`}
       ${S.previewing ? '<div class="preview-banner">✨ かんせいずだよ！ ここまで たてよう ✨</div>' : ''}
       <div class="castle-panel">
         <div class="cp-title">${c.flag} <b>${c.name}</b> <small>${c.en}</small></div>
@@ -460,6 +461,10 @@ function squarePhoto(file) {
 }
 
 // ---------- 暗証番号（遊ぶ時間などの「せってい」のときだけ） ----------
+function pinPassed() {
+  if (S.pin.next === 'preview') { go('castle', { previewing: true }); S.previewOK = true; return; }
+  S.pinOK = true; S.parentTab = 'settings'; go('parent');
+}
 function askPin(next) {
   const has = !!db().settings.pinHash;
   S.pin = { buf: '', mode: has ? 'enter' : 'setup1', first: '', next, msg: '' };
@@ -493,11 +498,11 @@ async function pinKey(v) {
     if (entered !== S.pin.first) { S.pin.mode = 'setup1'; S.pin.first = ''; toast('ばんごうが ちがいました。もういちど きめてください'); render(); return; }
     db().settings.pinHash = await hashPin(entered); save();
     toast('あんしょうばんごうを きめました');
-    S.pinOK = true; S.parentTab = 'settings'; go('parent');
+    pinPassed();
     return;
   }
   if (await hashPin(entered) === db().settings.pinHash) {
-    S.pinOK = true; S.parentTab = 'settings'; go('parent');
+    pinPassed();
   } else { S.pin.msg = 'ばんごうが ちがいます'; sfx.wrong(); render(); }
 }
 
@@ -952,9 +957,10 @@ const ACTIONS = {
     if (exchange(d.cur, n)) { toast(`💱 ${fmt(n * rate(d.cur))}えん → ${money(d.cur, n)}`); sayJa(`${n}${CURRENCIES[d.cur].name}に両替したよ`); render(); }
   },
   preview: () => {
+    if (!S.previewing && !S.previewOK) { askPin('preview'); return; }
     S.previewing = !S.previewing;
     castleView?.preview(S.previewing);
-    document.querySelector('.preview-btn').outerHTML = `<button class="preview-btn ${S.previewing ? 'on' : ''}" data-act="preview">${S.previewing ? '🔙 もどる' : '🖼️ かんせいず'}</button>`;
+    document.querySelector('.preview-btn').outerHTML = `<button class="preview-btn ${S.previewing ? 'on' : ''}" data-act="preview">${S.previewing ? '🔙 もどる' : '🖼️ かんせいず 🔒'}</button>`;
     document.querySelector('.preview-banner')?.remove();
     if (S.previewing) document.querySelector('.castle-page').insertAdjacentHTML('beforeend', '<div class="preview-banner">✨ かんせいずだよ！ ここまで たてよう ✨</div>');
   },
@@ -967,7 +973,7 @@ const ACTIONS = {
   },
   pinKey: d => pinKey(d.v),
   pinDel: () => { S.pin.buf = S.pin.buf.slice(0, -1); render(); },
-  pinCancel: () => { if (S.pin.next === 'extend') go('limit'); else { S.parentTab = 'home'; go('parent'); } },
+  pinCancel: () => { if (S.pin.next === 'extend') go('limit'); else if (S.pin.next === 'preview') go('castle', { previewing: false }); else { S.parentTab = 'home'; go('parent'); } },
   ptab: d => { if (d.v === 'settings' && !S.pinOK) { askPin('settings'); return; } S.parentTab = d.v; render(); },
   statsFor: d => { S.statsId = d.id; S.parentTab = 'stats'; render(); },
   setLevel: d => { const p = db().profiles.find(x => x.id === d.id); p.level = Number(d.v); save(); render(); },
