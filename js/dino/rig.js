@@ -26,6 +26,25 @@ function polyInfo(p, pts) {
   return best;
 }
 
+// 愛嬌の ある 目（琥珀色・つやつや・白い光）。AIの 目は 小さく くらいので 上に かさねる
+const EYE_MAT = { ball: null, pupil: null, hi: null };
+function eyeMats() {
+  EYE_MAT.ball ||= new THREE.MeshPhysicalMaterial({ color: 0xd8962a, roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.05 });
+  EYE_MAT.pupil ||= new THREE.MeshPhysicalMaterial({ color: 0x120b05, roughness: 0.08, clearcoat: 1 });
+  EYE_MAT.hi ||= new THREE.MeshBasicMaterial({ color: 0xffffff });
+  return EYE_MAT;
+}
+function makeEye(side, r) {
+  const m = eyeMats(), k = r / 0.09;
+  const inner = new THREE.Group(); inner.scale.setScalar(k);
+  inner.add(new THREE.Mesh(new THREE.SphereGeometry(0.09, 24, 16), m.ball));
+  const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.058, 20, 14), m.pupil); pupil.position.set(0.024, 0.006, side * 0.05); inner.add(pupil);
+  const hi = new THREE.Mesh(new THREE.SphereGeometry(0.022, 10, 8), m.hi); hi.position.set(0.05, 0.042, side * 0.083); inner.add(hi);
+  const hi2 = new THREE.Mesh(new THREE.SphereGeometry(0.01, 8, 6), m.hi); hi2.position.set(0.0, -0.026, side * 0.094); inner.add(hi2);
+  const eg = new THREE.Group(); eg.add(inner);
+  return eg;
+}
+
 export class GLBDino extends DinoBase {
   constructor(scene, cfg) {
     super(cfg);
@@ -144,7 +163,7 @@ export class GLBDino extends DinoBase {
       g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(si, 4));
       g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sw, 4));
       const mm = mat.clone();
-      if (mm.isMeshStandardMaterial) { mm.metalness = 0; mm.metalnessMap = null; mm.roughness = cfg.roughness ?? 0.85; mm.roughnessMap = null; mm.color.multiplyScalar(cfg.bright ?? 1); }
+      if (mm.isMeshStandardMaterial) { mm.metalness = 0; mm.metalnessMap = null; mm.roughness = cfg.roughness ?? 0.85; mm.roughnessMap = null; if (cfg.tint) mm.color.setRGB(...cfg.tint); else mm.color.multiplyScalar(cfg.bright ?? 1); }
       const m = new THREE.SkinnedMesh(g, mm);
       m.castShadow = true; m.receiveShadow = true; m.frustumCulled = false;
       inner.add(m);
@@ -166,6 +185,18 @@ export class GLBDino extends DinoBase {
     this.arms = armDefs.map(d => ({ sh: all[d.idx[0]] }));
     this.snoutLocal = V(cfg.snout[0], cfg.snout[1]).sub(headPos);
     this.anchors = { head: this.head, neck: bones[cfg.neckFrom ?? K - 3], back: bones[Math.min(K - 1, H + 1)] };
+    // 目（cfg.eyes = { pos: [x, y, z], r }）。DinoBase が まばたき・にっこりを する
+    this.eyes = [];
+    if (cfg.eyes) {
+      const [ex, ey, ez] = cfg.eyes.pos;
+      for (const side of [-1, 1]) {
+        const eg = makeEye(side, cfg.eyes.r);
+        eg.position.set(ex, ey, ez * side).sub(headPos);
+        eg.traverse(o => { if (o.isMesh) o.castShadow = false; });
+        this.head.add(eg);
+        this.eyes.push(eg);
+      }
+    }
     this.accFit = cfg.acc || {};
     // 5. 産毛と 色
     if (cfg.fluff !== false) {
@@ -217,7 +248,8 @@ export const TREX_ADULT_RIG = {
   arms: { shoulder: [7.85, 2.5, 0.42], hand: [8.25, 1.85] },
   jaw: { pivot: [8.9, 3.05], tip: [10.2, 3.02] }, jawMul: 0.45,
   snout: [10.25, 3.05],
-  neckX: 0.8, fluffLen: 0.1, bright: 1.45,
+  neckX: 0.8, fluffLen: 0.1, tint: [1.6, 1.45, 1.22],
+  eyes: { pos: [9.4, 3.71, 0.22], r: 0.13 },
   scale: [0.17, 0.58], headScale: [1, 1], eyeScale: [1, 1],
   acc: { head: { pos: [-0.25, 0.0, 0], scale: 1.35 }, neck: { pos: [0, 0, 0], scale: 1.15 }, back: { pos: [0, 0.35, 0], scale: 1.1 } },
 };
@@ -232,7 +264,8 @@ export const TREX_BABY_RIG = {
   arms: { shoulder: [6.9, 3.2, 0.55], hand: [7.3, 2.3] },
   jaw: { pivot: [8.2, 3.9], tip: [9.9, 3.85] }, jawMul: 0.35,
   snout: [9.95, 3.9],
-  neckX: 0.7, fluffLen: 0.14, bright: 1.2,
+  neckX: 0.7, fluffLen: 0.14, tint: [1.3, 1.22, 1.1],
+  eyes: { pos: [8.62, 4.57, 0.5], r: 0.27 },
   scale: [0.2, 0.4], headScale: [1, 1], eyeScale: [1, 1],
   acc: { head: { pos: [-0.5, 0.05, 0], scale: 2.1 }, neck: { pos: [0, -0.1, 0], scale: 1.8 }, back: { pos: [0, 0.6, 0], scale: 1.6 } },
 };

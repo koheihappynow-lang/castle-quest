@@ -32,7 +32,10 @@ if (Q.get('norm')) {
 }
 const size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
 const view = Q.get('view') || 'side';
-const span = Math.max(size.x, size.y, size.z) * 0.6;
+// ?focus=x,y,はば で 一部を 大きく 見る（normの 座標）
+const F = Q.get('focus') ? Q.get('focus').split(',').map(Number) : null;
+if (F) c.set(F[0], F[1], c.z);
+const span = F ? F[2] : Math.max(size.x, size.y, size.z) * 0.6;
 const asp = innerWidth / innerHeight;
 const cam = view === 'persp' ? new THREE.PerspectiveCamera(35, asp, 0.01, 1000) : new THREE.OrthographicCamera(-span * asp, span * asp, span, -span, -1000, 1000);
 if (view === 'side') cam.position.set(c.x, c.y, c.z + 100);
