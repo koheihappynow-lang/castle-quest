@@ -567,3 +567,47 @@ body[data-bg="hub"] .big-btn.math { min-height: 150px; }
 .col-card.has-img .col-flag { display: none; }
 .col-card.has-img .col-name, .col-card.has-img .col-sub { margin-top: 0; background: none; padding: 0; }
 .col-card.notyet .col-card-img { opacity: .38; filter: grayscale(.55) blur(.5px); }
+
+/* ---------- サンタさん・パパと はなす ---------- */
+.talk-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; max-width: 900px; margin: 22px auto 0; width: 100%; }
+.talk-btn { position: relative; display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 14px; align-items: center; text-align: left; border: 4px solid #fff; border-radius: 26px; padding: 12px 18px; cursor: pointer; font-family: inherit; box-shadow: 0 6px 0 rgba(0,0,0,.18), 0 12px 26px rgba(0,0,0,.25); }
+.talk-btn:active { transform: translateY(4px); }
+.talk-btn.santa { background: linear-gradient(135deg, #ff6b6b, #c81d2f); color: #fff; }
+.talk-btn.papa { background: linear-gradient(135deg, #7fd3ff, #3a86ff); color: #fff; }
+.talk-btn .lt-av { grid-row: span 2; }
+.talk-btn .tb-t { font-size: 1.45rem; font-weight: 900; text-shadow: 0 2px 0 rgba(0,0,0,.2); }
+.talk-btn .tb-s { font-size: .95rem; opacity: .95; }
+.tb-badge { position: absolute; top: -10px; right: -6px; background: #ffd23f; color: #5a3a00; font-size: .95rem; font-weight: 900; padding: 4px 12px; border-radius: 999px; box-shadow: 0 3px 8px rgba(0,0,0,.25); animation: pop 1.2s infinite; }
+.lt-av { width: 52px; height: 52px; border-radius: 50%; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; background: #fff; font-size: 2rem; flex: none; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
+.lt-av img { width: 100%; height: 100%; object-fit: cover; }
+.lt-av.lg { width: 74px; height: 74px; font-size: 2.8rem; }
+.lt-av.xl { width: 96px; height: 96px; font-size: 3.6rem; }
+.letters { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+.lt-head { display: flex; align-items: center; gap: 16px; background: rgba(255,255,255,.9); border-radius: 24px; padding: 12px 18px; box-shadow: var(--shadow); }
+.lt-head h2 { margin: 0; }
+.lt-head .sub { margin: 4px 0 0; }
+.letters.santa .lt-head { background: linear-gradient(135deg, #fff1f1, #ffe0e0); }
+.lt-list { background: rgba(255,255,255,.82); border-radius: 24px; padding: 14px; min-height: 220px; max-height: 46vh; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; box-shadow: var(--shadow); }
+.lt-empty { text-align: center; color: #6b5a3a; margin: auto; font-size: 1.1rem; }
+.bub-row { display: flex; align-items: flex-end; gap: 8px; }
+.bub-row.mine { justify-content: flex-end; }
+.bub { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; max-width: 78%; border: 0; border-radius: 22px; padding: 12px 16px; font-family: inherit; font-size: 1.15rem; cursor: pointer; text-align: left; box-shadow: 0 3px 8px rgba(0,0,0,.12); }
+.bub.mine { background: #d9f7c8; border-bottom-right-radius: 6px; }
+.bub.them { background: #fff; border-bottom-left-radius: 6px; }
+.letters.santa .bub.them { background: #fff4e6; }
+.bub.new { outline: 4px solid #ffd23f; animation: glow 1.6s ease-in-out infinite; }
+.bub-play { font-size: 1.5rem; }
+.bub-text { font-weight: 700; color: #2b2b4a; line-height: 1.4; }
+.bub-text.voice { color: #5a6a8a; }
+.bub-new { position: absolute; top: -10px; right: -8px; background: #ffd23f; color: #5a3a00; font-size: .8rem; padding: 2px 8px; border-radius: 999px; }
+.bub-time { font-size: .75rem; color: #8a8aa0; }
+.lt-rec { display: flex; align-items: center; justify-content: center; gap: 18px; min-height: 110px; background: rgba(255,255,255,.88); border-radius: 24px; padding: 10px; box-shadow: var(--shadow); }
+.lt-mic { width: 92px; height: 92px; border-radius: 50%; border: 5px solid #fff; background: linear-gradient(180deg, #ff8a8a, #e8322f); font-size: 2.6rem; cursor: pointer; box-shadow: 0 6px 0 #a3201f, 0 10px 22px rgba(0,0,0,.25); }
+.letters.papa .lt-mic { background: linear-gradient(180deg, #7fd3ff, #2f7fe8); box-shadow: 0 6px 0 #1d4f9a, 0 10px 22px rgba(0,0,0,.25); }
+.lt-mic:active { transform: translateY(4px); }
+.lt-mic.on { animation: pop .9s infinite; }
+.lt-rec-msg { font-size: 1.2rem; font-weight: 800; color: #4a2b10; text-align: center; }
+.lt-rec-msg small { font-weight: 500; font-size: .9rem; }
+.lt-stamps { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.lt-stamp { border: 3px solid #fff; border-radius: 999px; background: rgba(255,255,255,.92); padding: 10px 16px; font-size: 1.05rem; font-weight: 800; font-family: inherit; cursor: pointer; box-shadow: 0 3px 0 rgba(0,0,0,.12); }
+.lt-stamp:active { transform: translateY(3px); }

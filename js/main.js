@@ -14,6 +14,7 @@ import {
   GHOSTS_PER_TSURUGA_PART, DEFAULT_RATES, RATES_DATE,
 } from './castles.js';
 import { installDino } from './dinoGame.js';
+import { installLetters } from './lettersGame.js';
 import { buildMathSession, mathRetry, MATH_LEVELS, MATH_TYPE_NAMES, mathLevelForAge } from './math.js';
 
 const app = document.getElementById('app');
@@ -517,7 +518,7 @@ const AFTER = {
     sayJa(`${Q.correct}問正解！ ${target}円ゲット！`);
   },
   castle: () => attachCastle(),
-  parent: () => bindParent(),
+  parent: () => { bindParent(); LETTERS.bindParent(); },
   rest: () => { updateRest(); sayJa('ちょっとひと休みしよう。'); },
 };
 
@@ -552,7 +553,7 @@ function squarePhoto(file) {
 function pinPassed() {
   if (S.pin.next === 'endBreak') { const p = activeProfile(); if (p) { p.breakUntil = 0; p.contSec = 0; save(); } toast('きゅうけいを おわりに しました'); go(homeScreen()); return; }
   if (S.pin.next === 'preview') { go('castle', { previewing: true }); S.previewOK = true; return; }
-  S.pinOK = true; S.parentTab = 'settings'; go('parent');
+  S.pinOK = true; S.parentTab = S.pin.next === 'letters' ? 'letters' : 'settings'; go('parent');
 }
 function askPin(next) {
   const has = !!db().settings.pinHash;
@@ -901,7 +902,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 function parentScreen() {
   const d = db();
   const tab = S.parentTab;
-  const tabs = [['home', '👪 こども'], ['stats', '📊 しゅうけい'], ['settings', `⏰ せってい${S.pinOK ? '' : ' 🔒'}`], ['voice', '🔊 こえ'], ['backup', '💾 バックアップ'], ['credits', '📷 しゃしんの クレジット']];
+  const tabs = [['home', '👪 こども'], ['stats', '📊 しゅうけい'], ['settings', `⏰ せってい${S.pinOK ? '' : ' 🔒'}`], ['letters', `💌 おてがみ${S.pinOK ? '' : ' 🔒'}`], ['voice', '🔊 こえ'], ['backup', '💾 バックアップ'], ['credits', '📷 しゃしんの クレジット']];
   let body = '';
   if (tab === 'home') {
     body = d.profiles.length ? d.profiles.map(p => `
@@ -981,6 +982,8 @@ function parentScreen() {
         </ol>
         <small class="hint">PCでは Microsoft Edge で開くと「Natural」の自然な声が使えます。</small>
       </div>`;
+  } else if (tab === 'letters') {
+    body = LETTERS.parentHTML();
   } else if (tab === 'credits') {
     const list = Object.entries(PHOTOS).map(([id, p]) => ({ id, p, w: BY_ID[id] })).filter(x => x.w).sort((a, b) => a.w.en.localeCompare(b.w.en));
     body = `
@@ -1149,7 +1152,7 @@ const ACTIONS = {
   pinKey: d => pinKey(d.v),
   pinDel: () => { S.pin.buf = S.pin.buf.slice(0, -1); render(); },
   pinCancel: () => { if (S.pin.next === 'extend') go('limit'); else if (S.pin.next === 'endBreak') go('rest'); else if (S.pin.next === 'preview') go('castle', { previewing: false }); else { S.parentTab = 'home'; go('parent'); } },
-  ptab: d => { if (d.v === 'settings' && !S.pinOK) { askPin('settings'); return; } S.parentTab = d.v; render(); },
+  ptab: d => { if ((d.v === 'settings' || d.v === 'letters') && !S.pinOK) { askPin(d.v); return; } S.parentTab = d.v; render(); },
   statsFor: d => { S.statsId = d.id; S.parentTab = 'stats'; render(); },
   setMathLevel: d => { const p = db().profiles.find(x => x.id === d.id); p.mathLevel = Number(d.v); save(); render(); },
   setLevel: d => { const p = db().profiles.find(x => x.id === d.id); p.level = Number(d.v); save(); render(); },
@@ -1182,6 +1185,9 @@ installDino({
   S, SCREENS, ACTIONS, AFTER, BG, LEAVE, go, render, db, save, activeProfile, esc, fmt, toast, sfx, say, sayJa, sayEn, stopSpeech,
   header, dueIds, startQuiz, overLimit, onBreak, rate, money, wallet, exchange, today,
 });
+// サンタさんへの おてがみ ／ パパと おはなし
+const LETTERS = installLetters({ S, SCREENS, ACTIONS, AFTER, BG, LEAVE, go, render, activeProfile, esc, toast, sfx, header, squarePhoto });
+Object.assign(ACTIONS, LETTERS.actions);
 
 app.addEventListener('click', e => {
   const el = e.target.closest('[data-act]');
