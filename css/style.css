@@ -726,3 +726,23 @@ body { word-break: keep-all; overflow-wrap: anywhere; line-break: strict; }
 .rp-loop { background: linear-gradient(180deg, #ffd36a, #ff9a1a); box-shadow: 0 5px 0 #b86a00; font-size: 1.3rem; font-weight: 900; }
 .rp-del { background: linear-gradient(180deg, #d9dde3, #9aa3b2); box-shadow: 0 5px 0 #66707f; }
 .rp-run { min-width: 200px; }
+
+/* ロボット：なめらかに すべる・はねる・ぶつかる・ゴール */
+.rp-board { position: relative; }
+.rp-bot { position: absolute; left: 0; top: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 2;
+  transition: transform .44s cubic-bezier(.45,.05,.35,1); font-size: clamp(1.6rem, 6vw, 2.4rem); }
+.rp-face { display: inline-block; --sx: 1; transform: scaleX(var(--sx)); transition: transform .15s; filter: drop-shadow(0 4px 3px rgba(0,0,0,.25)); }
+.rp-face.hop { animation: rpHop .44s ease-out; }
+@keyframes rpHop { 0% { transform: scaleX(var(--sx)) translateY(0) scale(1, 1); } 30% { transform: scaleX(var(--sx)) translateY(-14px) scale(.95, 1.06); } 70% { transform: scaleX(var(--sx)) translateY(-4px); } 100% { transform: scaleX(var(--sx)) translateY(0) scale(1.06, .94); } }
+.rp-face.bonk { animation: rpBonk .4s; }
+@keyframes rpBonk { 0%, 100% { transform: scaleX(var(--sx)) rotate(0); } 25% { transform: scaleX(var(--sx)) rotate(-14deg); } 60% { transform: scaleX(var(--sx)) rotate(10deg); } }
+.rp-face.win { animation: rpWin .9s ease-out; }
+@keyframes rpWin { 0% { transform: rotate(0) translateY(0); } 40% { transform: rotate(200deg) translateY(-26px) scale(1.25); } 100% { transform: rotate(360deg) translateY(0) scale(1.1); } }
+.pz-g { position: relative; }
+.rp-gift { font-style: normal; display: inline-block; }
+.rp-gift.open { animation: rpGift .6s ease-out; }
+@keyframes rpGift { 50% { transform: scale(1.5) rotate(-10deg); } }
+.rp-spark { position: absolute; left: 50%; top: 50%; font-style: normal; font-size: 1.1rem; pointer-events: none; animation: rpSpark .9s ease-out forwards; }
+@keyframes rpSpark { from { transform: translate(-50%, -50%) rotate(var(--a)) translateY(0); opacity: 1; } to { transform: translate(-50%, -50%) rotate(var(--a)) translateY(-60px); opacity: 0; } }
+.rp-runwrap { display: flex; justify-content: center; }
+@media (prefers-reduced-motion: reduce) { .rp-bot { transition: none; } .rp-face.hop, .rp-face.win, .rp-face.bonk { animation: none; } }

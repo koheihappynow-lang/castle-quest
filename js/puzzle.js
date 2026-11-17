@@ -171,48 +171,78 @@ function robotplay(level) {
 export function mountRobot(el, q, { onSuccess, onGiveUp, sfx = {} }) {
   const { n, start, goal, walls, maxSlots, loops } = q.play;
   const wall = new Set(walls);
-  let prog = [], tries = 0, running = false, pos = [...start];
-  const cellsHTML = (bump) => { let h = ''; for (let yy = 0; yy < n; yy++) for (let xx = 0; xx < n; xx++) { const k = xx + ',' + yy, me = pos[0] === xx && pos[1] === yy; h += `<span class="pz-g ${me && bump ? 'bump' : ''}">${me ? '🤖' : xx === goal[0] && yy === goal[1] ? '🎁' : wall.has(k) ? '🌳' : ''}</span>`; } return h; };
-  const progHTML = () => prog.length ? prog.map((c, i) => `<span class="rp-chip">${c.d}${c.k > 1 ? '×' + c.k : ''}</span>`).join('') : '<span class="rp-empty">したの やじるしを おしてね</span>';
-  const draw = (msg = '', bump = false) => {
-    el.innerHTML = `<div class="pz-grid rp-grid" style="--n:${n}">${cellsHTML(bump)}</div>
-      <div class="rp-prog">${progHTML()}<span class="rp-left">あと ${maxSlots - prog.length}こ</span></div>
-      <div class="rp-msg">${msg}</div>
-      <div class="rp-keys">${['⬆️', '⬅️', '➡️', '⬇️'].map(d => `<button class="rp-key" data-d="${d}" ${running ? 'disabled' : ''}>${d}</button>`).join('')}
-        ${loops ? `<button class="rp-key rp-loop" data-k="2" ${running ? 'disabled' : ''}>×2</button><button class="rp-key rp-loop" data-k="3" ${running ? 'disabled' : ''}>×3</button>` : ''}
-        <button class="rp-key rp-del" data-del="1" ${running ? 'disabled' : ''}>⌫</button></div>
-      <button class="btn primary big rp-run" ${running || !prog.length ? 'disabled' : ''}>▶️ じっこう</button>`;
+  let prog = [], tries = 0, running = false;
+  const STEP = 460;                         // 1マスの じかん（ミリびょう）
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const tone = (f) => { try { (f || sfx.tap)?.(); } catch (e) {} };
+  const progHTML = () => prog.length ? prog.map(c => `<span class="rp-chip">${c.d}${c.k > 1 ? '×' + c.k : ''}</span>`).join('') : '<span class="rp-empty">したの やじるしを おしてね</span>';
+  // ばん（木と 🎁）は うごかさない。ロボットだけ うえに のせて すべらせる
+  let cells = '';
+  for (let yy = 0; yy < n; yy++) for (let xx = 0; xx < n; xx++) { const k = xx + ',' + yy; cells += `<span class="pz-g" data-c="${k}">${xx === goal[0] && yy === goal[1] ? '<i class="rp-gift">🎁</i>' : wall.has(k) ? '🌳' : ''}</span>`; }
+  el.innerHTML = `<div class="rp-board"><div class="pz-grid rp-grid" style="--n:${n}">${cells}</div><span class="rp-bot"><span class="rp-face">🤖</span></span></div>
+    <div class="rp-prog"></div><div class="rp-msg"></div><div class="rp-keys"></div><div class="rp-runwrap"></div>`;
+  const board = el.querySelector('.rp-board'), grid = el.querySelector('.rp-grid'), bot = el.querySelector('.rp-bot'), face = el.querySelector('.rp-face');
+  const cellAt = (x, y) => grid.querySelector(`[data-c="${x},${y}"]`);
+  // マスの いち（ばんの なかの px）。そとの ばあいは となりの マスから はかる
+  const place = (x, y, instant) => {
+    const ref = cellAt(Math.max(0, Math.min(n - 1, x)), Math.max(0, Math.min(n - 1, y)));
+    const bw = ref.offsetWidth, gap = (cellAt(Math.min(1, n - 1), 0).offsetLeft - cellAt(0, 0).offsetLeft) || bw;
+    const left = ref.offsetLeft + (x - Math.max(0, Math.min(n - 1, x))) * gap, top = ref.offsetTop + (y - Math.max(0, Math.min(n - 1, y))) * gap;
+    bot.style.width = bw + 'px'; bot.style.height = ref.offsetHeight + 'px';
+    if (instant) { bot.style.transition = 'none'; bot.style.transform = `translate(${left}px, ${top}px)`; void bot.offsetWidth; bot.style.transition = ''; }
+    else bot.style.transform = `translate(${left}px, ${top}px)`;
   };
-  const tone = () => { try { sfx.tap?.(); } catch (e) {} };
-  el.onclick = async e => {
+  const face1 = d => { face.style.setProperty('--sx', d === '⬅️' ? -1 : d === '➡️' ? 1 : (face.style.getPropertyValue('--sx') || 1)); };
+  const hop = () => { face.classList.remove('hop'); void face.offsetWidth; face.classList.add('hop'); };
+  const ui = (msg = '') => {
+    el.querySelector('.rp-prog').innerHTML = `${progHTML()}<span class="rp-left">あと ${maxSlots - prog.length}こ</span>`;
+    el.querySelector('.rp-msg').innerHTML = msg;
+    el.querySelector('.rp-keys').innerHTML = ['⬆️', '⬅️', '➡️', '⬇️'].map(d => `<button class="rp-key" data-d="${d}" ${running ? 'disabled' : ''}>${d}</button>`).join('')
+      + (loops ? `<button class="rp-key rp-loop" data-k="2" ${running ? 'disabled' : ''}>×2</button><button class="rp-key rp-loop" data-k="3" ${running ? 'disabled' : ''}>×3</button>` : '')
+      + `<button class="rp-key rp-del" data-del="1" ${running ? 'disabled' : ''}>⌫</button>`;
+    el.querySelector('.rp-runwrap').innerHTML = `<button class="btn primary big rp-run" ${running || !prog.length ? 'disabled' : ''}>▶️ じっこう</button>`;
+  };
+  const reset = () => { face.classList.remove('win', 'hop', 'bonk'); face.style.setProperty('--sx', 1); place(start[0], start[1], true); };
+  el.onclick = e => {
     const b = e.target.closest('button'); if (!b || running) return;
     if (b.dataset.d) { if (prog.length < maxSlots) { prog.push({ d: b.dataset.d, k: 1 }); tone(); } }
     else if (b.dataset.k) { if (prog.length) { prog[prog.length - 1].k = Number(b.dataset.k); tone(); } }
     else if (b.dataset.del) { prog.pop(); tone(); }
-    else if (b.classList.contains('rp-run')) return run();
-    pos = [...start]; draw();
+    else if (b.classList.contains('rp-run')) { run(); return; }
+    reset(); ui();
   };
   async function run() {
-    running = true; pos = [...start]; draw('うごかすよ…');
+    running = true; reset(); ui('うごかすよ…');
+    await wait(80);
     const steps = prog.flatMap(c => Array(c.k).fill(c.d));
+    let [x, y] = start;
     for (const d of steps) {
-      await new Promise(r => setTimeout(r, 420));
-      const nx = pos[0] + DIRS[d][0], ny = pos[1] + DIRS[d][1];
-      if (nx < 0 || ny < 0 || nx >= n || ny >= n || wall.has(nx + ',' + ny)) { running = false; return fail(wall.has(nx + ',' + ny) ? '🌳に ぶつかった！' : 'そとに でちゃう！'); }
-      pos = [nx, ny]; draw('うごかすよ…');
+      const nx = x + DIRS[d][0], ny = y + DIRS[d][1];
+      face1(d);
+      if (nx < 0 || ny < 0 || nx >= n || ny >= n || wall.has(nx + ',' + ny)) {
+        // ぶつかる：はんぶん すすんで ぼよんと もどる
+        place(x + DIRS[d][0] * 0.42, y + DIRS[d][1] * 0.42); await wait(STEP * 0.5);
+        face.classList.add('bonk'); tone(sfx.wrong); place(x, y); await wait(STEP * 0.8);
+        running = false; return fail(wall.has(nx + ',' + ny) ? '🌳に ぶつかった！' : 'そとに でちゃう！');
+      }
+      x = nx; y = ny; hop(); place(x, y); tone(); await wait(STEP);
     }
-    await new Promise(r => setTimeout(r, 350));
+    await wait(150);
     running = false;
-    if (pos[0] === goal[0] && pos[1] === goal[1]) { draw('🎉 やったね！ 🎁に ついた！'); onSuccess(); }
-    else fail('🎁まで とどかなかった…');
+    if (x === goal[0] && y === goal[1]) {
+      face.classList.add('win'); el.querySelector('.rp-gift')?.classList.add('open');
+      const c = cellAt(x, y); for (let i = 0; i < 10; i++) { const s = document.createElement('i'); s.className = 'rp-spark'; s.textContent = ['✨', '⭐', '🎉'][i % 3]; s.style.setProperty('--a', (i * 36) + 'deg'); c.appendChild(s); }
+      ui('🎉 やったね！ 🎁に ついた！'); el.querySelectorAll('button').forEach(b => { b.disabled = true; });
+      await wait(900); onSuccess();
+    } else fail('🎁まで とどかなかった…');
   }
   function fail(msg) {
     tries++;
-    try { sfx.wrong?.(); } catch (e) {}
-    if (tries >= 3) { draw(msg + ' こたえを みてみよう'); setTimeout(onGiveUp, 900); return; }
-    draw(`${msg}<br><small>なおして もういちど！（あと ${3 - tries}かい）</small>`, true);
+    if (tries >= 3) { ui(msg + ' こたえを みてみよう'); el.querySelectorAll('button').forEach(b => { b.disabled = true; }); setTimeout(onGiveUp, 900); return; }
+    ui(`${msg}<br><small>なおして もういちど！（あと ${3 - tries}かい）</small>`);
   }
-  draw();
+  ui(); place(start[0], start[1], true); requestAnimationFrame(() => place(start[0], start[1], true));
+  addEventListener('resize', () => { if (!running && el.isConnected) place(start[0], start[1], true); });
 }
 
 const GEN = { pattern, odd, robot, rotate, ifthen, balance, order, robotplay };
