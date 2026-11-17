@@ -41,6 +41,10 @@
   .m .meta { font-size: 12px; color: var(--soft); }
   .m audio { width: 240px; max-width: 100%; display: block; margin-top: 4px; }
   .m .unsent { color: var(--red); }
+  .m { position: relative; }
+  .m .del { position: absolute; top: 4px; right: 4px; border: 0; background: transparent; font-size: 14px; opacity: .45; cursor: pointer; padding: 2px; }
+  .m .del:hover { opacity: 1; }
+  .m .meta { padding-right: 22px; }
   .m.unread { outline: 2px solid #ffb21a; }
   .compose { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; border-top: 1px solid var(--line); padding: 10px 16px calc(env(safe-area-inset-bottom) + 10px); }
   .compose .in { max-width: 720px; margin: 0 auto; }

@@ -1,6 +1,6 @@
 // EndoGame：パパの へんじページ（パパ または サンタさん として へんじする）
 import { openDrawPad, showBig } from './drawpad.js';
-import { nameKey, makePairCode } from './letters.js';
+import { nameKey, makePairCode, deleteMsgs } from './letters.js';
 import { allMsgs, send, audioURL, audioBlob, imageBlob, sync, online, getCfg, setCfg, testConnection, Recorder, pickMime, speakAs, santaLine, playSanta, stopSanta, unlockAudio } from './letters.js';
 
 const $ = id => document.getElementById(id);
@@ -46,10 +46,12 @@ async function render() {
   const name = kids.find(([id]) => id === cur.kid)[1];
   main.innerHTML = `
     <div class="tabs">${tabs}</div>
+    ${list.length ? `<div style="text-align:right;margin:-4px 0 6px"><button class="btn" id="delAll" style="font-size:13px;padding:6px 10px">🗑️ この タブを ぜんぶ けす（${list.length}つう）</button></div>` : ''}
     ${online() ? '' : '<p class="hint">いまは この端末の なかだけ（⚙️ で サーバーに つなぐと スマホから へんじできます）</p>'}
     ${cur.th === 'santa' ? await linesHTML() : ''}
     <div class="card"><div class="msgs">${list.length ? list.map(m => `
       <div class="m ${m.from} ${m.from === 'kid' && !s[m.id] ? 'unread' : ''}">
+        <button class="del" data-del="${esc(m.id)}" title="けす">🗑️</button>
         <div class="meta">${m.from === 'kid' ? esc(m.kidName) + (m.device ? `（${esc(m.device)}）` : '') : TH[m.from]}・${when(m.ts)}${m.from !== 'kid' ? (m.heard ? '・✅ きいたよ' : '・まだ きいていない') : ''}${!m.synced && online() ? ' <span class="unsent">・まだ おくれていない</span>' : ''}</div>
         ${m.hasImage ? `<img data-img="${esc(m.id)}" alt="え" style="display:block;width:240px;max-width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;background:#fff;margin-top:4px;cursor:zoom-in">` : ''}
         ${m.text ? `<div>${esc(m.text)}</div>` : ''}
@@ -68,6 +70,17 @@ async function render() {
     const b = m && await imageBlob(m).catch(() => null);
     if (b) { const u = URL.createObjectURL(b); im.src = u; im.onclick = () => showBig(u); }
   });
+  main.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+    const m = msgs.find(x => x.id === b.dataset.del); if (!m) return;
+    if (!confirm('この おてがみを けしますか？（こどもの 端末からも きえます。もとに もどせません）')) return;
+    try { await deleteMsgs([m.id]); } catch (e) { alert('けせませんでした（' + e.message + '）'); }
+    render();
+  });
+  if ($('delAll')) $('delAll').onclick = async () => {
+    if (!confirm(`「${name}」の この タブの おてがみ ${list.length}つうを ぜんぶ けしますか？（こどもの 端末からも きえます。もとに もどせません）`)) return;
+    try { await deleteMsgs(list.map(m => m.id)); } catch (e) { alert('けせませんでした（' + e.message + '）'); }
+    render();
+  };
   markSeen(list.filter(m => m.from === 'kid').map(m => m.id));
   renderCompose(name);
   window.scrollTo(0, document.body.scrollHeight);

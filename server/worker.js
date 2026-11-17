@@ -47,6 +47,21 @@ export default {
 
     const readIndex = async () => JSON.parse((await env.LETTERS.get('index')) || '[]');
 
+    // おてがみを けす：{ ids: [...] }。ほかの 端末も けせるように「けした しるし」を のこす
+    if (req.method === 'POST' && url.pathname === '/api/delete') {
+      let body; try { body = await req.json(); } catch (e) { return J({ error: 'bad json' }, 400); }
+      const ids = Array.isArray(body?.ids) ? body.ids.filter(x => typeof x === 'string').slice(0, 500) : [];
+      const idx = await readIndex(), now = Date.now();
+      for (const id of ids) {
+        const i = idx.findIndex(x => x.id === id);
+        if (i < 0) continue;
+        const o = idx[i];
+        idx[i] = { id: o.id, kidId: o.kidId, kidName: o.kidName, thread: o.thread, from: o.from, ts: o.ts, deleted: true, u: now };
+        await env.LETTERS.delete('a:' + id); await env.LETTERS.delete('i:' + id);
+      }
+      await env.LETTERS.put('index', JSON.stringify(idx));
+      return J({ ok: true, deleted: ids.length, u: now });
+    }
     if (req.method === 'GET' && url.pathname === '/api/msgs') {
       const since = Number(url.searchParams.get('since') || 0);
       const idx = await readIndex();
@@ -83,6 +98,7 @@ export default {
       }
       const idx = await readIndex();
       const i = idx.findIndex(x => x.id === clean.id);
+      if (i >= 0 && idx[i].deleted) return J({ ok: true, u: now, deleted: true });   // けした ものは もどさない
       if (i >= 0) { const old = idx[i]; idx[i] = { ...old, heard: old.heard || clean.heard, text: clean.text || old.text, hasAudio: old.hasAudio || clean.hasAudio, hasImage: old.hasImage || clean.hasImage, u: now }; }
       else idx.push(clean);
       idx.sort((a, b) => a.ts - b.ts);

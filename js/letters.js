@@ -51,6 +51,16 @@ async function getMsg(id) { return reqP((await st('msgs')).get(id)); }
 async function putMsg(m) { return reqP((await st('msgs', 'readwrite')).put(m)); }
 async function getAudio(id) { return reqP((await st('audio')).get(id)); }
 async function putAudio(id, blob) { return reqP((await st('audio', 'readwrite')).put(blob, id)); }
+async function dropLocal(id) {
+  await reqP((await st('msgs', 'readwrite')).delete(id));
+  const a = await st('audio', 'readwrite'); await reqP(a.delete(id)); await reqP((await st('audio', 'readwrite')).delete('img:' + id));
+}
+// おてがみを けす（この 端末と サーバー。ほかの 端末は つぎの こうしんで きえる）
+export async function deleteMsgs(ids) {
+  if (!ids.length) return;
+  if (online()) await api('POST', '/api/delete', { ids });
+  for (const id of ids) await dropLocal(id);
+}
 
 // kid：{ id, name }（ぼうけんしゃ）
 export async function thread(kid, th) { return (await allMsgs()).filter(m => isKid(m, kid) && m.thread === th); }
@@ -153,12 +163,14 @@ async function doSync() {
     if (m.hasAudio && !m.audioSent) { const b = await getAudio(m.id); if (b) body.audio = await blobToDataURL(b); }
     if (m.hasImage && !m.audioSent) { const b = await getAudio('img:' + m.id); if (b) body.image = await blobToDataURL(b); }
     const r = await api('POST', '/api/msgs', body);
+    if (r.deleted) { await dropLocal(m.id); continue; }   // パパが けした もの
     m.synced = true; m.audioSent = true; m.u = r.u || m.u; await putMsg(m);
   }
   const since = getCfg().since || 0;
   const r = await api('GET', `/api/msgs?since=${since}`);
   let fresh = 0;
   for (const meta of r.msgs || []) {
+    if (meta.deleted) { await dropLocal(meta.id); continue; }   // ほかで けされた
     const cur = await getMsg(meta.id);
     if (cur && !cur.synced) continue;            // こちらの かわった ものが さき
     if (!cur && meta.from !== 'kid') fresh++;
