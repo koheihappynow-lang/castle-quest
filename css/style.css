@@ -776,3 +776,6 @@ body[data-bg="night"]::before { background-image: url(../bg/night.jpg); }
 /* ボタンの 絵 */
 .big-btn .bi .bi-img { width: 84px; height: 84px; object-fit: contain; display: block; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .25)); }
 @media (max-width: 640px) { .big-btn .bi .bi-img { width: 64px; height: 64px; } }
+
+/* 🌙 おやすみ（おうちのひとが スマホから） */
+.pause-msg { font-size: 1.3rem; font-weight: 800; background: #fff; border-radius: 16px; padding: 10px 16px; display: inline-block; }

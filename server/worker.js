@@ -5,6 +5,9 @@
 //   POST /api/msgs {msg, audio?}  … おてがみを ついか／こうしん（audio は data:URL）
 //   GET  /api/audio/:id           … こえ（data:URL）
 //   GET  /api/image/:id           … 絵（data:URL）
+//   POST /api/status {kid,name,device,rep} … こどもの iPad から ようす（1ぷんごと）。へんじに「おやすみ」の じょうたい
+//   GET  /api/status              … おうちのひとの スマホ：みんなの ようす
+//   POST /api/control {kid,until,msg} … おやすみ（until＝ミリ秒、0で かいじょ）
 import { sendPush } from './webpush.js';
 const KEEP_DAYS = 180, MAX_AUDIO = 3_000_000, MAX_IMAGE = 2_000_000;
 const THREADS = ['santa', 'papa', 'mama'], FROMS = ['kid', 'papa', 'santa', 'mama'];
@@ -133,6 +136,31 @@ export default {
       // ふるい もの（180日）は ときどき けす
       if (Math.random() < 0.02) await env.DB.prepare('DELETE FROM msgs WHERE ts < ?').bind(now - KEEP_DAYS * 86400000).run();
       return J({ ok: true, u: now });
+    }
+    // ---------- みまもり ----------
+    if (req.method === 'POST' && url.pathname === '/api/status') {
+      let body; try { body = await req.json(); } catch (e) { return J({ error: 'bad json' }, 400); }
+      const kid = String(body?.kid || '').slice(0, 30), device = String(body?.device || '').slice(0, 30), rep = JSON.stringify(body?.rep || {});
+      if (!kid || rep.length > 40000) return J({ error: 'bad status' }, 400);
+      const now = Date.now();
+      await env.DB.prepare('INSERT INTO status (kid, device, name, rep, ts) VALUES (?,?,?,?,?) ON CONFLICT(kid, device) DO UPDATE SET name = excluded.name, rep = excluded.rep, ts = excluded.ts')
+        .bind(kid, device, String(body.name || '').slice(0, 20), rep, now).run();
+      const c = await env.DB.prepare('SELECT until, msg FROM control WHERE kid = ?').bind(kid).first();
+      return J({ ok: true, now, control: c && c.until > now ? { until: c.until, msg: c.msg || '' } : null });
+    }
+    if (req.method === 'GET' && url.pathname === '/api/status') {
+      const now = Date.now();
+      const { results } = await env.DB.prepare('SELECT kid, device, name, rep, ts FROM status WHERE ts > ? ORDER BY ts DESC').bind(now - 60 * 86400000).all();
+      const ctl = (await env.DB.prepare('SELECT kid, until, msg FROM control WHERE until > ?').bind(now).all()).results;
+      return J({ now, rows: results.map(r => ({ ...r, rep: JSON.parse(r.rep || '{}') })), controls: Object.fromEntries(ctl.map(c => [c.kid, { until: c.until, msg: c.msg || '' }])) });
+    }
+    if (req.method === 'POST' && url.pathname === '/api/control') {
+      let body; try { body = await req.json(); } catch (e) { return J({ error: 'bad json' }, 400); }
+      const kid = String(body?.kid || '').slice(0, 30), until = Math.max(0, Number(body?.until) || 0);
+      if (!kid) return J({ error: 'bad control' }, 400);
+      await env.DB.prepare('INSERT INTO control (kid, until, msg, ts) VALUES (?,?,?,?) ON CONFLICT(kid) DO UPDATE SET until = excluded.until, msg = excluded.msg, ts = excluded.ts')
+        .bind(kid, until, String(body.msg || '').slice(0, 60), Date.now()).run();
+      return J({ ok: true });
     }
     return J({ error: 'not found' }, 404);
   },

@@ -19,6 +19,7 @@ import { APP_VERSION } from './version.js';
 import { buildMathSession, mathRetry, MATH_LEVELS, MATH_TYPE_NAMES, mathLevelForAge } from './math.js';
 import { buildPuzzleSession, mountRobot } from './puzzle.js';
 import { buildEasySession, praise as easyPraise } from './easy.js';
+import { installWatch } from './watch.js';
 // ひらめき パズル：2026-11-17 から こども みんなに ひらいた
 const puzzleOpen = () => true;
 
@@ -1155,7 +1156,7 @@ function exportData() {
 // ---------- タップ操作 ----------
 const ACTIONS = {
   go: d => { sfx.tap(); go(d.to, { previewing: false }); },
-  pick: d => { sfx.tap(); setActive(d.id); const p = activeProfile(); if (overLimit(p)) go('limit'); else if (onBreak(p)) go('rest'); else { go('games'); sayJa(`${p.name}、なにで あそぶ？`); } },
+  pick: d => { sfx.tap(); setActive(d.id); const p = activeProfile(); setTimeout(() => WATCH.ping(), 300); if (WATCH.paused(p)) go('paused'); else if (overLimit(p)) go('limit'); else if (onBreak(p)) go('rest'); else { go('games'); sayJa(`${p.name}、なにで あそぶ？`); } },
   playGame: d => {
     sfx.tap();
     const p = activeProfile();
@@ -1260,6 +1261,8 @@ installDino({
 });
 // サンタさんへの おてがみ ／ パパと おはなし
 const LETTERS = installLetters({ S, SCREENS, ACTIONS, AFTER, BG, LEAVE, go, render, activeProfile, esc, toast, sfx, header, squarePhoto });
+// みまもり（おうちのひとの スマホへ ようすを おくる・おやすみ）
+const WATCH = installWatch({ S, SCREENS, AFTER, BG, go, activeProfile, esc, sayJa, today, playedSec, limitSec, dueIds, BY_ID, TYPE_NAMES, MATH_TYPE_NAMES, PLAY_SCREENS, homeScreen, easyLevelOf });
 Object.assign(ACTIONS, LETTERS.actions);
 
 app.addEventListener('click', e => {

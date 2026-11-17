@@ -1,6 +1,7 @@
 // EndoGame：パパの へんじページ（パパ または サンタさん として へんじする）
 import { openDrawPad, showBig } from './drawpad.js';
 import { APP_VERSION } from './version.js';
+import { getStatus, setControl } from './letters.js';
 import { nameKey, makePairCode, deleteMsgs, retrySend, claimPairCode, VAPID_PUBLIC, pushSubscribe, pushUnsubscribe, pushTest } from './letters.js';
 import { allMsgs, send, audioURL, audioBlob, imageBlob, sync, online, getCfg, setCfg, testConnection, Recorder, pickMime, speakAs, santaLine, playSanta, stopSanta, unlockAudio } from './letters.js';
 
@@ -13,6 +14,7 @@ let cur = JSON.parse(localStorage.getItem('endogame.papaView') || '{}');
 const seenKey = 'endogame.papaSeen';
 const seen = () => { try { return JSON.parse(localStorage.getItem(seenKey) || '{}'); } catch (e) { return {}; } };
 const markSeen = ids => { const s = seen(); ids.forEach(i => { s[i] = 1; }); localStorage.setItem(seenKey, JSON.stringify(s)); };
+let showWatch = false, watchMsg = '';
 let showSetup = false, rec = null, recBlob = null, msgs = [];
 let idOf = k => k;
 let line = { kind: '', rec: null, blob: null };   // きまり文句の ろくおん
@@ -23,6 +25,8 @@ async function render() {
   msgs = await allMsgs();
   const main = $('main');
   document.body.classList.remove('chat');
+  if (showWatch && !showSetup) { $('compose').hidden = true; $('watchBtn').innerHTML = '✉️<span class="lbl"> おてがみ</span>'; document.querySelector('header h1').textContent = '📊 みまもり'; await renderWatch(main); return; }
+  $('watchBtn').innerHTML = '📊<span class="lbl"> みまもり</span>'; document.querySelector('header h1').textContent = '✉️ へんじ';
   if (showSetup || (!online() && !msgs.length)) { $('compose').hidden = true; main.innerHTML = setupHTML(); bindSetup(); return; }
   // こども × スレッド
   // こどもは「なまえ」で まとめる（ちがう 端末から でも おなじ こ）。へんじは その こ の ぜんぶの 端末に とどく
@@ -324,6 +328,9 @@ if (location.hash.startsWith('#setup=')) {
 }
 
 $('setBtn').onclick = () => { showSetup = true; render(); };
+$('watchBtn').onclick = () => { showWatch = !showWatch; showSetup = false; window.scrollTo(0, 0); render(); };
+// みまもりを ひらいている あいだは 30びょう ごとに こうしん
+setInterval(() => { if (showWatch && !showSetup && document.visibilityState === 'visible' && document.activeElement?.id !== 'wMsg') render(); }, 30000);
 // 📲 iPad を つなぐ：6けたの ばんごうを だす（10ぷん）
 $('pairBtn').onclick = async () => {
   if (!online()) { alert('さきに この ページを サーバーに つないでください（⚙️）'); return; }
@@ -371,4 +378,86 @@ if (new URLSearchParams(location.search).has('demo') && !online()) {
     localStorage.setItem('endogame.papaView', JSON.stringify({ kid: 'haruto', th: 'mama' }));
     render();
   })();
+}
+
+// ---------- 📊 みまもり ----------
+const DOW = ['日', '月', '火', '水', '木', '金', '土'];
+const MSGS = ['ごはんだよ', 'おふろだよ', 'そとで あそぼう', 'ねる じかんだよ', 'しゅくだいを しよう'];
+const hm = ts => { const d = new Date(ts); return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`; };
+const ago = ts => { const m = Math.round((Date.now() - ts) / 60000); return m < 1 ? 'いま' : m < 60 ? `${m}ふん まえ` : m < 1440 ? `${Math.round(m / 60)}じかん まえ` : when(ts); };
+const pctOf = (a, b) => b ? Math.round(a / b * 100) : 0;
+const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+function timeOfDay(hours) {
+  const parts = [['あさ', 5, 10], ['ひる', 10, 15], ['ゆうがた', 15, 18], ['よる', 18, 24]].map(([n, a, b]) => [n, hours.slice(a, b).reduce((s, v) => s + v, 0)]);
+  const tot = parts.reduce((s, [, v]) => s + v, 0); if (!tot) return '';
+  const top = parts.sort((a, b) => b[1] - a[1])[0];
+  return `${top[0]}に よく あそんでいます（${pctOf(top[1], tot)}%）`;
+}
+// ようすから「けいこう」の ひとこと
+function tips(r, todayMin) {
+  const t = [];
+  const days = r.days || [], played = days.filter(d => d.sec >= 60).length;
+  if (r.streak >= 3) t.push(`🔥 ${r.streak}にち つづけて あそんでいます。ほめてあげてください`);
+  if (played <= 1 && days.length) t.push('📉 この1しゅうかんは あまり あそんでいません');
+  const w = (r.weak || [])[0]; if (w) t.push(`🤔 「${w.k.replace(/^\S+ /, '')}」で まちがいが おおめです（${pctOf(w.ok, w.n)}%）。いっしょに やってみるのも おすすめ`);
+  const s = (r.strong || [])[0]; if (s) t.push(`⭐ 「${s.k.replace(/^\S+ /, '')}」が とくいです（${pctOf(s.ok, s.n)}%）`);
+  if (r.limitMin && todayMin >= r.limitMin) t.push('⏰ きょうの じかんを つかいきりました');
+  return t;
+}
+async function renderWatch(main) {
+  if (!online()) { main.innerHTML = '<div class="card empty">サーバーに つながると、こどもの ようすが みられます（⚙️）</div>'; return; }
+  let st; try { st = await getStatus(); } catch (e) { main.innerHTML = `<div class="card empty">よみこめませんでした（${esc(e.message)}）</div>`; return; }
+  const kids = new Map();
+  for (const row of st.rows) { const k = kids.get(row.kid) || []; k.push(row); kids.set(row.kid, k); }
+  if (!kids.size) { main.innerHTML = '<div class="card empty">まだ ようすが とどいていません。<br>こどもの iPad で あそぶと（1ぷんくらいで）ここに でます。<br><small>iPad が サーバーに つながっている ひつようが あります</small></div>'; return; }
+  const td = todayStr();
+  main.innerHTML = [...kids.entries()].map(([kid, rows]) => {
+    rows.sort((a, b) => b.ts - a.ts);
+    const top = rows[0], r = top.rep || {}, name = top.name || kid;
+    const ctl = st.controls[kid];
+    const playing = rows.some(x => x.rep?.playing && Date.now() - x.ts < 150000);
+    const todayMin = Math.round(rows.reduce((s, x) => s + ((x.rep?.days || []).find(d => d.d === td)?.sec || 0), 0) / 60);
+    const lim = r.limitMin || 0, over = lim && todayMin >= lim;
+    const now = ctl ? `<span class="w-now off">🌙 おやすみ ちゅう（〜${hm(ctl.until)}）</span>` : playing ? '<span class="w-now on">🟢 いま あそんでいる</span>' : `<span class="w-now">さいご：${ago(top.ts)}</span>`;
+    const maxSec = Math.max(1800, ...(r.days || []).map(d => d.sec));
+    const week = (r.days || []).map(d => { const dt = new Date(d.d + 'T00:00'); return `<div class="w-day ${d.d === td ? 'today' : ''}" title="${d.n}もん"><i style="height:${Math.round(d.sec / maxSec * 80)}%"></i><span>${Math.round(d.sec / 60)}</span><span>${DOW[dt.getDay()]}</span></div>`; }).join('');
+    const areas = Object.entries(r.areas || {}).sort((a, b) => b[1].n - a[1].n).map(([k, v]) => { const p = pctOf(v.ok, v.n); return `<div class="w-area"><span>${esc(k)}</span><div class="w-bar ${p < 60 ? 'low' : p < 80 ? 'mid' : ''}"><i style="width:${p}%"></i></div><small>${p}%・${v.n}もん</small></div>`; }).join('');
+    const li = (arr, f) => arr && arr.length ? `<ul class="w-list">${arr.map(f).join('')}</ul>` : '<p class="hint">まだ データが すくないです</p>';
+    const tipList = tips(r, todayMin);
+    const tod = timeOfDay(r.hours || []);
+    const others = rows.length > 1 ? `<p class="hint">つかっている 端末：${rows.map(x => `${esc(x.device || '？')}（${ago(x.ts)}）`).join('・')}</p>` : (top.device ? `<p class="hint">端末：${esc(top.device)}</p>` : '');
+    return `<div class="card" data-kid="${esc(kid)}">
+      <div class="w-head"><h2>${esc(name)}</h2>${now}</div>
+      ${playing && r.doing ? `<p class="w-doing">いま：${esc(r.doing)}</p>` : ''}
+      <div class="w-today">きょう <b>${todayMin}</b> ふん${lim ? ` ／ ${lim}ふんまで` : ''}</div>
+      ${lim ? `<div class="w-bar ${over ? 'over' : ''}"><i style="width:${Math.min(100, pctOf(todayMin, lim))}%"></i></div>` : ''}
+      ${ctl ? `${ctl.msg ? `<p class="hint">ひとこと：${esc(ctl.msg)}</p>` : ''}<button class="btn w-resume" data-resume="${esc(kid)}">▶ あそんで いいよ（おやすみを おわる）</button>`
+        : `<div class="w-pause"><button class="btn" data-pause="30">⏸ 30ぷん</button><button class="btn" data-pause="60">⏸ 1じかん</button><button class="btn" data-pause="day">🌙 きょうは おわり</button></div>
+        <div class="w-chips">${MSGS.map(m => `<button class="w-chip ${watchMsg === m ? 'on' : ''}" data-msg="${esc(m)}">${esc(m)}</button>`).join('')}</div>
+        <p class="hint" style="margin:4px 0 0">ひとことを えらんでから ⏸ を おすと、iPad に でます（なくても OK）</p>`}
+      ${tipList.length ? `<div class="w-tip">${tipList.map(esc).join('<br>')}</div>` : ''}
+      <div class="w-sec">この 1しゅうかん（ふん）</div><div class="w-week">${week}</div>
+      <div class="w-sec">きょうか べつ（2しゅうかん・せいかい率）</div>${areas || '<p class="hint">まだ もんだいを といていません</p>'}
+      <div class="w-sec">⭐ とくい</div>${li(r.strong, x => `<li>${esc(x.k)}（${pctOf(x.ok, x.n)}%・${x.n}もん）</li>`)}
+      <div class="w-sec">🤔 にがて</div>${li(r.weak, x => `<li>${esc(x.k)}（${pctOf(x.ok, x.n)}%・${x.n}もん）</li>`)}
+      ${(r.weakWords || []).length ? `<div class="w-sec">よく まちがえる えいご</div>${li(r.weakWords, w => `<li>${esc(w.pic)} ${esc(w.en)}（${esc(w.ja)}）× ${w.wrong}</li>`)}` : ''}
+      <div class="w-sec">そのほか</div>
+      <ul class="w-list">${tod ? `<li>${tod}</li>` : ''}<li>れんぞく ${r.streak || 0}にち ／ おしろ ${r.castles || 0}こ かんせい ／ きょうりゅう ${r.dinos || 0}ひき</li>${r.ghosts ? `<li>ふくしゅう まちの おばけ ${r.ghosts}ひき</li>` : ''}${r.easy ? '<li>🌈 やさしい モード：オン</li>' : ''}</ul>
+      ${others}
+    </div>`;
+  }).join('') + '<p class="hint" style="text-align:center">こどもの iPad が ひらいている あいだ、1ぷんごとに こうしんされます</p>';
+  // おやすみ・ひとこと
+  main.querySelectorAll('[data-msg]').forEach(b => b.onclick = () => { watchMsg = watchMsg === b.dataset.msg ? '' : b.dataset.msg; render(); });
+  main.querySelectorAll('[data-pause]').forEach(b => b.onclick = async () => {
+    const kid = b.closest('[data-kid]').dataset.kid, v = b.dataset.pause;
+    let until; if (v === 'day') { const d = new Date(); d.setHours(23, 59, 0, 0); until = d.getTime(); } else until = Date.now() + Number(v) * 60000;
+    b.textContent = '…';
+    try { await setControl(kid, until, watchMsg); watchMsg = ''; } catch (e) { alert('できませんでした（' + e.message + '）'); }
+    render();
+  });
+  main.querySelectorAll('[data-resume]').forEach(b => b.onclick = async () => {
+    b.textContent = '…';
+    try { await setControl(b.dataset.resume, 0); } catch (e) { alert('できませんでした（' + e.message + '）'); }
+    render();
+  });
 }

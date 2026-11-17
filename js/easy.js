@@ -21,6 +21,7 @@ const SHAPES = { まる: '🔴', さんかく: '🔺', しかく: '🟦', ほし
 const BIG = ['🐘', '🐶', '🍎', '🚗', '🐻', '🌳', '🐟', '🌻'];
 const PRAISE = ['すごい！', 'やったね！', 'せいかい！', 'よく みてたね！', 'さすが！'];
 export const praise = () => pick(PRAISE);
+export const EASY_NAMES = { count: 'いくつ ある？', same: 'おなじ え', odd: 'なかまはずれ', color: 'いろ', shape: 'かたち', size: 'おおきい・ちいさい', next: 'つぎは どれ？' };
 
 // こたえ（1つ）と ほか（n-1つ）を まぜて もんだいに する
 function Q(kind, level, { show, say, explain, right, wrongs, opt = x => x }) {

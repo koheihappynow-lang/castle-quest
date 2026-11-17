@@ -278,6 +278,10 @@ async function api(method, path, body) {
   if (!res.ok) throw new Error('サーバー ' + res.status);
   return res.json();
 }
+// みまもり（ようす・おやすみ）
+export const postStatus = body => api('POST', '/api/status', body);
+export const getStatus = () => api('GET', '/api/status');
+export const setControl = (kid, until, msg = '') => api('POST', '/api/control', { kid, until, msg });
 const blobToDataURL = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
 let syncing = null;
 // おくっていない ものを おくって、あたらしい ものを もらう。もどりち：あたらしく とどいた かず
