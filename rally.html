@@ -67,6 +67,13 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
 .stars{color:var(--yel);font-size:14px;letter-spacing:1px}
 .stars i{font-style:normal;color:#4a5170}
 .car button{width:100%;font-size:14px;padding:8px 10px}
+.car{position:relative}
+.car .cimg{width:100%;aspect-ratio:10/11;object-fit:cover;border-radius:12px;background:#fff}
+.car b small{display:block;font-size:11px;color:var(--soft);font-weight:500}
+.car .line{font-size:12px;color:#fff3b0;text-align:center;line-height:1.35;min-height:2.7em}
+.car .hornb{background:#3a4157;font-size:13px;padding:6px 10px}
+#homeCv{cursor:pointer}
+#homeCar b{color:var(--yel);font-size:18px}
 .wrap{position:relative;border-radius:18px;overflow:hidden;box-shadow:0 0 0 4px var(--deep);touch-action:none}
 .wrap canvas{display:block}
 #pauseBtn{position:absolute;top:28px;right:8px;font-size:13px;padding:6px 12px;background:rgba(17,20,31,.6);box-shadow:none}
@@ -140,6 +147,30 @@ const CARS=[
  {n:'きんいろリムジン',g:5,p:6000,style:'limo',col:'#f4c542',col2:'#fff3c4',len:108,wid:44,ab:'coin2',at:'コインが 2ばい'},
  {n:'にじいろカー',g:5,p:7000,style:'rainbow',col:'#ff5aa5',col2:'#ffffff',len:80,wid:44,ab:'shield',at:'ときどき バリアが でる'},
  {n:'ほしぞらカー',g:5,p:8000,style:'star',col:'#1e2a5a',col2:'#7fe3ff',len:82,wid:44,ab:'all',at:'すいよせ＋はやい＋バリア'}];
+/* ================= くるまの キャラクター ================= */
+// id：イラストの ファイル名（cards/rally-<id>.jpg）。nick：あだな。line：くちぐせ。horn：クラクション [おと(Hz), ながさ, かたち, まつ]
+// fx：はしりかた（bounce はずむ／sway ゆれる／trail うしろに のこる もの）
+const CHARA=[
+ {id:'chibi',nick:'ちびまる',line:'いっしょに いこう！ ブッブー！',horn:[[880,.08,'square',0],[880,.12,'square',.12]],fx:{bounce:1.5,trail:{rate:.15,cols:['#ffffff'],s:3,spread:6}}},
+ {id:'taxi',nick:'ハッピー',line:'どちらまで？ コインの ところまで！',horn:[[660,.14,'square',0],[523,.18,'square',.16]],fx:{bounce:.8,trail:{rate:.25,cols:['#ffd23f'],s:3,tw:1,spread:14}}},
+ {id:'truck',nick:'ハコブン',line:'にもつは まかせて！ よいしょ！',horn:[[330,.25,'sawtooth',0]],fx:{sway:.03,bounce:1.2}},
+ {id:'police',nick:'マモル',line:'あんぜん うんてんで いこう！',horn:[[700,.25,'sine',0],[950,.25,'sine',.25],[700,.25,'sine',.5]],fx:{trail:{rate:.4,cols:['#ff3030','#3a7bff'],s:3,tw:1,spread:16}}},
+ {id:'ambulance',nick:'ナオスケ',line:'だいじょうぶ？ すぐ いくよ！',horn:[[960,.3,'sine',0],[770,.3,'sine',.3],[960,.3,'sine',.6]],fx:{trail:{rate:.3,cols:['#ff8fb1','#ffffff'],s:3,tw:1,spread:12}}},
+ {id:'bus',nick:'ノセルン',line:'みんな のって！ しゅっぱーつ！',horn:[[220,.45,'sawtooth',0]],fx:{sway:.04}},
+ {id:'fire',nick:'ジャージャー',line:'ひは ぼくに まかせて！',horn:[[1320,.06,'triangle',0],[1320,.06,'triangle',.12],[1320,.06,'triangle',.24],[1320,.06,'triangle',.36]],fx:{spray:1,trail:{rate:.35,cols:['#7fd3ff','#ffffff'],s:2.5,spread:10}}},
+ {id:'sports',nick:'ビュンタ',line:'はやさなら まけないぜ！',horn:[[520,.08,'sawtooth',0],[780,.18,'sawtooth',.08]],fx:{lines:.5,trail:{rate:.3,cols:['#ffffff'],s:2,spread:8}}},
+ {id:'monster',nick:'ドッスン',line:'なんでも ふみこえる！ ドッスーン！',horn:[[110,.4,'sawtooth',0],[90,.3,'sawtooth',.3]],fx:{bounce:3.5,trail:{rate:.6,cols:['#f1dfb8','#d9bd8a','#ffffff'],s:6,spread:24}}},
+ {id:'camper',nick:'キャンプー',line:'たびは たのしむのが いちばん！',horn:[[523,.12,'triangle',0],[659,.12,'triangle',.13],[784,.2,'triangle',.26]],fx:{sway:.025,trail:{rate:.2,cols:['#d9dde3'],s:5,spread:6}}},
+ {id:'racer',nick:'イチバン',line:'いちばんに なるぞ！',horn:[[300,.1,'sawtooth',0],[600,.25,'sawtooth',.1]],fx:{lines:.8,trail:{rate:.4,cols:['#c9ced8'],s:3,spread:10}}},
+ {id:'rocket',nick:'ブースト',line:'3、2、1… はっしゃ！',horn:[[200,.5,'sawtooth',0,1400]],fx:{flame:1,lines:.6}},
+ {id:'limo',nick:'キラリ',line:'ごきげんよう。コインは 2ばいで ございます',horn:[[1047,.25,'sine',0],[1319,.25,'sine',.2],[1568,.35,'sine',.4]],fx:{trail:{rate:.5,cols:['#ffe27a','#fff6c8'],s:3,tw:1,spread:12}}},
+ {id:'rainbow',nick:'ニジー',line:'いろんな いろが だいすき！',horn:[[523,.1,'triangle',0],[659,.1,'triangle',.08],[784,.1,'triangle',.16],[1047,.2,'triangle',.24]],fx:{rainbow:1}},
+ {id:'star',nick:'ステラ',line:'よぞらの ゆめを のせて はしるよ',horn:[[1568,.12,'sine',0],[1976,.12,'sine',.12],[2349,.25,'sine',.24]],fx:{trail:{rate:.7,cols:['#7fe3ff','#ffffff','#ffd23f'],s:3,tw:1,spread:14}}}];
+// クラクション
+function horn(i){const h=CHARA[i]?.horn||[[880,.1,'square',0]];h.forEach(([f,d,type,delay,f2])=>tone(f,d,type,.12,delay,f2))}
+// くちぐせを よみあげる（iPad の 日本語の こえ）
+function sayLine(i){try{const u=new SpeechSynthesisUtterance(CHARA[i].line.replace(/…/g,'、'));u.lang='ja-JP';u.rate=1.05;u.pitch=1.15;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
+
 const COURSES=[
  {n:'まちなか',side:'#a7d98b',road:'#5c6270',edge:'#ffffff',deco:['building','tree'],obs:['cone','barrel'],traffic:.15,rc:'#2b6cff',rs:'sports',kerb:1},
  {n:'こうえん',side:'#86d16f',road:'#6a6f7d',edge:'#ffffff',deco:['tree','flower'],obs:['cone','bush'],traffic:.1,rc:'#ff8a00',rs:'compact',kerb:1},
@@ -338,6 +369,26 @@ function drawDeco(c,o,x,y,t,C){
   c.restore();
 }
 
+/* ================= くるまごとの はしりかた ================= */
+function carFx(dt){
+  const fx=CHARA[sel].fx||{},p=R.p,L=R.car.len,tail=PY+L/2;
+  const tr=fx.trail;
+  if(tr&&Math.random()<tr.rate*dt*60*.2*(1+p.speed/25)){
+    const col=tr.cols[Math.floor(Math.random()*tr.cols.length)];
+    R.parts.push({x:p.x+rnd(-tr.spread,tr.spread),y:tail+rnd(0,6),vx:rnd(-20,20),vy:rnd(10,60),life:rnd(.4,.8),max:.8,col,s:tr.s*rnd(.7,1.3),world:true,tw:!!tr.tw});
+  }
+  if(fx.rainbow&&Math.random()<.9){const cols=['#ff5a5a','#ffb21a','#ffe14a','#3ddc84','#4da3ff','#9b5cff'];cols.forEach((col,k)=>{if(Math.random()<.5)R.parts.push({x:p.x-15+k*6,y:tail+2,vx:0,vy:0,life:.45,max:.45,col,s:3,world:true})})}
+  if(fx.flame){for(let k=0;k<2;k++)R.parts.push({x:p.x+rnd(-6,6),y:tail+4,vx:rnd(-15,15),vy:rnd(80,160),life:rnd(.15,.3),max:.3,col:['#fff6a8','#ffb21a','#ff5a1f'][Math.floor(Math.random()*3)],s:rnd(3,6),world:false})}
+  if(fx.lines&&Math.random()<fx.lines*.5)R.parts.push({x:p.x+(Math.random()<.5?-1:1)*rnd(R.car.wid*.7,R.car.wid*1.4),y:PY+rnd(-L*.3,L*.6),vx:0,vy:600,life:.25,max:.25,col:'rgba(255,255,255,.55)',s:1.6,line:true});
+  if(fx.spray&&Math.random()<.25)R.parts.push({x:p.x+rnd(-8,8),y:PY-L/2-4,vx:rnd(-40,40),vy:rnd(-260,-160),life:rnd(.25,.45),max:.45,col:['#7fd3ff','#ffffff'][Math.floor(Math.random()*2)],s:rnd(2,4),world:false});
+}
+function carMotion(t){
+  const fx=CHARA[sel].fx||{};
+  const dy=fx.bounce?-Math.abs(Math.sin(t*(fx.bounce>2?9:14)))*fx.bounce:0;
+  const rot=fx.sway?Math.sin(t*2.6)*fx.sway:0;
+  return {dy,rot};
+}
+
 /* ================= race ================= */
 const W=400,H=640,PY=500,PX=12,LX=[107,200,293],RL=60,RR=340;
 const cv=document.getElementById('cv'),cx=cv.getContext('2d'),wrap=document.getElementById('wrap');
@@ -413,7 +464,7 @@ function update(dt){
   for(const q of R.parts){q.life-=dt;q.x+=q.vx*dt;q.y+=q.vy*dt;if(q.world)q.y+=p.speed*PX*dt}R.parts=R.parts.filter(q=>q.life>0);
   for(const q of R.toasts)q.t-=dt;R.toasts=R.toasts.filter(q=>q.t>0);
   if(R.shake>0)R.shake-=dt;
-  if(R.st==='count'){const before=Math.ceil(R.cd-1);R.cd-=dt;const now=Math.ceil(R.cd-1);if(now!==before&&now>=0)tone(now===0?880:440,.18,'square',.08);if(R.cd<=1){R.st='go';R.goT=.8}p.x+=(LX[p.lane]-p.x)*Math.min(1,dt*12);return}
+  if(R.st==='count'){const before=Math.ceil(R.cd-1);R.cd-=dt;const now=Math.ceil(R.cd-1);if(now!==before&&now>=0)tone(now===0?880:440,.18,'square',.08);if(R.cd<=1){R.st='go';R.goT=.8;horn(sel);toast(CHARA[sel].nick+'「'+CHARA[sel].line+'」','#ffffff')}p.x+=(LX[p.lane]-p.x)*Math.min(1,dt*12);return}
   if(R.st==='finish'||R.st==='retire'){
     p.speed*=R.st==='retire'?.95:.985;p.d+=p.speed*dt;rv.d+=rv.speed*dt;
     if(R.st==='finish'&&Math.random()<.3)burst(rnd(60,340),rnd(80,300),['#ffd23f','#ff5d8f','#4da3ff','#3ddc84'],6,200,false);
@@ -428,6 +479,7 @@ function update(dt){
   if(p.inv>0)p.inv-=dt;if(p.slow>0)p.slow-=dt;
   if(p.turbo>0){p.turbo-=dt;if(Math.random()<.6)R.parts.push({x:rnd(RL,RR),y:-10,vx:0,vy:900,life:.6,max:.6,col:'rgba(255,255,255,.6)',s:1.5,line:true})}
   if(p.shield>0)p.shield-=dt;
+  carFx(dt);
   if(A.shieldEvery){p.shCD-=dt;if(p.shCD<=0){p.shCD=A.shieldEvery;p.shield=5;toast('バリア！','#7fd3ff');tone(1000,.2,'sine',.08)}}
   if(A.heal){p.healCD-=dt;if(p.healCD<=0){p.healCD=25;if(p.hearts<p.max){p.hearts++;toast('ハート かいふく！','#ff8fb1');arp([660,880])}}}
   if(A.clear){p.clearCD-=dt;if(p.clearCD<=0){const tgt=R.obs.find(o=>!o.dead&&o.lane===p.lane&&o.d-p.d>4&&o.d-p.d<32);
@@ -441,7 +493,7 @@ function update(dt){
   const rvx=(LX[rv.lane]-rv.x)*Math.min(1,dt*8);rv.x+=rvx;rv.tilt=rvx/dt/900*.35;
   if(!rv.fin&&rv.d>=R.L){rv.fin=true;toast('ライバルが ゴールした！','#ff8a8a')}
   const lead=p.d-rv.d>3?1:p.d-rv.d<-3?-1:R.lead;
-  if(R.lead!==0&&lead!==R.lead&&!rv.fin){if(lead===1){toast('ぬかした！','#3ddc84');arp([784,988])}else{toast('ぬかされた！','#ff8a8a');tone(330,.2,'triangle',.08)}}
+  if(R.lead!==0&&lead!==R.lead&&!rv.fin){if(lead===1){toast('ぬかした！','#3ddc84');arp([784,988]);setTimeout(()=>horn(sel),250)}else{toast('ぬかされた！','#ff8a8a');tone(330,.2,'triangle',.08)}}
   R.lead=lead;
   // spawns
   const ahead=p.d+62;
@@ -503,7 +555,7 @@ function render(){
   const ry=sy(rv.d);
   if(ry>-80&&ry<H+80){drawCar(c,R.rcar,rv.x,ry,t,{rot:rv.tilt,night:R.C.night});c.fillStyle='rgba(17,20,31,.75)';c.beginPath();c.roundRect(rv.x-30,ry-R.rcar.len/2-24,60,18,9);c.fill();c.fillStyle='#ff8a8a';c.font='800 11px "M PLUS Rounded 1c",sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText('ライバル',rv.x,ry-R.rcar.len/2-15)}
   for(const q of R.parts){if(!q.line)continue;c.strokeStyle=q.col;c.lineWidth=q.s;c.beginPath();c.moveTo(q.x,q.y);c.lineTo(q.x,q.y-40);c.stroke()}
-  if(!(p.inv>0&&Math.floor(t*14)%2&&R.st==='go'))drawCar(c,R.car,p.x,PY,t,{rot:p.tilt,turbo:p.turbo>0,night:R.C.night});
+  const mo=carMotion(t);if(!(p.inv>0&&Math.floor(t*14)%2&&R.st==='go'))drawCar(c,R.car,p.x,PY+mo.dy,t,{rot:p.tilt+mo.rot,turbo:p.turbo>0,night:R.C.night});
   if(p.shield>0){const r=Math.max(R.car.len,R.car.wid)*.62;c.save();c.globalAlpha=p.shield<1.2&&Math.floor(t*10)%2?.3:1;c.fillStyle='rgba(127,211,255,.18)';c.beginPath();c.arc(p.x,PY,r,0,7);c.fill();c.lineWidth=3;c.strokeStyle=hsl2hex((t*200)%360,90,70);c.stroke();twinkle(c,p.x+Math.cos(t*4)*r,PY+Math.sin(t*4)*r,5,'#fff');c.restore()}
   for(const q of R.parts){if(q.line)continue;c.globalAlpha=Math.max(0,q.life/q.max);if(q.tw)twinkle(c,q.x,q.y,q.s*1.3,q.col);else{c.fillStyle=q.col;c.beginPath();c.arc(q.x,q.y,q.s,0,7);c.fill()}}c.globalAlpha=1;
   c.restore();
@@ -539,7 +591,7 @@ function show(s){screen=s;['home','courses','garage','race'].forEach(k=>$(k).hid
 function layout(){const s=Math.min((innerWidth-24)/W,(innerHeight-24)/H),dpr=window.devicePixelRatio||1;wrap.style.width=W*s+'px';wrap.style.height=H*s+'px';cv.style.width=W*s+'px';cv.style.height=H*s+'px';cv.width=Math.round(W*s*dpr);cv.height=Math.round(H*s*dpr);cx.setTransform(s*dpr,0,0,s*dpr,0,0)}
 addEventListener('resize',()=>{if(screen==='race')layout()});
 
-function renderHome(){$('homeCar').textContent='いまの くるま：'+CARS[sel].n+'（'+CARS[sel].at+'）'}
+function renderHome(){$('homeCar').innerHTML='いまの くるま：<b>'+CHARA[sel].nick+'</b>（'+CARS[sel].n+'）<br>「'+CHARA[sel].line+'」'}
 function renderCourses(){
   const seg=$('diffSeg');seg.innerHTML='';
   DIFF.forEach((d,i)=>{const b=document.createElement('button');b.textContent=d.n;b.setAttribute('aria-pressed',i===diff);b.onclick=()=>{diff=i;save();renderCourses()};seg.appendChild(b)});
@@ -555,7 +607,9 @@ function renderGarage(){
   const g=$('carGrid');g.innerHTML='';gCanv=[];
   CARS.forEach((car,i)=>{const d=document.createElement('div');d.className='car'+(i===sel?' sel':'');
     const cvs=document.createElement('canvas');cvs.width=200;cvs.height=220;d.appendChild(cvs);gCanv.push(cvs.getContext('2d'));
-    d.insertAdjacentHTML('beforeend',`<div class="stars">${'★'.repeat(car.g)}<i>${'★'.repeat(5-car.g)}</i></div><b>${car.n}</b><div class="ab">${car.at}</div>`);
+    const ch=CHARA[i];d.insertAdjacentHTML('afterbegin',`<img class="cimg" src="cards/rally-${ch.id}.jpg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()">`);
+    d.insertAdjacentHTML('beforeend',`<div class="stars">${'★'.repeat(car.g)}<i>${'★'.repeat(5-car.g)}</i></div><b>${ch.nick}<small>（${car.n}）</small></b><div class="line">「${ch.line}」</div><div class="ab">${car.at}</div>`);
+    const hb=document.createElement('button');hb.className='hornb sm';hb.textContent='📯 プップー';hb.onclick=e=>{e.stopPropagation();horn(i);setTimeout(()=>sayLine(i),500)};d.appendChild(hb);
     const btn=document.createElement('button');
     if(owned[i]){btn.textContent=i===sel?'のってるよ':'これに のる';btn.className=i===sel?'':'go';btn.disabled=i===sel;btn.onclick=()=>{sel=i;save();tone(880,.1,'triangle');renderGarage()}}
     else{btn.textContent=car.p+' コインで かう';btn.className='go';btn.disabled=bank<car.p;if(bank<car.p)btn.textContent=`${car.p}（あと ${car.p-bank}）`;
@@ -567,6 +621,7 @@ function drawGarage(t){gCanv.forEach((g,i)=>{const car=CARS[i];g.setTransform(2,
   const s=Math.min(1,96/car.len);if(!owned[i]){g.globalAlpha=.85}drawCar(g,car,50,56,t,{s});g.globalAlpha=1;
   if(!owned[i]){g.fillStyle='rgba(17,20,31,.45)';g.fillRect(0,0,100,110)}})}
 const hc=$('homeCv'),hx=hc.getContext('2d');
+hc.addEventListener('click',()=>{horn(sel);setTimeout(()=>sayLine(sel),500);hc.animate([{transform:'scale(1)'},{transform:'scale(1.08) rotate(-3deg)'},{transform:'scale(1)'}],{duration:400})});
 function drawHome(t){hx.setTransform(4,0,0,4,0,0);hx.clearRect(0,0,120,120);hx.fillStyle='#3a4157';hx.beginPath();hx.arc(60,60,58,0,7);hx.fill();
   hx.save();hx.beginPath();hx.arc(60,60,58,0,7);hx.clip();hx.fillStyle='#5c6270';hx.fillRect(30,0,60,120);hx.fillStyle='#fff';for(let y=((t*60)%30)-30;y<120;y+=30)hx.fillRect(59,y,2,15);hx.restore();
   const car=CARS[sel];drawCar(hx,car,60,62,t,{s:Math.min(1.05,100/car.len)})}
@@ -638,6 +693,10 @@ function frame(ts){const dt=Math.min(.033,(ts-last)/1000);last=ts;TT+=dt;
   else if(screen==='garage')drawGarage(TT);
   requestAnimationFrame(frame)}
 renderHome();show('home');
+// 開発用：?demo=車の番号 で その車の レースを すぐ はじめる（保存しない）
+const DEMO=new URLSearchParams(location.search).get('demo');
+if(DEMO!==null){sel=Math.max(0,Math.min(CARS.length-1,Number(DEMO)));startRace(Number(new URLSearchParams(location.search).get('course')||0),0);const AT=Number(new URLSearchParams(location.search).get('at')||0);for(let i=0;i<AT*30;i++)update(1/30)}
+const GAR=new URLSearchParams(location.search).get('garage');if(GAR!==null){show('garage');renderGarage()}
 requestAnimationFrame(frame);
 </script>
 
