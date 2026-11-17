@@ -9,7 +9,28 @@ const WHO = {
     stamps: [['❤️', 'パパ だいすき！'], ['🎉', 'きょう がんばったよ！'], ['🏠', 'はやく かえってきてね！'], ['😴', 'おやすみなさい']],
     thanks: null },
 };
-const PAPA_PHOTO = 'endogame.papaPhoto';
+const PAPA_PHOTO = 'endogame.papaPhoto';      // まるい 顔（チャットの アイコン）
+const PAPA_CARD = 'endogame.papaCard';        // ボタンの 大きな 絵（この iPad の なかだけ）
+const SANTA_CARD = 'cards/santa-card.jpg';    // サンタさんの 全身の 絵
+const papaCard = () => { try { return localStorage.getItem(PAPA_CARD) || localStorage.getItem(PAPA_PHOTO); } catch (e) { return null; } };
+// たての 絵（3:4）に する（顔が きれないように 上を のこす）
+function portraitPhoto(file, W = 600, H = 800) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas'); c.width = W; c.height = H;
+      const k = Math.max(W / img.width, H / img.height), w = img.width * k, h = img.height * k;
+      c.getContext('2d').drawImage(img, (W - w) / 2, Math.min(0, (H - h) * 0.2), w, h);
+      URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg', 0.84));
+    };
+    img.onerror = rej; img.src = url;
+  });
+}
+const cardArt = th => {
+  const src = th === 'santa' ? SANTA_CARD : papaCard();
+  const emoji = WHO[th].emoji;
+  return `<span class="tc-art"><i>${emoji}</i>${src ? `<img src="${src}" alt="" onerror="this.remove()">` : ''}</span>`;
+};
 const LIMIT = 5;   // へんじが くるまで おくれる かず
 // さいごの へんじの あとに こどもが おくった かず
 const streakOf = list => { let n = 0; for (let i = list.length - 1; i >= 0 && list[i].from === 'kid'; i--) n++; return n; };
@@ -30,8 +51,8 @@ export function installLetters(api) {
   const hubGames = SCREENS.games;
   SCREENS.games = () => hubGames().replace(/<\/div>\s*$/, `
       <div class="talk-row">
-        <button class="talk-btn santa" data-act="openLetters" data-th="santa">${whoAvatar('santa', 'lg')}<span class="tb-t">サンタさんと はなす</span><span class="tb-s">こえで おてがみを おくろう</span><b class="tb-badge" id="badge-santa" hidden></b></button>
-        <button class="talk-btn papa" data-act="openLetters" data-th="papa">${whoAvatar('papa', 'lg')}<span class="tb-t">パパと はなす</span><span class="tb-s">こえで メッセージを おくろう</span><b class="tb-badge" id="badge-papa" hidden></b></button>
+        <button class="talk-card santa" data-act="openLetters" data-th="santa">${cardArt('santa')}<span class="tc-body"><span class="tb-t">サンタさんと<br>はなす</span><span class="tb-s">🎤 こえで おてがみを おくろう</span></span><b class="tb-badge" id="badge-santa" hidden></b></button>
+        <button class="talk-card papa" data-act="openLetters" data-th="papa">${cardArt('papa')}<span class="tc-body"><span class="tb-t">パパと<br>はなす</span><span class="tb-s">🎤 こえで メッセージを おくろう</span></span><b class="tb-badge" id="badge-papa" hidden></b></button>
       </div>
     </div>`);
   const badges = async () => {
@@ -169,8 +190,8 @@ export function installLetters(api) {
       const c = getCfg(), ph = papaPhoto();
       return `
       <div class="card"><h3>👨 パパの しゃしん</h3>
-        <p class="hint">「パパと はなす」ボタンと、おへんじに でる しゃしんです（この iPad の なかだけに ほぞん）。</p>
-        <div class="row wrap">${ph ? `<img class="avatar-img lg" src="${ph}" alt="">` : '<span class="avatar lg">👨</span>'}
+        <p class="hint">「パパと はなす」の 大きな ボタンと、おへんじの アイコンに でます。<b>この iPad の なかだけに ほぞん</b>（インターネットには のせません）。たてながの しゃしん（かおが 上の ほう）が きれいに うつります。</p>
+        <div class="row wrap">${ph ? `<img src="${papaCard()}" alt="" style="width:90px;height:120px;object-fit:cover;border-radius:12px"><img class="avatar-img lg" src="${ph}" alt="">` : '<span class="avatar lg">👨</span>'}
           <label class="btn sm">📷 しゃしんを えらぶ<input type="file" accept="image/*" id="papaPhotoInput" hidden></label>
           ${ph ? '<button class="btn sm ghost" data-act="ltPapaPhotoOff">しゃしんを はずす</button>' : ''}</div>
       </div>
@@ -191,11 +212,11 @@ export function installLetters(api) {
       const f = document.getElementById('papaPhotoInput');
       f?.addEventListener('change', async () => {
         const file = f.files?.[0]; if (!file) return;
-        try { localStorage.setItem(PAPA_PHOTO, await squarePhoto(file)); toast('しゃしんを ほぞんしました'); render(); } catch (e) { alert('しゃしんを よみこめませんでした'); }
+        try { localStorage.setItem(PAPA_PHOTO, await squarePhoto(file)); localStorage.setItem(PAPA_CARD, await portraitPhoto(file)); toast('しゃしんを ほぞんしました'); render(); } catch (e) { alert('しゃしんを よみこめませんでした'); }
       });
     },
     actions: {
-      ltPapaPhotoOff: () => { localStorage.removeItem(PAPA_PHOTO); render(); },
+      ltPapaPhotoOff: () => { localStorage.removeItem(PAPA_PHOTO); localStorage.removeItem(PAPA_CARD); render(); },
       ltSaveCfg: async () => {
         const server = document.getElementById('ltServer').value.trim(), key = document.getElementById('ltKey').value.trim();
         const msg = document.getElementById('ltCfgMsg');
