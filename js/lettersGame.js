@@ -61,8 +61,8 @@ export function installLetters(api) {
   const hubGames = SCREENS.games;
   SCREENS.games = () => hubGames().replace(/<\/div>\s*$/, `
       <div class="talk-row">
-        <button class="talk-card santa" data-act="openLetters" data-th="santa">${cardArt('santa')}<span class="tc-body"><span class="tb-t">サンタさんと<br>はなす</span><span class="tb-s">🎤 こえで おてがみを おくろう</span>${online() ? '' : '<span class="tb-off">📡 まだ つながっていないよ</span>'}</span><b class="tb-badge" id="badge-santa" hidden></b></button>
-        <button class="talk-card papa" data-act="openLetters" data-th="papa">${cardArt('papa')}<span class="tc-body"><span class="tb-t">パパと<br>はなす</span><span class="tb-s">🎤 こえで メッセージを おくろう</span>${online() ? '' : '<span class="tb-off">📡 まだ つながっていないよ</span>'}</span><b class="tb-badge" id="badge-papa" hidden></b></button>
+        <button class="talk-card santa" data-act="openLetters" data-th="santa">${cardArt('santa')}<span class="tc-body"><span class="tb-t">サンタさんと<br>はなす</span><span class="tb-s">🎤 こえ・🎨 え・✏️ もじ</span>${online() ? '' : '<span class="tb-off">📡 まだ つながって いないよ</span>'}</span><b class="tb-badge" id="badge-santa" hidden></b></button>
+        <button class="talk-card papa" data-act="openLetters" data-th="papa">${cardArt('papa')}<span class="tc-body"><span class="tb-t">パパと<br>はなす</span><span class="tb-s">🎤 こえ・🎨 え・✏️ もじ</span>${online() ? '' : '<span class="tb-off">📡 まだ つながって いないよ</span>'}</span><b class="tb-badge" id="badge-papa" hidden></b></button>
       </div>
     </div>`);
   const badges = async () => {

@@ -155,29 +155,38 @@ const blobToDataURL = b => new Promise((res, rej) => { const r = new FileReader(
 let syncing = null;
 // おくっていない ものを おくって、あたらしい ものを もらう。もどりち：あたらしく とどいた かず
 export function sync() { return syncing ||= doSync().finally(() => { syncing = null; }); }
+let fullDone = false;   // おきて さいしょの 1かいは ぜんぶ とりなおす
 async function doSync() {
   if (!online()) return 0;
-  for (const m of (await allMsgs()).filter(x => !x.synced)) {
-    const { synced, ...meta } = m;
-    const body = { msg: meta };
-    if (m.hasAudio && !m.audioSent) { const b = await getAudio(m.id); if (b) body.audio = await blobToDataURL(b); }
-    if (m.hasImage && !m.audioSent) { const b = await getAudio('img:' + m.id); if (b) body.image = await blobToDataURL(b); }
-    const r = await api('POST', '/api/msgs', body);
-    if (r.deleted) { await dropLocal(m.id); continue; }   // パパが けした もの
-    m.synced = true; m.audioSent = true; m.u = r.u || m.u; await putMsg(m);
+  // 1) おくる：1つ しっぱいしても ほかは つづける（まえは 1つ しっぱいすると うけとりまで とまっていた）
+  for (const m of (await allMsgs()).filter(x => !x.synced && !x.failed)) {
+    try {
+      const { synced, ...meta } = m;
+      const body = { msg: meta };
+      if (m.hasAudio && !m.audioSent) { const b = await getAudio(m.id); if (b) body.audio = await blobToDataURL(b); }
+      if (m.hasImage && !m.audioSent) { const b = await getAudio('img:' + m.id); if (b) body.image = await blobToDataURL(b); }
+      const r = await api('POST', '/api/msgs', body);
+      if (r.deleted) { await dropLocal(m.id); continue; }   // パパが けした もの
+      m.synced = true; m.audioSent = true; m.u = r.u || m.u; await putMsg(m);
+    } catch (e) {
+      if (/かぎ/.test(e.message)) throw e;
+      if (/サーバー 4\d\d/.test(e.message)) { m.failed = true; await putMsg(m); }   // おくれない もの（大きすぎる など）は あきらめる
+    }
   }
-  const since = getCfg().since || 0;
+  // 2) うけとる：おきた ときは ぜんぶ、そのあとは 10ぷん さかのぼって（とりこぼし ふせぎ）
+  const since = fullDone ? Math.max(0, (getCfg().since || 0) - 600000) : 0;
   const r = await api('GET', `/api/msgs?since=${since}`);
+  fullDone = true;
   let fresh = 0;
   for (const meta of r.msgs || []) {
     if (meta.deleted) { await dropLocal(meta.id); continue; }   // ほかで けされた
     const cur = await getMsg(meta.id);
-    if (cur && !cur.synced) continue;            // こちらの かわった ものが さき
+    if (cur && !cur.synced && !cur.failed) continue;            // こちらの かわった ものが さき
     if (!cur && meta.from !== 'kid') fresh++;
-    if (cur && !cur.heard && meta.heard === false && cur.u >= meta.u) continue;
+    if (cur && cur.heard && !meta.heard) { meta.heard = true; }
     await putMsg({ ...meta, synced: true, audioSent: true });
   }
-  setCfg({ since: Math.max(0, (r.now || Date.now()) - 120000) });
+  setCfg({ since: r.now || Date.now() });
   return fresh;
 }
 // つなぐ ばんごう

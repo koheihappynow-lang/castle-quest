@@ -659,3 +659,9 @@ body[data-bg="hub"] .big-btn.math { min-height: 150px; }
 .lt-off { margin: 6px 0 0; font-size: .9rem; color: #b5462c; font-weight: 700; }
 
 .app-ver { margin-top: 6px; font-size: .75rem; color: rgba(255,255,255,.85); text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+
+/* ことばの とちゅうで 改行しない（文は ことばの あいだに スペースが あるので、そこで おりかえす） */
+body { word-break: keep-all; overflow-wrap: anywhere; line-break: strict; }
+.talk-card .tb-s, .talk-card .tb-off, .gc-sub { text-wrap: balance; }
+/* iPad を たてに しても 3つの ゲームを よこに ならべる */
+@media (min-width: 640px) { .game-cards { grid-template-columns: repeat(3, 1fr); gap: 16px; } .game-card .gc-name { font-size: clamp(1.15rem, 2.6vw, 1.9rem); } .game-card .gc-sub { font-size: clamp(.75rem, 1.6vw, 1rem); } }

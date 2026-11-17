@@ -172,7 +172,7 @@ const SCREENS = {
           <span class="gc-art dino-art" role="img" aria-label="子どもたちが赤ちゃん恐竜をお世話している"></span>
           <span class="gc-name">ダイナソークエスト</span>
           <span class="gc-sub">えいごで きょうりゅうを そだてよう</span>
-          <span class="gc-badge soon">🥚 もうすぐ できるよ（おためし）</span>
+          <span class="gc-badge soon">🥚 おためし ちゅう</span>
         </button>
         <button class="game-card rally" data-act="playGame" data-g="rally">
           <span class="gc-art rally-art"><img src="cards/rally-card.jpg" alt="" onload="this.nextElementSibling.remove()" onerror="this.remove()"><span>🚗</span></span>
