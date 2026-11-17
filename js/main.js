@@ -17,7 +17,7 @@ import { installDino } from './dinoGame.js';
 import { installLetters } from './lettersGame.js';
 import { APP_VERSION } from './version.js';
 import { buildMathSession, mathRetry, MATH_LEVELS, MATH_TYPE_NAMES, mathLevelForAge } from './math.js';
-import { buildPuzzleSession } from './puzzle.js';
+import { buildPuzzleSession, mountRobot } from './puzzle.js';
 // ひらめき パズルは さくせいちゅう：?dev=1 で ひらいた 端末だけ おためしできる
 if (new URLSearchParams(location.search).has('dev')) { try { localStorage.setItem('endogame.dev', '1'); } catch (e) {} }
 const puzzleOpen = () => { try { return localStorage.getItem('endogame.dev') === '1'; } catch (e) { return false; } };
@@ -298,7 +298,7 @@ const SCREENS = {
         <button class="icon-btn sm" data-act="quitQuiz" aria-label="やめる">✕</button>
       </div>
       <div class="prompt">${promptHTML}</div>
-      <div class="options ${q.puzzle ? 'pz-opts' : ''}">${opts}</div>
+      ${q.play ? '<div class="robot-play" id="robotPlay"></div>' : `<div class="options ${q.puzzle ? 'pz-opts' : ''}">${opts}</div>`}
       <div id="feedback"></div>
     </div>`;
   },
@@ -511,7 +511,11 @@ const AFTER = {
     i?.addEventListener('input', () => { S.newProfile.name = i.value; });
     bindPhoto('photoInput', url => { S.newProfile.name = document.getElementById('pname')?.value || S.newProfile.name; S.newProfile.photo = url; render(); });
   },
-  quiz: () => speakQuestion(),
+  quiz: () => {
+    speakQuestion();
+    const q = S.quiz.qs[S.quiz.i], el = document.getElementById('robotPlay');
+    if (q?.play && el) mountRobot(el, q, { sfx, onSuccess: () => answer(q.answer, el), onGiveUp: () => answer('txt:__giveup', el) });
+  },
   result: () => {
     const el = document.getElementById('coinCount');
     const Q = S.quiz;

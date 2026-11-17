@@ -7,12 +7,13 @@ const R = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const shuffle = a => { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
 const opts = (ans, others, n = 4) => { const s = new Set([ans]); for (const o of shuffle(others)) if (s.size < n && o !== ans) s.add(o); return shuffle([...s]).map(v => `txt:${v}`); };
-function Q(mtype, { html, text, ja, options, answer, explain }, level) {
-  return { type: 'math', math: true, puzzle: true, mtype, wid: null, prompt: { html, text }, options, answer: `txt:${answer}`, say: [{ t: ja || text, l: 'ja' }], explain, mlevel: level, retryFn: () => puzzleRetry(mtype, level) };
+const PRAISE = ['Great job!', 'Nice thinking!', 'Well done!', 'You did it!', 'Awesome!'];
+function Q(mtype, { html, text, ja, options, answer, explain, play }, level) {
+  return { type: 'math', math: true, puzzle: true, mtype, wid: null, prompt: { html, text }, options, answer: `txt:${answer}`, say: [{ t: ja || text, l: 'ja' }], explain, after: pick(PRAISE), mlevel: level, retryFn: () => puzzleRetry(mtype, level), ...(play ? { play } : {}) };
 }
 
 export const PUZZLE_TYPE_NAMES = {
-  pattern: 'きまりを みつけよう', odd: 'なかまはずれ', robot: 'ロボットを うごかそう', rotate: 'まわすと どうなる？',
+  pattern: 'きまりを みつけよう', odd: 'なかまはずれ', robot: 'ロボットを うごかそう', robotplay: '🤖 プログラミング', rotate: 'まわすと どうなる？',
   ifthen: 'もし 〜なら', balance: 'どれが おもい？', order: 'ならべよう',
 };
 Object.assign(MATH_TYPE_NAMES, PUZZLE_TYPE_NAMES);   // クイズ画面の みだし に つかう
@@ -145,7 +146,76 @@ function order(level) {
   return Q('order', { html, text: ask === 1 ? 'いちばん ちいさいのは どれ？' : 'いちばん おおきいのは どれ？', ja: ask === 1 ? 'いちばん ちいさいのは どれかな？' : 'いちばん おおきいのは どれかな？', options: sizes.map((_, i) => `txt:${'ABCD'[i]}`), answer: ans, explain: `${ans} が ${ask === 1 ? 'いちばん ちいさい' : 'いちばん おおきい'}` }, level);
 }
 
-const GEN = { pattern, odd, robot, rotate, ifthen, balance, order };
+// ---------- 8. ロボット プログラミング（じぶんで やじるしを ならべる） ----------
+function robotplay(level) {
+  const n = level <= 2 ? 3 : level <= 4 ? 4 : 5, loops = level >= 4;
+  for (let tries = 0; tries < 80; tries++) {
+    const start = [0, n - 1];
+    const right = R(1, n - 1), up = R(level <= 1 ? 0 : 1, n - 1);
+    if (right + up < (level <= 1 ? 1 : 2) || (level <= 1 && right + up > 3)) continue;
+    let moves = loops ? [...Array(right).fill('➡️'), ...Array(up).fill('⬆️')] : shuffle([...Array(right).fill('➡️'), ...Array(up).fill('⬆️')]);
+    const path = new Set(); let [x, y] = start; path.add(x + ',' + y);
+    for (const m of moves) { x += DIRS[m][0]; y += DIRS[m][1]; path.add(x + ',' + y); }
+    const goal = [x, y], walls = [];
+    if (level >= 2) for (let k = 0; k < (level >= 4 ? 4 : 2); k++) { const w = R(0, n - 1) + ',' + R(0, n - 1); if (!path.has(w) && !walls.includes(w)) walls.push(w); }
+    const runs = pack(moves).split(' ');
+    const maxSlots = loops ? runs.length + 1 : moves.length + 2;   // レベル4から「くりかえし」を つかわないと たりない
+    if (loops && moves.length <= maxSlots) continue;
+    const ans = loops ? pack(moves) : moves.join('');
+    return Q('robotplay', { html: '', text: 'やじるしを ならべて 🤖 を 🎁 まで うごかそう！', ja: 'やじるしを ならべて、ロボットを プレゼントまで うごかそう！', options: [`txt:${ans}`], answer: ans, explain: `こたえの れい：${ans}`, play: { n, start, goal, walls, maxSlots, loops } }, level);
+  }
+  return robot(level);
+}
+
+// ミニゲームの がめん（クイズ画面の なかに つくる）
+export function mountRobot(el, q, { onSuccess, onGiveUp, sfx = {} }) {
+  const { n, start, goal, walls, maxSlots, loops } = q.play;
+  const wall = new Set(walls);
+  let prog = [], tries = 0, running = false, pos = [...start];
+  const cellsHTML = (bump) => { let h = ''; for (let yy = 0; yy < n; yy++) for (let xx = 0; xx < n; xx++) { const k = xx + ',' + yy, me = pos[0] === xx && pos[1] === yy; h += `<span class="pz-g ${me && bump ? 'bump' : ''}">${me ? '🤖' : xx === goal[0] && yy === goal[1] ? '🎁' : wall.has(k) ? '🌳' : ''}</span>`; } return h; };
+  const progHTML = () => prog.length ? prog.map((c, i) => `<span class="rp-chip">${c.d}${c.k > 1 ? '×' + c.k : ''}</span>`).join('') : '<span class="rp-empty">したの やじるしを おしてね</span>';
+  const draw = (msg = '', bump = false) => {
+    el.innerHTML = `<div class="pz-grid rp-grid" style="--n:${n}">${cellsHTML(bump)}</div>
+      <div class="rp-prog">${progHTML()}<span class="rp-left">あと ${maxSlots - prog.length}こ</span></div>
+      <div class="rp-msg">${msg}</div>
+      <div class="rp-keys">${['⬆️', '⬅️', '➡️', '⬇️'].map(d => `<button class="rp-key" data-d="${d}" ${running ? 'disabled' : ''}>${d}</button>`).join('')}
+        ${loops ? `<button class="rp-key rp-loop" data-k="2" ${running ? 'disabled' : ''}>×2</button><button class="rp-key rp-loop" data-k="3" ${running ? 'disabled' : ''}>×3</button>` : ''}
+        <button class="rp-key rp-del" data-del="1" ${running ? 'disabled' : ''}>⌫</button></div>
+      <button class="btn primary big rp-run" ${running || !prog.length ? 'disabled' : ''}>▶️ じっこう</button>`;
+  };
+  const tone = () => { try { sfx.tap?.(); } catch (e) {} };
+  el.onclick = async e => {
+    const b = e.target.closest('button'); if (!b || running) return;
+    if (b.dataset.d) { if (prog.length < maxSlots) { prog.push({ d: b.dataset.d, k: 1 }); tone(); } }
+    else if (b.dataset.k) { if (prog.length) { prog[prog.length - 1].k = Number(b.dataset.k); tone(); } }
+    else if (b.dataset.del) { prog.pop(); tone(); }
+    else if (b.classList.contains('rp-run')) return run();
+    pos = [...start]; draw();
+  };
+  async function run() {
+    running = true; pos = [...start]; draw('うごかすよ…');
+    const steps = prog.flatMap(c => Array(c.k).fill(c.d));
+    for (const d of steps) {
+      await new Promise(r => setTimeout(r, 420));
+      const nx = pos[0] + DIRS[d][0], ny = pos[1] + DIRS[d][1];
+      if (nx < 0 || ny < 0 || nx >= n || ny >= n || wall.has(nx + ',' + ny)) { running = false; return fail(wall.has(nx + ',' + ny) ? '🌳に ぶつかった！' : 'そとに でちゃう！'); }
+      pos = [nx, ny]; draw('うごかすよ…');
+    }
+    await new Promise(r => setTimeout(r, 350));
+    running = false;
+    if (pos[0] === goal[0] && pos[1] === goal[1]) { draw('🎉 やったね！ 🎁に ついた！'); onSuccess(); }
+    else fail('🎁まで とどかなかった…');
+  }
+  function fail(msg) {
+    tries++;
+    try { sfx.wrong?.(); } catch (e) {}
+    if (tries >= 3) { draw(msg + ' こたえを みてみよう'); setTimeout(onGiveUp, 900); return; }
+    draw(`${msg}<br><small>なおして もういちど！（あと ${3 - tries}かい）</small>`, true);
+  }
+  draw();
+}
+
+const GEN = { pattern, odd, robot, rotate, ifthen, balance, order, robotplay };
 const PLAN = {
   1: [['pattern', 4], ['odd', 3], ['ifthen', 2], ['robot', 2], ['order', 1]],
   2: [['pattern', 3], ['odd', 2], ['robot', 3], ['ifthen', 1], ['rotate', 1], ['order', 2]],
@@ -159,13 +229,15 @@ export function makePuzzle(level, type) {
     let t = type;
     if (!t) { const total = plan.reduce((s, x) => s + x[1], 0); let r = Math.random() * total; for (const [k, w] of plan) { r -= w; if (r <= 0) { t = k; break; } } t ||= plan[0][0]; }
     const q = GEN[t](level);
-    if (q.options.length >= 3 && q.options.includes(q.answer) && new Set(q.options).size === q.options.length) return q;
+    if (q.play || (q.options.length >= 3 && q.options.includes(q.answer) && new Set(q.options).size === q.options.length)) return q;
   }
   return pattern(level);
 }
 export function buildPuzzleSession(level, n = 10) {
   const qs = [], seen = new Set(); let g = 0;
+  const playAt = new Set([3, 7]);   // 4もんめ と 8もんめ は ロボット プログラミング
   while (qs.length < n && g++ < 300) {
+    if (playAt.has(qs.length)) { qs.push(makePuzzle(level, 'robotplay')); continue; }
     const challenge = level < 5 && Math.random() < 0.12;
     const q = makePuzzle(challenge ? level + 1 : level);
     const key = q.mtype + '|' + q.prompt.html; if (seen.has(key)) continue; seen.add(key);
