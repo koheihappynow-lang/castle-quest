@@ -746,3 +746,17 @@ body { word-break: keep-all; overflow-wrap: anywhere; line-break: strict; }
 @keyframes rpSpark { from { transform: translate(-50%, -50%) rotate(var(--a)) translateY(0); opacity: 1; } to { transform: translate(-50%, -50%) rotate(var(--a)) translateY(-60px); opacity: 0; } }
 .rp-runwrap { display: flex; justify-content: center; }
 @media (prefers-reduced-motion: reduce) { .rp-bot { transition: none; } .rp-face.hop, .rp-face.win, .rp-face.bonk { animation: none; } }
+
+/* 🌈 やさしい モード */
+.big-btn.easy { grid-column: 1 / -1; background: linear-gradient(135deg, #ff9ecf, #ffd36a 45%, #7fe0b0 75%, #7fb8ff); color: #4a2b10; }
+.big-btn.easy .bi { font-size: 3rem; }
+.ez-show { font-size: clamp(3rem, 10vw, 4.6rem); line-height: 1.15; letter-spacing: .08em; text-align: center; }
+.ez-many { display: inline-block; max-width: 11em; font-size: .8em; word-break: break-all; }
+.ez-q { display: inline-block; margin-left: .15em; color: #7b3fe4; font-weight: 900; animation: rpHop 1.2s infinite; }
+.options.ez-opts { grid-template-columns: repeat(3, 1fr); }
+.options.ez-opts.n4 { grid-template-columns: repeat(4, 1fr); }
+.opt.ez { min-height: 130px; justify-content: center; }
+.ez-opt { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: clamp(2.6rem, 8vw, 3.6rem); line-height: 1; }
+.ez-num { font-size: .9em; color: #4a2b10; }
+.ez-dots { font-size: .32em; color: #ff7a1a; letter-spacing: .05em; max-width: 6em; word-break: break-all; text-align: center; }
+@media (max-width: 640px) { .options.ez-opts.n4 { grid-template-columns: 1fr 1fr; } }

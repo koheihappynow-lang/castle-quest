@@ -36,7 +36,7 @@ const TALK_YEN = 300, TALK_MAX = 10;   // 1日に 10かいまで おこづかい
 const RARE_GHOSTS = 20;
 
 export function installDino(api) {
-  const { S, SCREENS, ACTIONS, AFTER, BG, LEAVE, go, render, db, save, activeProfile, esc, fmt, toast, sfx, say, sayJa, sayEn, stopSpeech, header, dueIds, startQuiz, rate, money, wallet, exchange, today, puzzleOpen } = api;
+  const { S, SCREENS, ACTIONS, AFTER, BG, LEAVE, go, render, db, save, activeProfile, esc, fmt, toast, sfx, say, sayJa, sayEn, stopSpeech, header, dueIds, startQuiz, rate, money, wallet, exchange, today, puzzleOpen, easyLevelOf } = api;
 
   Object.assign(BG, { dhome: 'dino', deggs: 'dino', hatch: 'dino', dshop: 'dino', dzukan: 'dino', dcare: 'dino' });
   S.shopTab = 'food';
@@ -59,6 +59,9 @@ export function installDino(api) {
     ${header(p, { back: 'games' })}
     <div class="page">
       <div class="home-grid dino-grid">
+        ${easyLevelOf(p) ? `<button class="big-btn easy" data-act="startQuiz" data-mode="easy">
+          <span class="bi">🌈</span><span class="bt">かんがえて あそぼう</span><span class="bs">みて・きいて・タッチ</span>
+        </button>` : ''}
         <button class="big-btn quiz" data-act="startQuiz" data-mode="normal">
           <span class="bi">🔤</span><span class="bt">えいごに ちょうせん</span><span class="bs">ことばで おかねを ためよう</span>
         </button>

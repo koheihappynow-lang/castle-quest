@@ -18,6 +18,7 @@ import { installLetters } from './lettersGame.js';
 import { APP_VERSION } from './version.js';
 import { buildMathSession, mathRetry, MATH_LEVELS, MATH_TYPE_NAMES, mathLevelForAge } from './math.js';
 import { buildPuzzleSession, mountRobot } from './puzzle.js';
+import { buildEasySession, praise as easyPraise } from './easy.js';
 // ひらめき パズル：2026-11-17 から こども みんなに ひらいた
 const puzzleOpen = () => true;
 
@@ -223,6 +224,9 @@ const SCREENS = {
     ${header(p, { back: 'games' })}
     <div class="page">
       <div class="home-grid">
+        ${easyLevelOf(p) ? `<button class="big-btn easy" data-act="startQuiz" data-mode="easy">
+          <span class="bi">🌈</span><span class="bt">かんがえて あそぼう</span><span class="bs">みて・きいて・タッチ</span>
+        </button>` : ''}
         <button class="big-btn quiz" data-act="startQuiz" data-mode="normal">
           <span class="bi">🔤</span><span class="bt">えいごに ちょうせん</span><span class="bs">${LEVEL_NAMES[p.level]}・${SESSION_LEN}もん・1もん ${fmt(YEN_PER_LEVEL[p.level])}えん</span>
         </button>
@@ -257,7 +261,7 @@ const SCREENS = {
     const P = q.prompt || {};
     const sentenceHTML = s => esc(s).replace('___', '<span class="blank">？</span>');
     const promptHTML = [
-      `<div class="q-type">${q.math ? (q.puzzle ? '🧩 ' : '🔢 ') + MATH_TYPE_NAMES[q.mtype] : TYPE_NAMES[q.type]}</div>`,
+      q.easy ? '<div class="q-type">🌈 かんがえて あそぼう</div>' : `<div class="q-type">${q.math ? (q.puzzle ? '🧩 ' : '🔢 ') + MATH_TYPE_NAMES[q.mtype] : TYPE_NAMES[q.type]}</div>`,
       P.html ? `<div class="q-math">${P.html}</div>` : '',
       P.pic ? `<div class="q-pic">${picHTML(BY_ID[P.pic], 'xl')}</div>` : '',
       P.emojiRow ? `<div class="q-emoji">${esc(P.emojiRow)}</div>` : '',
@@ -271,7 +275,8 @@ const SCREENS = {
     const letters = ['A', 'B', 'C', 'D'];
     const opts = q.options.map((id, k) => {
       let inner;
-      if (id.startsWith('txt:')) inner = `<span class="opt-text">${esc(id.slice(4))}</span>`;
+      if (q.easy) inner = `<span class="ez-opt">${q.easyOpts[k]}</span>`;
+      else if (id.startsWith('txt:')) inner = `<span class="opt-text">${esc(id.slice(4))}</span>`;
       else {
         const o = BY_ID[id];
         if (q.optMode === 'pic') inner = picHTML(o, 'opt-pic');
@@ -279,7 +284,7 @@ const SCREENS = {
         else if (q.optMode === 'ja') inner = `<span class="opt-text ja">${esc(o.ja)}</span>`;
         else inner = `<span class="opt-text">${esc(o.en)}</span><span class="opt-say" data-act="sayOpt" data-id="${id}">🔊</span>`;
       }
-      return `<button class="opt" data-act="answer" data-id="${id}"><span class="opt-letter">${letters[k]}</span>${inner}</button>`;
+      return `<button class="opt ${q.easy ? 'ez' : ''}" data-act="answer" data-id="${id}">${q.easy ? '' : `<span class="opt-letter">${letters[k]}</span>`}${inner}</button>`;
     }).join('');
     const tags = [
       q.review ? '<span class="tag review">👻 ふくしゅう</span>' : '',
@@ -291,13 +296,13 @@ const SCREENS = {
     <div class="page quiz-page">
       <div class="progress"><div class="progress-bar" style="width:${(Q.i / total) * 100}%"></div></div>
       <div class="quiz-top">
-        <span class="qcount">${Q.i + 1} / ${total}</span>
+        ${q.easy ? '<span class="tags"></span>' : `<span class="qcount">${Q.i + 1} / ${total}</span>
         <span class="tags">${tags}</span>
-        <span class="streak ${Q.streak >= 3 ? 'hot' : ''}">🔥 ${Q.streak}</span>
+        <span class="streak ${Q.streak >= 3 ? 'hot' : ''}">🔥 ${Q.streak}</span>`}
         <button class="icon-btn sm" data-act="quitQuiz" aria-label="やめる">✕</button>
       </div>
       <div class="prompt">${promptHTML}</div>
-      ${q.play ? '<div class="robot-play" id="robotPlay"></div>' : `<div class="options ${q.puzzle ? 'pz-opts' : ''}">${opts}</div>`}
+      ${q.play ? '<div class="robot-play" id="robotPlay"></div>' : `<div class="options ${q.puzzle ? 'pz-opts' : ''} ${q.easy ? 'ez-opts n' + q.options.length : ''}">${opts}</div>`}
       <div id="feedback"></div>
     </div>`;
   },
@@ -308,6 +313,17 @@ const SCREENS = {
     const c = Q.yen;
     const firstTotal = Q.qs.filter(q => !q.retry).length;
     const stars = Q.correct === firstTotal ? '🌟🌟🌟' : Q.correct >= firstTotal * 0.7 ? '🌟🌟' : '🌟';
+    if (Q.mode === 'easy') return `
+    ${header(p)}
+    <div class="page narrow result">
+      <div class="stars">🌈</div>
+      <h2>よく がんばったね！</h2>
+      <div class="coin-total"><span>💴</span><b id="coinCount">0</b><span>えん ゲット！</span></div>
+      <div class="row center">
+        <button class="btn" data-act="startQuiz" data-mode="easy">🔁 もういちど</button>
+        ${S.game === 'dino' ? '<button class="btn primary" data-act="go" data-to="dhome">🦖 もどる</button>' : '<button class="btn primary" data-act="go" data-to="home">🏠 もどる</button>'}
+      </div>
+    </div>`;
     return `
     ${header(p)}
     <div class="page narrow result">
@@ -527,7 +543,7 @@ const AFTER = {
       sfx.coin();
       if (n >= target) { clearInterval(h); sfx.bonus(); }
     }, 60);
-    sayJa(`${Q.correct}問正解！ ${target}円ゲット！`);
+    sayJa(Q.mode === 'easy' ? `よく がんばったね！ ${target}円 ゲット！` : `${Q.correct}問正解！ ${target}円ゲット！`);
   },
   castle: () => attachCastle(),
   parent: () => { bindParent(); LETTERS.bindParent(); },
@@ -613,13 +629,15 @@ function startQuiz(mode) {
   const p = activeProfile();
   if (overLimit(p)) { go('limit'); return; }
   if (onBreak(p)) { go('rest'); return; }
-  const qs = mode === 'puzzle' ? buildPuzzleSession(mathLevelOf(p)) : mode === 'math' ? buildMathSession(mathLevelOf(p)) : buildSession(p, mode, { boost: S.game === 'dino' ? 'dino' : null });
+  const qs = mode === 'easy' ? buildEasySession(easyLevelOf(p)) : mode === 'puzzle' ? buildPuzzleSession(mathLevelOf(p)) : mode === 'math' ? buildMathSession(mathLevelOf(p)) : buildSession(p, mode, { boost: S.game === 'dino' ? 'dino' : null });
   if (!qs.length) { toast('きょうの ふくしゅうは おわり！ 👻 は いないよ'); return; }
   S.quiz = { mode, qs, i: 0, correct: 0, streak: 0, answered: false, graduated: 0, tsuruga: 0, yen: { base: 0, streak: 0, challenge: 0, perfect: 0, retry: 0 }, retried: new Set() };
   go('quiz');
 }
 // さんすうの レベル（おうちのひとが かえられる。きめていなければ ねんれいから）
 function mathLevelOf(p) { return p.mathLevel || mathLevelForAge(p.age); }
+// やさしい モード：0＝つかわない・1・2。きめていなければ 4さい いかは 1
+function easyLevelOf(p) { return p ? (p.easy ?? (p.age <= 4 ? 1 : 0)) : 0; }
 // 「2/3」を よみやすく（3ぶんの2）
 const mathYomi = t => String(t).replace(/(\d+)\/(\d+)/g, (_, a, b) => `${b}分の${a}`).replace(/×/g, 'かける').replace(/÷/g, 'わる').replace(/−/g, 'ひく').replace(/＋/g, 'たす').replace(/＝/g, 'は');
 function speakQuestion() {
@@ -634,9 +652,33 @@ function addYen(n, kind) {
   const chip = document.querySelector('#yenChip b');
   if (chip) { chip.textContent = fmt(wallet(p).yen); chip.parentElement.classList.remove('pop'); void chip.offsetWidth; chip.parentElement.classList.add('pop'); }
 }
+function answerEasy(id, btn) {
+  const Q = S.quiz, p = activeProfile(), q = Q.qs[Q.i];
+  const ok = id === q.answer;
+  q.tries = (q.tries || 0) + 1;
+  if (q.tries === 1) { p.history.push({ d: today(), ts: Date.now(), w: 'easy:' + q.mtype, ty: 'easy', c: id, ok, m: 'easy', r: 0, ch: 0, el: q.mlevel }); if (p.history.length > HISTORY_MAX) p.history.splice(0, p.history.length - HISTORY_MAX); }
+  if (ok) {
+    Q.answered = true;
+    document.querySelectorAll('.opt').forEach(b => { b.disabled = true; });
+    btn.classList.add('right', 'bounce'); sfx.correct();
+    if (q.tries === 1) { Q.correct++; addYen(YEN_PER_LEVEL[p.level], 'base'); }
+    save(); burst(btn);
+    setTimeout(() => sayJa(easyPraise()), 300);
+    setTimeout(nextQuestion, 2000);
+    return;
+  }
+  btn.classList.add('wrong', 'shake'); btn.disabled = true; sfx.tap(); save();
+  if (q.tries >= 2) {
+    Q.answered = true;
+    document.querySelectorAll('.opt').forEach(b => { b.disabled = true; if (b.dataset.id === q.answer) b.classList.add('right', 'bounce'); });
+    setTimeout(() => say(q.explain), 300);
+    setTimeout(nextQuestion, 3600);
+  } else setTimeout(() => sayJa('おしい！ もういちど みてみよう。'), 250);
+}
 function answer(id, btn) {
   const Q = S.quiz;
   if (Q.answered) return;
+  if (Q.qs[Q.i]?.easy) return answerEasy(id, btn);
   Q.answered = true;
   const p = activeProfile();
   const q = Q.qs[Q.i];
@@ -927,6 +969,9 @@ function parentScreen() {
         <div class="field"><span>さんすうの むずかしさ</span><div class="row wrap">
           ${[1, 2, 3, 4, 5].map(l => `<button class="pill ${mathLevelOf(p) === l ? 'on' : ''}" data-act="setMathLevel" data-id="${p.id}" data-v="${l}">${MATH_LEVELS[l].name}</button>`).join('')}
         </div><small class="hint">${MATH_LEVELS[mathLevelOf(p)].sub}</small></div>
+        <div class="field"><span>🌈 やさしい モード（もじが よめなくても あそべる）</span><div class="row wrap">
+          ${[[0, 'つかわない'], [1, 'やさしい'], [2, 'すこし むずかしい']].map(([l, t]) => `<button class="pill ${easyLevelOf(p) === l ? 'on' : ''}" data-act="setEasy" data-id="${p.id}" data-v="${l}">${t}</button>`).join('')}
+        </div><small class="hint">ホームの いちばん うえに「🌈 かんがえて あそぼう」が でます。こえで きいて、えを タッチするだけ。まちがえても もう1かい えらべます</small></div>
         <div class="field"><span>アイコン</span><div class="row wrap">
           <label class="btn sm">📷 しゃしんを えらぶ<input type="file" accept="image/*" class="photoFor" data-id="${p.id}" hidden></label>
           ${p.photo ? `<button class="btn sm ghost" data-act="removePhoto" data-id="${p.id}">しゃしんを はずす</button>` : ''}
@@ -1169,6 +1214,7 @@ const ACTIONS = {
   ptab: d => { if ((d.v === 'settings' || d.v === 'letters') && !S.pinOK) { askPin(d.v); return; } S.parentTab = d.v; render(); },
   statsFor: d => { S.statsId = d.id; S.parentTab = 'stats'; render(); },
   setMathLevel: d => { const p = db().profiles.find(x => x.id === d.id); p.mathLevel = Number(d.v); save(); render(); },
+  setEasy: d => { const p = db().profiles.find(x => x.id === d.id); p.easy = Number(d.v); save(); render(); },
   setLevel: d => { const p = db().profiles.find(x => x.id === d.id); p.level = Number(d.v); save(); render(); },
   // ふるい 版で とまった ときの ための ボタン：保存した プログラムと 画像を けして よみなおす（あそんだ きろくは けさない）
   forceUpdate: async () => {
@@ -1204,7 +1250,7 @@ const ACTIONS = {
 
 installDino({
   S, SCREENS, ACTIONS, AFTER, BG, LEAVE, go, render, db, save, activeProfile, esc, fmt, toast, sfx, say, sayJa, sayEn, stopSpeech,
-  header, dueIds, startQuiz, overLimit, onBreak, rate, money, wallet, exchange, today, puzzleOpen,
+  header, dueIds, startQuiz, easyLevelOf, overLimit, onBreak, rate, money, wallet, exchange, today, puzzleOpen,
 });
 // サンタさんへの おてがみ ／ パパと おはなし
 const LETTERS = installLetters({ S, SCREENS, ACTIONS, AFTER, BG, LEAVE, go, render, activeProfile, esc, toast, sfx, header, squarePhoto });
