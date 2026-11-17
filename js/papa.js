@@ -83,18 +83,21 @@ async function render() {
   };
   markSeen(list.filter(m => m.from === 'kid').map(m => m.id));
   renderCompose(name);
-  window.scrollTo(0, document.body.scrollHeight);
+  fitPad(); window.scrollTo(0, document.body.scrollHeight);
 }
 
+// 下の 入力欄の 高さに あわせて、ページの 下の よはくを かえる（サンタの ときは 入力欄が たかい）
+function fitPad() { const c = $('compose'); $('main').style.paddingBottom = (c.hidden ? 24 : c.offsetHeight + 24) + 'px'; }
+addEventListener('resize', fitPad);
 function renderCompose(name) {
   $('compose').hidden = false;
   const santa = cur.th === 'santa', canRec = pickMime() !== null && navigator.mediaDevices?.getUserMedia;
   $('composeIn').innerHTML = `
-    <textarea id="txt" placeholder="${santa ? 'サンタとして もじで へんじ（きかいの こえで よみあげます。🎤 で パパの こえを ろくおんする ほうが しぜんです）' : esc(name) + 'へ へんじ'}"></textarea>
+    <textarea id="txt" placeholder="${santa ? 'サンタとして もじで へんじ（🎤 こえ の ほうが しぜん）' : esc(name) + 'へ へんじ'}"></textarea>
     <div class="row" style="margin-top:6px">
-      <button class="btn ${santa ? 'santa' : 'primary'}" id="sendTxt">${santa ? '🎅 サンタとして おくる' : '📮 おくる'}</button>
+      <button class="btn ${santa ? 'santa' : 'primary'}" id="sendTxt">${santa ? '🎅 もじを おくる' : '📮 おくる'}</button>
       ${santa ? `<button class="btn" id="preview">🔊 サンタの こえで ためす</button>` : ''}
-      ${canRec ? `<button class="btn ${santa && !recBlob && !rec ? 'santa' : ''}" id="recBtn">${rec ? '⏹️ とめる' : recBlob ? '🎤 とりなおす' : santa ? '🎤 サンタとして こえで へんじ' : '🎤 こえで へんじ'}</button>` : ''}
+      ${canRec ? `<button class="btn ${santa && !recBlob && !rec ? 'santa' : ''}" id="recBtn">${rec ? '⏹️ とめる' : recBlob ? '🎤 とりなおす' : '🎤 こえで へんじ'}</button>` : ''}
       ${recBlob ? `<button class="btn" id="recPlay">${santa ? '🎅 サンタの こえで きく' : '▶️ きく'}</button><button class="btn ${santa ? 'santa' : 'primary'}" id="recSend">📮 こえを おくる</button>` : ''}
       <button class="btn" id="drawBtn">🎨 えで へんじ</button>
       <span id="recMsg" class="recdot"></span>
@@ -121,6 +124,7 @@ function renderCompose(name) {
     await send({ kidId: idOf(cur.kid), kidName: name, thread: cur.th, from: cur.th, image: img }); await sync().catch(() => {});
     render();
   };
+  fitPad(); requestAnimationFrame(fitPad);
   if ($('recPlay')) $('recPlay').onclick = () => { if (santa) playSanta(recBlob); else new Audio(URL.createObjectURL(recBlob)).play(); };
   if ($('recSend')) $('recSend').onclick = async () => {
     $('recSend').disabled = true;

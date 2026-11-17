@@ -48,6 +48,10 @@
   .m.unread { outline: 2px solid #ffb21a; }
   .compose { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; border-top: 1px solid var(--line); padding: 10px 16px calc(env(safe-area-inset-bottom) + 10px); }
   .compose .in { max-width: 720px; margin: 0 auto; }
+  .compose textarea { min-height: 52px; }
+  .compose .row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .compose .row .btn { font-size: 14px; padding: 9px 8px; }
+  .compose .row .recdot { grid-column: 1 / -1; }
   .hint { font-size: 13px; color: var(--soft); }
   .empty { color: var(--soft); text-align: center; padding: 30px 0; }
   .recdot { color: var(--red); font-weight: 700; }
