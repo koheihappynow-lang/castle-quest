@@ -69,8 +69,8 @@ if (!document.getElementById('dp-style')) {
   .dp-box { background: #fffaf0; border-radius: 24px; padding: 12px; width: min(100%, 900px); max-height: 100%; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 40px rgba(0,0,0,.4); font-family: inherit; }
   .dp-top { display: flex; align-items: center; justify-content: space-between; font-size: 1.3rem; color: #4a2b10; }
   .dp-x { border: 0; background: #eee; border-radius: 50%; width: 44px; height: 44px; font-size: 1.2rem; cursor: pointer; }
-  .dp-canvas { background: #fff; border-radius: 16px; border: 3px solid #e8d6b0; overflow: hidden; touch-action: none; }
-  .dp-canvas canvas { display: block; width: 100%; height: auto; max-height: 58vh; object-fit: contain; touch-action: none; cursor: crosshair; }
+  .dp-canvas { background: #f4ecd8; border-radius: 16px; border: 3px solid #e8d6b0; overflow: hidden; touch-action: none; }
+  .dp-canvas canvas { display: block; width: min(100%, calc(58vh * 4 / 3)); aspect-ratio: 4 / 3; height: auto; margin: 0 auto; touch-action: none; cursor: crosshair; }
   .dp-tools { display: flex; flex-direction: column; gap: 8px; }
   .dp-colors, .dp-sizes { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; }
   .dp-col { width: 44px; height: 44px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 0 2px #ccc; cursor: pointer; }
