@@ -170,6 +170,12 @@ const SCREENS = {
           <span class="gc-sub">えいごで きょうりゅうを そだてよう</span>
           <span class="gc-badge soon">🥚 もうすぐ できるよ（おためし）</span>
         </button>
+        <button class="game-card rally" data-act="playGame" data-g="rally">
+          <span class="gc-art rally-art"><span>🚗</span></span>
+          <span class="gc-name">ブーブーラリー</span>
+          <span class="gc-sub">えいごで くるまの ラリーに ちょうせん</span>
+          <span class="gc-badge soon">🔧 じゅんびちゅう</span>
+        </button>
       </div>
     </div>`;
   },
@@ -1056,6 +1062,7 @@ const ACTIONS = {
   playGame: d => {
     sfx.tap();
     const p = activeProfile();
+    if (d.g === 'rally') { toast('🚗 ブーブーラリーは いま つくっているよ。もうすこし まってね！'); sayJa('ブーブーラリーは、いま作っているよ。もう少し待ってね！'); return; }
     S.game = d.g;
     if (d.g === 'castle') { go('home'); sayJa(`${p.name}、一緒にがんばろう！`); }
     else { go(p.dino.order.length ? 'dhome' : 'deggs'); sayJa(p.dino.order.length ? `${p.name}、恐竜が待ってるよ！` : 'たまごを選んでね！'); }
