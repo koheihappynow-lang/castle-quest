@@ -49,6 +49,14 @@ const hhmm = ts => { const d = new Date(ts), t = new Date(); const day = d.toDat
 export function installLetters(api) {
   const { S, SCREENS, ACTIONS, AFTER, BG, LEAVE, go, render, activeProfile, esc, toast, sfx, header, squarePhoto } = api;
   Object.assign(BG, { letters: 'hub' });
+  // かんたん せってい：#setup=…（サーバーと かぎ）の リンクで ひらくと つながる。かぎは「#」の あとなので サーバーには おくられない
+  if (location.hash.startsWith('#setup=')) {
+    try {
+      const { s, k } = JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(7).replace(/-/g, '+').replace(/_/g, '/')))));
+      if (s && k) { setCfg({ server: s, key: k, since: 0 }); setTimeout(() => toast('✅ おてがみサーバーに つながりました', 3000), 800); }
+    } catch (e) {}
+    history.replaceState(null, '', location.pathname);
+  }
   let rec = null, recBlob = null, player = null, poll = null;
 
   // ---------- ゲームを えらぶ 画面の 下の ボタン ----------
