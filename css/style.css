@@ -552,3 +552,8 @@ body[data-bg="dino"]::before { background-image: linear-gradient(rgba(255, 255, 
 .m-grp { display: flex; flex-wrap: wrap; gap: 2px; max-width: 120px; justify-content: center; background: #fff7e0; border: 3px solid #e0a526; border-radius: 50%; padding: 12px; font-size: 1.5rem; }
 .m-story { font-size: 4rem; }
 .fb-math { font: 900 2.6rem/1.2 "Arial Rounded MT Bold", "Hiragino Maru Gothic ProN", sans-serif; color: #2f6fd8; padding: 4px 18px; }
+
+/* ホーム：えいご と さんすう を ならべる */
+.big-btn.quiz { grid-column: auto; min-height: 190px; }
+.big-btn.math { background: linear-gradient(135deg, #4dc3ff, #2f7fe8); min-height: 190px; }
+body[data-bg="hub"] .big-btn.math { min-height: 150px; }

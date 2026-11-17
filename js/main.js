@@ -218,14 +218,14 @@ const SCREENS = {
     <div class="page">
       <div class="home-grid">
         <button class="big-btn quiz" data-act="startQuiz" data-mode="normal">
-          <span class="bi">📝</span><span class="bt">もんだいに ちょうせん</span><span class="bs">${LEVEL_NAMES[p.level]}・${SESSION_LEN}もん・1もん ${fmt(YEN_PER_LEVEL[p.level])}えん</span>
+          <span class="bi">🔤</span><span class="bt">えいごに ちょうせん</span><span class="bs">${LEVEL_NAMES[p.level]}・${SESSION_LEN}もん・1もん ${fmt(YEN_PER_LEVEL[p.level])}えん</span>
+        </button>
+        <button class="big-btn math" data-act="startQuiz" data-mode="math">
+          <span class="bi">🔢</span><span class="bt">さんすうに ちょうせん</span><span class="bs">${MATH_LEVELS[mathLevelOf(p)].name}・10もん・1もん ${fmt(YEN_PER_LEVEL[p.level])}えん</span>
         </button>
         <button class="big-btn review ${due ? 'alert' : ''}" data-act="startQuiz" data-mode="review">
           <span class="bi">👻</span><span class="bt">きょうの ふくしゅう</span>
           <span class="bs">${due ? `おばけが ${due}ひき まってるよ！ おかね 2ばい` : 'いまは おばけ いないよ'}</span>
-        </button>
-        <button class="big-btn math" data-act="startQuiz" data-mode="math">
-          <span class="bi">🔢</span><span class="bt">さんすうに ちょうせん</span><span class="bs">${MATH_LEVELS[mathLevelOf(p)].name}・10もん・1もん ${fmt(YEN_PER_LEVEL[p.level])}えん</span>
         </button>
         <button class="big-btn castle" data-act="go" data-to="castles">
           <span class="bi">🏰</span><span class="bt">おしろを つくる</span><span class="bs">かんせい ${doneN}/${total}</span>
