@@ -559,3 +559,11 @@ body[data-bg="dino"]::before { background-image: linear-gradient(rgba(255, 255, 
 body[data-bg="hub"] .big-btn.math { min-height: 150px; }
 .rally-art { position: relative; overflow: hidden; }
 .rally-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+/* ずかん：絵は カードの 上に おさめる（はみ出さない）。まだ あっていない 恐竜は うっすら */
+.col-card.has-img { padding: 8px 8px 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.col-card.has-img .col-card-img { position: static; inset: auto; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 14px; background: #fff; filter: none; }
+.col-card.has-img .col-card-img.fit { object-fit: contain; padding: 4px; }
+.col-card.has-img .col-flag { display: none; }
+.col-card.has-img .col-name, .col-card.has-img .col-sub { margin-top: 0; background: none; padding: 0; }
+.col-card.notyet .col-card-img { opacity: .38; filter: grayscale(.55) blur(.5px); }

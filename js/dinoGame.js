@@ -227,8 +227,10 @@ export function installDino(api) {
       <div class="col-grid">
         ${list.map(x => {
           const m = d.owned[x.id], art = ART[x.id];
-          return `<button class="col-card ${m ? 'got' : ''}" data-act="dinoDesc" data-id="${x.id}">
-            ${art ? `<img class="col-card-img ${m ? '' : 'shadow'}" src="${art}" alt="">` : ''}
+          // かわいい サムネ（cards/dino-thumb-<id>.jpg）。なければ いままでの 絵、それも なければ 国旗
+          const fb = art ? `this.onerror=null;this.src='${art}';this.classList.add('fit')` : `this.closest('.col-card').classList.remove('has-img');this.remove()`;
+          return `<button class="col-card has-img ${m ? 'got' : 'notyet'}" data-act="dinoDesc" data-id="${x.id}">
+            <img class="col-card-img" src="cards/dino-thumb-${x.id}.jpg" alt="" onerror="${fb}">
             <div class="col-flag">${x.flag}</div>
             <div class="col-name">${x.name}</div>
             <div class="col-sub">${m ? `${stageOf(m.growth).name}（${Math.round(m.growth)}）` : 'まだ あえていないよ'}</div>
