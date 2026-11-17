@@ -701,3 +701,9 @@ body { word-break: keep-all; overflow-wrap: anywhere; line-break: strict; }
 .talk-card .tb-off { font-size: .75rem; align-self: center; }
 .talk-card .tc-body::after { font-size: .9rem; }
 @media (max-width: 520px) { .talk-row { grid-template-columns: 1fr; } .talk-card { grid-template-columns: minmax(110px, 36%) 1fr; grid-template-rows: auto; text-align: left; } .talk-card .tc-art { aspect-ratio: auto; border-radius: 24px 0 0 24px; } .talk-card .tc-body { align-items: flex-start; } }
+/* iPad の Safari で 写真の わくが つぶれる ので、むかしからの やりかた（padding）で 高さを きめる */
+.talk-card { align-items: start; }
+.talk-card .tc-art { display: block; height: 0; padding-top: 62.5%; aspect-ratio: auto; align-self: start; width: 100%; }
+.talk-card .tc-art i { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.talk-card .tc-art img { position: absolute; inset: 0; width: 100%; height: 100%; }
+@media (max-width: 520px) { .talk-card .tc-art { height: auto; padding-top: 0; min-height: 150px; } }
