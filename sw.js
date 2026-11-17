@@ -1,7 +1,7 @@
 // オフラインでも動くように、ゲームのファイルをiPadに保存しておく
 // ・ネットにつながっているときは、いつも最新のプログラムを取りにいく（更新がすぐ反映される）
 // ・つながっていないときは、保存しておいたものを使う
-const VERSION = 'cq-v39';
+const VERSION = 'cq-v40';
 const BG_FILES = ['endogame-adventure', 'hero', 'title', 'hub', 'study', 'select', 'build-day', 'build-sunset', 'build-night', 'exchange', 'ghosts', 'workshop', 'habitat-jungle', 'habitat-volcano', 'habitat-coast']
   .map(n => `./bg/${n}.jpg`);
 const CASTLE_FILES = ['himeji', 'neuschwanstein', 'windsor', 'montsaintmichel', 'edinburgh', 'alhambra', 'chambord', 'hearst', 'forbiddencity', 'pena', 'tsuruga']
@@ -35,6 +35,8 @@ const isCode = url => /\.(html|js|css|webmanifest)$/.test(url.pathname) || url.p
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
+  // ほかの サイト（おてがみサーバー など）は さわらない。ほぞんするのは 3Dの 部品（jsdelivr）だけ
+  if (url.origin !== location.origin && !url.hostname.endsWith('jsdelivr.net')) return;
   e.respondWith(caches.open(VERSION).then(async cache => {
     const hit = await cache.match(e.request, { ignoreSearch: true });
     // プログラム（同じサイトのhtml/js/css）は、ネット優先
