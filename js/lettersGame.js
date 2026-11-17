@@ -1,5 +1,6 @@
 // EndoGame：サンタさんへの おてがみ ／ パパと おはなし（こどもの 画面）
 import { openDrawPad, showBig } from './drawpad.js';
+import { sharedImage } from './letters.js';
 import { thread, unheard, send, markHeard, audioURL, audioBlob, imageBlob, sync, online, getCfg, setCfg, testConnection, Recorder, pickMime, speakAs, santaLine, playSanta, stopSanta, unlockAudio } from './letters.js';
 
 const WHO = {
@@ -63,8 +64,24 @@ export function installLetters(api) {
     const n = await unheard(p.id);
     for (const th of ['santa', 'papa']) { const b = document.getElementById('badge-' + th); if (b) { b.hidden = !n[th]; b.textContent = n[th] ? `おへんじ ${n[th]}` : ''; } }
   };
+  // パパの しゃしんが サーバーに あれば この iPad に とりこむ（この iPad で えらんだ ものより あたらしい ときだけ）
+  const blobToURL = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
+  async function pullPapaPhoto() {
+    try {
+      const card = await sharedImage('papaPhoto'); if (!card) return false;
+      const mine = Number(localStorage.getItem('endogame.papaPhotoTs') || 0);
+      if (card.ts <= mine) return false;
+      const icon = await sharedImage('papaIcon');
+      const cb = await imageBlob(card), ib = icon && await imageBlob(icon);
+      if (!cb) return false;
+      localStorage.setItem(PAPA_CARD, await blobToURL(cb));
+      localStorage.setItem(PAPA_PHOTO, ib ? await blobToURL(ib) : await blobToURL(cb));
+      localStorage.setItem('endogame.papaPhotoTs', String(card.ts));
+      return true;
+    } catch (e) { return false; }
+  }
   const prevGames = AFTER.games;
-  AFTER.games = () => { prevGames?.(); badges(); sync().then(n => n && badges()).catch(() => {}); };
+  AFTER.games = () => { prevGames?.(); badges(); sync().then(async n => { if (n) badges(); if (await pullPapaPhoto() && S.screen === 'games') render(); }).catch(() => {}); };
 
   // ---------- おてがみの 画面 ----------
   SCREENS.letters = () => {
@@ -213,7 +230,7 @@ export function installLetters(api) {
       const c = getCfg(), ph = papaPhoto();
       return `
       <div class="card"><h3>👨 パパの しゃしん</h3>
-        <p class="hint">「パパと はなす」の 大きな ボタンと、おへんじの アイコンに でます。<b>この iPad の なかだけに ほぞん</b>（インターネットには のせません）。たてながの しゃしん（かおが 上の ほう）が きれいに うつります。</p>
+        <p class="hint">「パパと はなす」の 大きな ボタンと、おへんじの アイコンに でます。この iPad で えらぶと、この iPad の なかだけに ほぞんします。サーバーに つないでいると、パパが かぞくの サーバーに いれた しゃしんが じどうで とどきます（かぎが ないと みられません）。たてながの しゃしん（かおが 上の ほう）が きれいに うつります。</p>
         <div class="row wrap">${ph ? `<img src="${papaCard()}" alt="" style="width:90px;height:120px;object-fit:cover;border-radius:12px"><img class="avatar-img lg" src="${ph}" alt="">` : '<span class="avatar lg">👨</span>'}
           <label class="btn sm">📷 しゃしんを えらぶ<input type="file" accept="image/*" id="papaPhotoInput" hidden></label>
           ${ph ? '<button class="btn sm ghost" data-act="ltPapaPhotoOff">しゃしんを はずす</button>' : ''}</div>
@@ -235,7 +252,7 @@ export function installLetters(api) {
       const f = document.getElementById('papaPhotoInput');
       f?.addEventListener('change', async () => {
         const file = f.files?.[0]; if (!file) return;
-        try { localStorage.setItem(PAPA_PHOTO, await squarePhoto(file)); localStorage.setItem(PAPA_CARD, await portraitPhoto(file)); toast('しゃしんを ほぞんしました'); render(); } catch (e) { alert('しゃしんを よみこめませんでした'); }
+        try { localStorage.setItem(PAPA_PHOTO, await squarePhoto(file)); localStorage.setItem(PAPA_CARD, await portraitPhoto(file)); localStorage.setItem('endogame.papaPhotoTs', String(Date.now())); toast('しゃしんを ほぞんしました'); render(); } catch (e) { alert('しゃしんを よみこめませんでした'); }
       });
     },
     actions: {

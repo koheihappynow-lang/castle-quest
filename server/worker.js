@@ -51,7 +51,7 @@ export default {
         id: m.id, kidId: String(m.kidId || '').slice(0, 40), kidName: String(m.kidName || '').slice(0, 20),
         thread: m.thread, from: m.from, text: String(m.text || '').slice(0, 500),
         hasAudio: !!m.hasAudio, hasImage: !!m.hasImage, mime: String(m.mime || '').slice(0, 40), ts: Number(m.ts) || now, heard: !!m.heard, u: now,
-        ...(['greet', 'thanks'].includes(m.kind) ? { kind: m.kind } : {}),
+        ...(['greet', 'thanks', 'papaPhoto', 'papaIcon'].includes(m.kind) ? { kind: m.kind } : {}),
       };
       if (body.audio) {
         if (typeof body.audio !== 'string' || !body.audio.startsWith('data:audio/') || body.audio.length > MAX_AUDIO) return J({ error: 'bad audio' }, 400);

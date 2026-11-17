@@ -70,6 +70,11 @@ export async function imageBlob(m) {
   return b || null;
 }
 export async function audioURL(m) { const b = await audioBlob(m); return b ? URL.createObjectURL(b) : null; }
+// かぞく ぜんいん むけの 絵（パパの しゃしん など）：いちばん あたらしい もの
+export async function sharedImage(kind) {
+  const list = (await allMsgs()).filter(m => m.kidId === '*' && m.kind === kind && m.hasImage);
+  return list[list.length - 1] || null;
+}
 // サンタの きまり文句（いちばん あたらしい もの）
 export async function santaLine(kind) {
   const list = (await allMsgs()).filter(m => m.kidId === '*' && m.kind === kind && m.hasAudio);
