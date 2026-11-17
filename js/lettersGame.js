@@ -74,9 +74,13 @@ export function installLetters(api) {
   };
   // パパの しゃしんが サーバーに あれば この iPad に とりこむ（この iPad で えらんだ ものより あたらしい ときだけ）
   const blobToURL = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
+  let pulledAll = false;
   async function pullPapaPhoto() {
     try {
-      const card = await sharedImage('papaPhoto'); if (!card) return false;
+      let card = await sharedImage('papaPhoto');
+      // みつからない ときは サーバーから ぜんぶ とりなおす（いちどだけ）
+      if (!card && online() && !pulledAll) { pulledAll = true; setCfg({ since: 0 }); await sync().catch(() => {}); card = await sharedImage('papaPhoto'); }
+      if (!card) return false;
       const mine = Number(localStorage.getItem('endogame.papaPhotoTs') || 0);
       if (card.ts <= mine) return false;
       const icon = await sharedImage('papaIcon');

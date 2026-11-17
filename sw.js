@@ -2,7 +2,7 @@
 // ・プログラム（html/js/css）：ネット優先（更新がすぐ反映）。ネットが おそい・ない ときは 保存した もの
 // ・画像・3Dモデル：保存した ものを すぐ 使い、うらで 新しい ものが ないか 確かめる。
 //   画像の 保存場所（ASSETS）は 版を あげても けさない → 更新の たびに 全部 とりなおさない（起動が はやい）
-const VERSION = 'cq-v41';
+const VERSION = 'cq-v42';
 const ASSETS = 'cq-assets-v1';
 const BG_FILES = ['endogame-adventure', 'hero', 'title', 'hub', 'study', 'select', 'build-day', 'build-sunset', 'build-night', 'exchange', 'ghosts', 'workshop', 'habitat-jungle', 'habitat-volcano', 'habitat-coast']
   .map(n => `./bg/${n}.jpg`);
