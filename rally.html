@@ -68,7 +68,9 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
 .stars i{font-style:normal;color:#4a5170}
 .car button{width:100%;font-size:14px;padding:8px 10px}
 .car{position:relative}
-.car .cimg{width:100%;aspect-ratio:10/11;object-fit:cover;border-radius:12px;background:#fff}
+.car .cimg{width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px;background:#fff}
+.car .cimg.notyet{filter:brightness(.6) saturate(.5)}
+#homeImg{width:min(62vw,260px);aspect-ratio:1;object-fit:cover;border-radius:28px;box-shadow:0 8px 24px rgba(0,0,0,.35);cursor:pointer;display:block;margin:0 auto}
 .car b small{display:block;font-size:11px;color:var(--soft);font-weight:500}
 .car .line{font-size:12px;color:#fff3b0;text-align:center;line-height:1.35;min-height:2.7em}
 .car .hornb{background:#3a4157;font-size:13px;padding:6px 10px}
@@ -92,6 +94,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
 <section id="home">
   <div class="bar"><a class="homebtn" href="./#games" aria-label="EndoGame に もどる">🏠</a><div class="coins"><span class="coin"></span><span class="cv">0</span></div></div>
   <h1>ぶーぶー<br>ラリー</h1>
+  <img id="homeImg" alt="いま のっている くるま" hidden>
   <canvas id="homeCv" width="480" height="480" aria-label="いま のっている くるま"></canvas>
   <p class="sub" id="homeCar"></p>
   <div class="btns"><button class="go" id="toCourse">はしる！</button><button id="toGarage">ガレージ</button></div>
@@ -591,7 +594,7 @@ function show(s){screen=s;['home','courses','garage','race'].forEach(k=>$(k).hid
 function layout(){const s=Math.min((innerWidth-24)/W,(innerHeight-24)/H),dpr=window.devicePixelRatio||1;wrap.style.width=W*s+'px';wrap.style.height=H*s+'px';cv.style.width=W*s+'px';cv.style.height=H*s+'px';cv.width=Math.round(W*s*dpr);cv.height=Math.round(H*s*dpr);cx.setTransform(s*dpr,0,0,s*dpr,0,0)}
 addEventListener('resize',()=>{if(screen==='race')layout()});
 
-function renderHome(){$('homeCar').innerHTML='いまの くるま：<b>'+CHARA[sel].nick+'</b>（'+CARS[sel].n+'）<br>「'+CHARA[sel].line+'」'}
+function renderHome(){const im=$('homeImg');im.onload=()=>{im.hidden=false;$('homeCv').style.display='none'};im.onerror=()=>{im.hidden=true;$('homeCv').style.display=''};im.src='cards/rally-'+CHARA[sel].id+'.jpg';$('homeCar').innerHTML='いまの くるま：<b>'+CHARA[sel].nick+'</b>（'+CARS[sel].n+'）<br>「'+CHARA[sel].line+'」'}
 function renderCourses(){
   const seg=$('diffSeg');seg.innerHTML='';
   DIFF.forEach((d,i)=>{const b=document.createElement('button');b.textContent=d.n;b.setAttribute('aria-pressed',i===diff);b.onclick=()=>{diff=i;save();renderCourses()};seg.appendChild(b)});
@@ -607,7 +610,7 @@ function renderGarage(){
   const g=$('carGrid');g.innerHTML='';gCanv=[];
   CARS.forEach((car,i)=>{const d=document.createElement('div');d.className='car'+(i===sel?' sel':'');
     const cvs=document.createElement('canvas');cvs.width=200;cvs.height=220;d.appendChild(cvs);gCanv.push(cvs.getContext('2d'));
-    const ch=CHARA[i];d.insertAdjacentHTML('afterbegin',`<img class="cimg" src="cards/rally-${ch.id}.jpg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()">`);
+    const ch=CHARA[i];d.insertAdjacentHTML('afterbegin',`<img class="cimg${owned[i]?'':' notyet'}" src="cards/rally-${ch.id}.jpg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()">`);
     d.insertAdjacentHTML('beforeend',`<div class="stars">${'★'.repeat(car.g)}<i>${'★'.repeat(5-car.g)}</i></div><b>${ch.nick}<small>（${car.n}）</small></b><div class="line">「${ch.line}」</div><div class="ab">${car.at}</div>`);
     const hb=document.createElement('button');hb.className='hornb sm';hb.textContent='📯 プップー';hb.onclick=e=>{e.stopPropagation();horn(i);setTimeout(()=>sayLine(i),500)};d.appendChild(hb);
     const btn=document.createElement('button');
@@ -621,6 +624,7 @@ function drawGarage(t){gCanv.forEach((g,i)=>{const car=CARS[i];g.setTransform(2,
   const s=Math.min(1,96/car.len);if(!owned[i]){g.globalAlpha=.85}drawCar(g,car,50,56,t,{s});g.globalAlpha=1;
   if(!owned[i]){g.fillStyle='rgba(17,20,31,.45)';g.fillRect(0,0,100,110)}})}
 const hc=$('homeCv'),hx=hc.getContext('2d');
+$('homeImg').addEventListener('click',()=>{horn(sel);setTimeout(()=>sayLine(sel),500);$('homeImg').animate([{transform:'scale(1)'},{transform:'scale(1.08) rotate(-3deg)'},{transform:'scale(1)'}],{duration:400})});
 hc.addEventListener('click',()=>{horn(sel);setTimeout(()=>sayLine(sel),500);hc.animate([{transform:'scale(1)'},{transform:'scale(1.08) rotate(-3deg)'},{transform:'scale(1)'}],{duration:400})});
 function drawHome(t){hx.setTransform(4,0,0,4,0,0);hx.clearRect(0,0,120,120);hx.fillStyle='#3a4157';hx.beginPath();hx.arc(60,60,58,0,7);hx.fill();
   hx.save();hx.beginPath();hx.arc(60,60,58,0,7);hx.clip();hx.fillStyle='#5c6270';hx.fillRect(30,0,60,120);hx.fillStyle='#fff';for(let y=((t*60)%30)-30;y<120;y+=30)hx.fillRect(59,y,2,15);hx.restore();

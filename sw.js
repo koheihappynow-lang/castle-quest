@@ -1,7 +1,7 @@
 // オフラインでも動くように、ゲームのファイルをiPadに保存しておく
 // ・ネットにつながっているときは、いつも最新のプログラムを取りにいく（更新がすぐ反映される）
 // ・つながっていないときは、保存しておいたものを使う
-const VERSION = 'cq-v23';
+const VERSION = 'cq-v24';
 const BG_FILES = ['endogame-adventure', 'hero', 'title', 'hub', 'study', 'select', 'build-day', 'build-sunset', 'build-night', 'exchange', 'ghosts', 'workshop', 'habitat-jungle', 'habitat-volcano', 'habitat-coast']
   .map(n => `./bg/${n}.jpg`);
 const CASTLE_FILES = ['himeji', 'neuschwanstein', 'windsor', 'montsaintmichel', 'edinburgh', 'alhambra', 'chambord', 'hearst', 'forbiddencity', 'pena', 'tsuruga']
@@ -12,7 +12,7 @@ const LOCAL = [
   './js/speech.js', './js/sfx.js', './js/castles.js', './js/photos.js', './js/sentences.js', './js/math.js', './js/diorama/engine.js', ...CASTLE_FILES,
   './js/dinoGame.js', './js/dinos.js', './js/dino/view.js', './js/dino/trex.js', './js/dino/dinoBase.js', './js/dino/look.js',
   './cards/dino-trex.jpg', './cards/dino-trex-baby.jpg',
-  './cards/dino-care.jpg', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', ...BG_FILES,
+  './cards/dino-care.jpg', './cards/rally-chibi.jpg', './cards/rally-taxi.jpg', './cards/rally-truck.jpg', './cards/rally-police.jpg', './cards/rally-ambulance.jpg', './cards/rally-bus.jpg', './cards/rally-fire.jpg', './cards/rally-sports.jpg', './cards/rally-monster.jpg', './cards/rally-camper.jpg', './cards/rally-racer.jpg', './cards/rally-rocket.jpg', './cards/rally-limo.jpg', './cards/rally-rainbow.jpg', './cards/rally-star.jpg', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', ...BG_FILES,
 ];
 const CDN = [
   'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js',
