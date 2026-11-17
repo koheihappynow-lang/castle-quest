@@ -16,7 +16,7 @@ function idb() {
   return dbp ||= new Promise((res, rej) => {
     const r = indexedDB.open('endogame-letters', 1);
     r.onupgradeneeded = () => { r.result.createObjectStore('msgs', { keyPath: 'id' }); r.result.createObjectStore('audio'); };
-    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    r.onsuccess = () => { const d = r.result; d.onversionchange = () => { d.close(); dbp = null; }; res(d); }; r.onerror = () => { dbp = null; rej(r.error); };
   });
 }
 const reqP = r => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
@@ -37,10 +37,11 @@ export async function unheard(kidId) {
 
 const rid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 // kind：'greet'（サンタの あいさつ）／'thanks'（おれい）。kidId '*' は こども ぜんいん むけ
-export async function send({ kidId, kidName, thread: th, from, text = '', audio = null, kind = '' }) {
+export async function send({ kidId, kidName, thread: th, from, text = '', audio = null, image = null, kind = '' }) {
   const now = Date.now();
-  const m = { id: rid(), kidId, kidName, thread: th, from, text: String(text).slice(0, 500), hasAudio: !!audio, mime: audio?.type || '', ts: now, u: now, heard: from === 'kid' || kidId === '*', synced: false, ...(kind ? { kind } : {}) };
+  const m = { id: rid(), kidId, kidName, thread: th, from, text: String(text).slice(0, 500), hasAudio: !!audio, mime: audio?.type || '', hasImage: !!image, ts: now, u: now, heard: from === 'kid' || kidId === '*', synced: false, ...(kind ? { kind } : {}) };
   if (audio) await putAudio(m.id, audio);
+  if (image) await putAudio('img:' + m.id, image);
   await putMsg(m);
   sync().catch(() => {});
   return m;
@@ -56,6 +57,15 @@ export async function audioBlob(m) {
   if (!b && online()) {
     const r = await api('GET', `/api/audio/${encodeURIComponent(m.id)}`);
     if (r?.audio) { b = await (await fetch(r.audio)).blob(); await putAudio(m.id, b); }
+  }
+  return b || null;
+}
+// 絵（この端末に なければ サーバーから もらう）
+export async function imageBlob(m) {
+  let b = await getAudio('img:' + m.id);
+  if (!b && online()) {
+    const r = await api('GET', `/api/image/${encodeURIComponent(m.id)}`);
+    if (r?.image) { b = await (await fetch(r.image)).blob(); await putAudio('img:' + m.id, b); }
   }
   return b || null;
 }
@@ -110,6 +120,7 @@ async function doSync() {
     const { synced, ...meta } = m;
     const body = { msg: meta };
     if (m.hasAudio && !m.audioSent) { const b = await getAudio(m.id); if (b) body.audio = await blobToDataURL(b); }
+    if (m.hasImage && !m.audioSent) { const b = await getAudio('img:' + m.id); if (b) body.image = await blobToDataURL(b); }
     const r = await api('POST', '/api/msgs', body);
     m.synced = true; m.audioSent = true; m.u = r.u || m.u; await putMsg(m);
   }

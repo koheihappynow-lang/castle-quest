@@ -1,5 +1,6 @@
 // EndoGame：サンタさんへの おてがみ ／ パパと おはなし（こどもの 画面）
-import { thread, unheard, send, markHeard, audioURL, audioBlob, sync, online, getCfg, setCfg, testConnection, Recorder, pickMime, speakAs, santaLine, playSanta, stopSanta, unlockAudio } from './letters.js';
+import { openDrawPad, showBig } from './drawpad.js';
+import { thread, unheard, send, markHeard, audioURL, audioBlob, imageBlob, sync, online, getCfg, setCfg, testConnection, Recorder, pickMime, speakAs, santaLine, playSanta, stopSanta, unlockAudio } from './letters.js';
 
 const WHO = {
   santa: { name: 'サンタさん', title: '🎅 サンタさんへ おてがみ', img: 'cards/santa.jpg', emoji: '🎅',
@@ -32,6 +33,8 @@ const cardArt = th => {
   return `<span class="tc-art"><i>${emoji}</i>${src ? `<img src="${src}" alt="" onerror="this.remove()">` : ''}</span>`;
 };
 const LIMIT = 5;   // へんじが くるまで おくれる かず
+const PIC_LIMIT = 2;   // そのうち 絵は 2まいまで
+const picsOf = list => { let n = 0; for (let i = list.length - 1; i >= 0 && list[i].from === 'kid'; i--) if (list[i].hasImage) n++; return n; };
 // さいごの へんじの あとに こどもが おくった かず
 const streakOf = list => { let n = 0; for (let i = list.length - 1; i >= 0 && list[i].from === 'kid'; i--) n++; return n; };
 const papaPhoto = () => { try { return localStorage.getItem(PAPA_PHOTO); } catch (e) { return null; } };
@@ -69,13 +72,13 @@ export function installLetters(api) {
     return `
     ${header(p, { back: 'games' })}
     <div class="page letters ${th}">
-      <div class="lt-head">${whoAvatar(th, 'xl')}<div><h2>${w.title}</h2><p class="sub">${th === 'santa' ? 'マイクを おして、サンタさんに おはなし してね' : 'マイクを おして、パパに おはなし してね'}</p></div></div>
+      <div class="lt-head">${whoAvatar(th, 'xl')}<div><h2>${w.title}</h2><p class="sub">${th === 'santa' ? 'こえ・え・もじ で サンタさんに おてがみを おくろう' : 'こえ・え・もじ で パパに おくろう'}</p></div></div>
       <div class="lt-list" id="ltList"><p class="lt-empty">よみこみちゅう…</p></div>
       <div class="lt-rec" id="ltRec"></div>
       <div class="lt-stamps" id="ltStamps">${w.stamps.map(([e, t], i) => `<button class="lt-stamp" data-act="ltStamp" data-i="${i}">${e} ${t}</button>`).join('')}</div>
     </div>`;
   };
-  let STREAK = 0;
+  let STREAK = 0, PICS = 0;
   const recArea = (state, sec = 0) => {
     const el = document.getElementById('ltRec'); if (!el) return;
     const canRec = pickMime() !== null && navigator.mediaDevices?.getUserMedia;
@@ -92,26 +95,28 @@ export function installLetters(api) {
       : state === 'done'
       ? `<div class="row center wrap"><button class="btn" data-act="ltPreview">▶️ きいてみる</button><button class="btn primary big" data-act="ltSend">📮 おくる</button><button class="btn ghost" data-act="ltCancel">🗑️ やりなおす</button></div>`
       : state === 'sending' ? `<div class="lt-rec-msg">おくっているよ…</div>`
-      : `${canRec ? `<button class="lt-mic" data-act="ltRec"><span>🎤</span></button><div class="lt-rec-msg">おして はなす</div>` : ''}
-         <button class="lt-pen" data-act="ltText">✏️<span>もじで かく</span></button>
-         <div class="lt-left">あと <b>${left}</b>かい おくれるよ</div>`;
+      : `<div class="lt-modes">
+           ${canRec ? `<button class="lt-mode voice" data-act="ltRec"><i>🎤</i><span>こえ</span></button>` : ''}
+           <button class="lt-mode draw ${PICS >= PIC_LIMIT ? 'off' : ''}" data-act="ltDraw"><i>🎨</i><span>え</span></button>
+           <button class="lt-mode text" data-act="ltText"><i>✏️</i><span>もじ</span></button>
+         </div>
+         <div class="lt-left">あと <b>${left}</b>かい おくれるよ${PICS >= PIC_LIMIT ? '（え は おへんじが きたら また かけるよ）' : `（え は あと ${PIC_LIMIT - PICS}まい）`}</div>`;
     if (state === 'text') setTimeout(() => document.getElementById('ltTxt')?.focus(), 50);
   };
   async function fillList() {
     const p = activeProfile(), th = S.lettersTo, el = document.getElementById('ltList');
     if (!el || !p) return;
     const list = await thread(p.id, th);
-    const before = STREAK; STREAK = streakOf(list);
-    const recNow = document.getElementById('ltRec');
-    if (before !== STREAK && recNow && !rec && !recBlob && !recNow.querySelector('#ltTxt')) recArea('idle');
+    const before = STREAK + PICS * 100; STREAK = streakOf(list); PICS = picsOf(list);
+    if (before !== STREAK + PICS * 100) { const r = document.getElementById('ltRec'); if (r && !rec && !recBlob && !r.querySelector('#ltTxt')) recArea('idle'); }
     if (!list.length) { el.innerHTML = `<p class="lt-empty">${th === 'santa' ? 'サンタさんに はじめての おてがみを おくってみよう！' : 'パパに メッセージを おくってみよう！'}</p>`; return; }
     el.innerHTML = list.map(m => {
       const mine = m.from === 'kid';
       return `<div class="bub-row ${mine ? 'mine' : 'them'}">
         ${mine ? '' : whoAvatar(th)}
         <button class="bub ${mine ? 'mine' : 'them'} ${!mine && !m.heard ? 'new' : ''}" data-act="ltPlay" data-id="${m.id}">
-          <span class="bub-play">${m.hasAudio ? '🔊' : '💬'}</span>
-          ${m.text ? `<span class="bub-text">${esc(m.text)}</span>` : `<span class="bub-text voice">${mine ? 'こえの おてがみ' : 'こえの おへんじ'}</span>`}
+          ${m.hasImage ? `<img class="bub-img" data-img="${m.id}" alt="え">` : `<span class="bub-play">${m.hasAudio ? '🔊' : '💬'}</span>`}
+          ${m.text ? `<span class="bub-text">${esc(m.text)}</span>` : m.hasAudio ? `<span class="bub-text voice">${mine ? 'こえの おてがみ' : 'こえの おへんじ'}</span>` : ''}
           ${!mine && !m.heard ? '<b class="bub-new">あたらしい！</b>' : ''}
           <small class="bub-time">${hhmm(m.ts)}${mine && online() && !m.synced ? '・まだ とどいていないよ' : ''}</small>
         </button>
@@ -119,6 +124,12 @@ export function installLetters(api) {
     }).join('');
     el.scrollTop = el.scrollHeight;
     LIST = list;
+    // 絵を よみこむ
+    el.querySelectorAll('img[data-img]').forEach(async im => {
+      const m = list.find(x => x.id === im.dataset.img);
+      const b = m && await imageBlob(m).catch(() => null);
+      if (b) { im.src = URL.createObjectURL(b); im.onload = () => { el.scrollTop = el.scrollHeight; }; } else im.alt = 'え（よみこみちゅう）';
+    });
   }
   let LIST = [];
   AFTER.letters = () => {
@@ -140,6 +151,11 @@ export function installLetters(api) {
   async function playMsg(m) {
     player?.pause(); speechSynthesis.cancel(); stopSanta();
     if (m.from !== 'kid' && !m.heard) { m.heard = true; markHeard(m.id).then(fillList); }
+    if (m.hasImage) {
+      const b = await imageBlob(m).catch(() => null);
+      if (b) showBig(URL.createObjectURL(b));
+      if (!m.hasAudio && !m.text) return;
+    }
     if (m.hasAudio && m.from === 'santa') {
       const b = await audioBlob(m).catch(() => null);
       if (b) { try { await playSanta(b); } catch (e) { toast('こえを よみこめなかったよ'); } } else toast('こえを よみこめなかったよ');
@@ -151,11 +167,12 @@ export function installLetters(api) {
       speakAs(m.text, m.from === 'santa' ? 'santa' : m.from === 'papa' ? 'papa' : 'kid');
     }
   }
-  async function deliver({ text = '', audio = null }) {
-    const p = activeProfile(), th = S.lettersTo;
-    if (streakOf(await thread(p.id, th)) >= LIMIT) { recArea('wait'); toast(`${WHO[th].name}の おへんじを まってね`); return; }
+  async function deliver({ text = '', audio = null, image = null }) {
+    const p = activeProfile(), th = S.lettersTo, cur = await thread(p.id, th);
+    if (streakOf(cur) >= LIMIT) { recArea('wait'); toast(`${WHO[th].name}の おへんじを まってね`); return; }
+    if (image && picsOf(cur) >= PIC_LIMIT) { toast('え は 2まいまで。おへんじを まってね'); return; }
     recArea('sending');
-    await send({ kidId: p.id, kidName: p.name, thread: th, from: 'kid', text, audio });
+    await send({ kidId: p.id, kidName: p.name, thread: th, from: 'kid', text, audio, image });
     await sync().catch(() => {});
     recBlob = null; await fillList(); recArea('idle');
     sfx.bonus?.();
@@ -178,6 +195,12 @@ export function installLetters(api) {
     ltPreview: () => { if (!recBlob) return; player?.pause(); player = new Audio(URL.createObjectURL(recBlob)); player.play().catch(() => {}); },
     ltCancel: () => { recBlob = null; recArea('idle'); },
     ltText: () => { speechSynthesis.cancel(); recArea('text'); },
+    ltDraw: async () => {
+      if (PICS >= PIC_LIMIT) { toast('え は 2まいまで。おへんじが きたら また かけるよ', 2800); return; }
+      speechSynthesis.cancel(); stopSanta();
+      const img = await openDrawPad({ title: `${WHO[S.lettersTo].name}に えを かこう` });
+      if (img) deliver({ image: img });
+    },
     ltSendText: () => { const t = document.getElementById('ltTxt')?.value.trim(); if (!t) { toast('なにか かいてね'); return; } deliver({ text: t.slice(0, 100) }); },
     ltSend: () => { if (recBlob) deliver({ audio: recBlob }); },
     ltStamp: d => { const [e, t] = WHO[S.lettersTo].stamps[Number(d.i)]; deliver({ text: `${e} ${t}` }); },
