@@ -6,7 +6,7 @@
 try { importScripts('./asset-hashes.js'); } catch (e) {}
 const HASH = self.ASSET_HASH || {};
 const SCOPE = new URL('./', self.location).pathname;
-const VERSION = 'cq-v57';
+const VERSION = 'cq-v58';
 const ASSETS = 'cq-assets-v2';
 const BG_FILES = ['endogame-adventure', 'hero', 'title', 'hub', 'study', 'select', 'build-day', 'build-sunset', 'build-night', 'exchange', 'ghosts', 'workshop', 'habitat-jungle', 'habitat-volcano', 'habitat-coast']
   .map(n => `./bg/${n}.jpg`);

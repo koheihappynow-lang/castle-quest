@@ -17,7 +17,9 @@
   body { word-break: keep-all; overflow-wrap: anywhere; margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 -apple-system, "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif; }
   header { position: sticky; top: 0; z-index: 2; background: var(--blue); color: #fff; padding: calc(env(safe-area-inset-top) + 10px) 16px 10px; display: flex; align-items: center; gap: 10px; }
   header h1 { font-size: 18px; margin: 0; flex: 1; white-space: nowrap; }
-  header button { white-space: nowrap; }
+  header button { white-space: nowrap; flex: none; font-size: 13px; padding: 6px 8px; }
+  header h1 { min-width: 0; }
+  @media (max-width: 420px) { header { gap: 6px; padding-left: 12px; padding-right: 12px; } header h1 { font-size: 16px; } #syncBtn .lbl { display: none; } }
   header button { background: rgba(255,255,255,.2); color: #fff; border: 0; border-radius: 10px; padding: 6px 10px; font: inherit; font-size: 14px; }
   main { max-width: 720px; margin: 0 auto; padding: 12px 16px 120px; }
   .card { background: var(--card); border-radius: 14px; padding: 14px 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
@@ -39,6 +41,7 @@
   .m.kid { background: var(--kid); align-self: flex-start; }
   .m.papa { background: var(--papa); align-self: flex-end; }
   .m.santa { background: var(--santa); align-self: flex-end; }
+  .m.mama { background: #ffe3ef; align-self: flex-end; }
   .m .meta { font-size: 12px; color: var(--soft); }
   .m audio { width: 240px; max-width: 100%; display: block; margin-top: 4px; }
   .m .unsent { color: var(--red); }
@@ -59,7 +62,7 @@
 </style>
 </head>
 <body>
-<header><h1>✉️ へんじ</h1><button id="pairBtn">📲 つなぐ</button><button id="syncBtn">🔄 こうしん</button><button id="setBtn">⚙️</button></header>
+<header><h1>✉️ へんじ</h1><button id="pairBtn">📲 つなぐ</button><button id="syncBtn">🔄<span class="lbl"> こうしん</span></button><button id="setBtn">⚙️</button></header>
 <main id="main"></main>
 <div class="compose" id="compose" hidden><div class="in" id="composeIn"></div></div>
 <script type="module" src="js/papa.js"></script>

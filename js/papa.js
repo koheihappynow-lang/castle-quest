@@ -47,7 +47,7 @@ async function render() {
   main.innerHTML = `
     <div class="tabs">${tabs}</div>
     ${list.length ? `<div style="text-align:right;margin:-4px 0 6px"><button class="btn" id="delAll" style="font-size:13px;padding:6px 10px">🗑️ この タブを ぜんぶ けす（${list.length}つう）</button></div>` : ''}
-    ${online() ? '' : '<p class="hint">いまは この端末の なかだけ（⚙️ で サーバーに つなぐと スマホから へんじできます）</p>'}
+    ${online() || location.search.includes('demo') ? '' : '<p class="hint">いまは この端末の なかだけ（⚙️ で サーバーに つなぐと スマホから へんじできます）</p>'}
     ${cur.th === 'santa' ? await linesHTML() : ''}
     <div class="card"><div class="msgs">${list.length ? list.map(m => `
       <div class="m ${m.from} ${m.from === 'kid' && !s[m.id] ? 'unread' : ''}">
@@ -275,7 +275,7 @@ $('pairBtn').onclick = async () => {
     document.getElementById('pairClose').onclick = () => { clearInterval(t); box.remove(); };
   } catch (e) { alert('ばんごうを つくれませんでした（' + e.message + '）'); }
 };
-$('syncBtn').onclick = async () => { $('syncBtn').textContent = '…'; try { await sync(); } catch (e) { alert(e.message); } $('syncBtn').textContent = '🔄 こうしん'; render(); };
+$('syncBtn').onclick = async () => { $('syncBtn').textContent = '…'; try { await sync(); } catch (e) { alert(e.message); } $('syncBtn').innerHTML = '🔄<span class="lbl"> こうしん</span>'; render(); };
 // ひらいている あいだは 20びょう ごとに あたらしい おてがみを みる
 setInterval(async () => { if (rec || document.activeElement?.id === 'txt') return; try { const n = await sync(); if (n !== undefined) { const before = msgs.length; const all = await allMsgs(); if (all.length !== before) render(); } } catch (e) {} }, 20000);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') sync().then(render).catch(() => {}); });
@@ -288,4 +288,20 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   }).catch(() => {});
   let reloaded = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (had && !reloaded && !rec) { reloaded = true; location.reload(); } });
+}
+// 開発用：?demo で ひらくと、見本の おてがみ（この 端末の なかだけ）を ならべる。サーバーに つながって いない ときだけ
+if (new URLSearchParams(location.search).has('demo') && !online()) {
+  (async () => {
+    if ((await allMsgs()).length) return;
+    const devBefore = localStorage.getItem('endogame.deviceName'); localStorage.setItem('endogame.deviceName', 'はるとの iPad');
+    const t = Date.now() - 3600000, k = { kidId: 'demo-haruto', kidName: 'Haruto' };
+    const mk = (o, i) => send({ ...k, ...o }).then(m => m);
+    await mk({ thread: 'mama', from: 'kid', text: '🍳 ごはん なあに？' });
+    await mk({ thread: 'mama', from: 'mama', text: 'きょうは カレーだよ！ たのしみに しててね' });
+    await mk({ thread: 'mama', from: 'kid', text: '❤️ ママ だいすき！' });
+    await mk({ thread: 'santa', from: 'kid', text: '🎁 プレゼント たのしみ！' });
+    if (devBefore) localStorage.setItem('endogame.deviceName', devBefore); else localStorage.removeItem('endogame.deviceName');
+    localStorage.setItem('endogame.papaView', JSON.stringify({ kid: 'haruto', th: 'mama' }));
+    render();
+  })();
 }
