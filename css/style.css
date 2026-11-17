@@ -685,3 +685,19 @@ body { word-break: keep-all; overflow-wrap: anywhere; line-break: strict; }
 .pz-scale .beam { font-size: .9em; }
 .pz-opts .opt-text { font-size: clamp(2.2rem, 6vw, 3.2rem); line-height: 1.1; font-family: "Segoe UI Emoji", "Apple Color Emoji", sans-serif; }
 .pz-row { flex-wrap: nowrap; font-size: clamp(1.6rem, 5vw, 3rem); }
+
+.talk-card.mama { background: linear-gradient(135deg, #ffa3c8, #e8508f); animation-delay: .52s; }
+.talk-card.mama .tc-body::after { content: '💗 ✨ 💗'; font-size: 1.1rem; opacity: .85; }
+.letters.mama .lt-mode.voice { background: linear-gradient(180deg, #ffa3c8, #e8508f); }
+/* はなす カードが 3まい：え を うえ、もじ を したに */
+.talk-row { grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.talk-card { grid-template-columns: 1fr; grid-template-rows: auto 1fr; min-height: 0; text-align: center; }
+.talk-card .tc-art { aspect-ratio: 16 / 10; border-radius: 24px 24px 0 0; }
+.talk-card .tc-art i { font-size: 3.6rem; }
+.talk-card .tc-body { align-items: center; padding: 10px 8px 12px; gap: 4px; }
+.talk-card .tb-t { font-size: clamp(1.05rem, 2.6vw, 1.5rem); white-space: nowrap; }
+.talk-card .tb-t br { display: none; }
+.talk-card .tb-s { font-size: clamp(.7rem, 1.7vw, .95rem); white-space: nowrap; }
+.talk-card .tb-off { font-size: .75rem; align-self: center; }
+.talk-card .tc-body::after { font-size: .9rem; }
+@media (max-width: 520px) { .talk-row { grid-template-columns: 1fr; } .talk-card { grid-template-columns: minmax(110px, 36%) 1fr; grid-template-rows: auto; text-align: left; } .talk-card .tc-art { aspect-ratio: auto; border-radius: 24px 0 0 24px; } .talk-card .tc-body { align-items: flex-start; } }

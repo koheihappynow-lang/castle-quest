@@ -75,7 +75,7 @@ export async function deleteMsgs(ids) {
 export async function thread(kid, th) { return (await allMsgs()).filter(m => isKid(m, kid) && m.thread === th); }
 // まだ きいていない へんじの かず { santa: n, papa: n }
 export async function unheard(kid) {
-  const out = { santa: 0, papa: 0 };
+  const out = { santa: 0, papa: 0, mama: 0 };
   for (const m of await allMsgs()) if (isKid(m, kid) && m.from !== 'kid' && !m.heard) out[m.thread]++;
   return out;
 }
@@ -344,7 +344,7 @@ export function speakAs(text, who) {
     const u = new SpeechSynthesisUtterance(text);
     u.lang = 'ja-JP';
     const ja = speechSynthesis.getVoices().filter(v => /ja/i.test(v.lang));
-    if (ja.length) u.voice = ja.find(v => /otoya|ichiro|keita|male|男/i.test(v.name)) || ja[0];
+    if (ja.length) u.voice = who === 'mama' ? (ja.find(v => /kyoko|haruka|nanami|ayumi|female|女/i.test(v.name)) || ja[0]) : (ja.find(v => /otoya|ichiro|keita|male|男/i.test(v.name)) || ja[0]);
     if (who === 'santa') { u.pitch = 0.55; u.rate = 0.88; } else { u.pitch = 0.95; u.rate = 1; }
     speechSynthesis.cancel(); speechSynthesis.speak(u);
     return new Promise(res => { u.onend = res; u.onerror = res; });

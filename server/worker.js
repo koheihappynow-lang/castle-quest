@@ -6,7 +6,7 @@
 //   GET  /api/audio/:id           … こえ（data:URL）
 //   GET  /api/image/:id           … 絵（data:URL）
 const KEEP_DAYS = 180, MAX_AUDIO = 3_000_000, MAX_IMAGE = 2_000_000;
-const THREADS = ['santa', 'papa'], FROMS = ['kid', 'papa', 'santa'];
+const THREADS = ['santa', 'papa', 'mama'], FROMS = ['kid', 'papa', 'santa', 'mama'];
 
 export default {
   async fetch(req, env) {
@@ -99,7 +99,7 @@ export default {
         if (typeof body.image !== 'string' || !body.image.startsWith('data:image/') || body.image.length > MAX_IMAGE) return J({ error: 'bad image' }, 400);
         await env.LETTERS.put('i:' + m.id, body.image, { expirationTtl: KEEP_DAYS * 86400 });
       }
-      const kind = ['greet', 'thanks', 'papaPhoto', 'papaIcon'].includes(m.kind) ? m.kind : null;
+      const kind = ['greet', 'thanks', 'papaPhoto', 'papaIcon', 'mamaPhoto', 'mamaIcon'].includes(m.kind) ? m.kind : null;
       await env.DB.prepare(`INSERT INTO msgs (id,kidId,kidName,thread,frm,text,hasAudio,hasImage,mime,device,kind,ts,heard,deleted,u) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,0,?)
         ON CONFLICT(id) DO UPDATE SET heard = MAX(heard, excluded.heard), text = CASE WHEN excluded.text <> '' THEN excluded.text ELSE text END,
           hasAudio = MAX(hasAudio, excluded.hasAudio), hasImage = MAX(hasImage, excluded.hasImage), u = excluded.u`)

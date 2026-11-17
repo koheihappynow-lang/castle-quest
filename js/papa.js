@@ -1,12 +1,12 @@
 // EndoGame：パパの へんじページ（パパ または サンタさん として へんじする）
 import { openDrawPad, showBig } from './drawpad.js';
-import { nameKey, makePairCode, deleteMsgs, retrySend } from './letters.js';
+import { nameKey, makePairCode, deleteMsgs, retrySend, claimPairCode } from './letters.js';
 import { allMsgs, send, audioURL, audioBlob, imageBlob, sync, online, getCfg, setCfg, testConnection, Recorder, pickMime, speakAs, santaLine, playSanta, stopSanta, unlockAudio } from './letters.js';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const when = ts => { const d = new Date(ts); return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`; };
-const TH = { papa: '👨 パパ', santa: '🎅 サンタ' };
+const TH = { papa: '👨 パパ', mama: '👩 ママ', santa: '🎅 サンタ' };
 // 見ている こども・スレッド。既読（パパが みた）は この端末だけに おぼえる
 let cur = JSON.parse(localStorage.getItem('endogame.papaView') || '{}');
 const seenKey = 'endogame.papaSeen';
@@ -38,7 +38,7 @@ async function render() {
   if (!cur.kid || !kids.some(([id]) => id === cur.kid)) cur = { kid: kids[0][0], th: 'papa' };
   const s = seen();
   const unread = (kid, th) => msgs.filter(m => m.kidId !== '*' && nameKey(m.kidName) === kid && m.thread === th && m.from === 'kid' && !s[m.id]).length;
-  const tabs = kids.flatMap(([id, name]) => ['papa', 'santa'].map(th => {
+  const tabs = kids.flatMap(([id, name]) => ['papa', 'mama', 'santa'].map(th => {
     const n = unread(id, th);
     return `<button class="tab ${cur.kid === id && cur.th === th ? 'on' : ''}" data-kid="${esc(id)}" data-th="${th}">${esc(name)}${info.get(id).devices.size ? `<small style="opacity:.7">（${[...info.get(id).devices].map(esc).join('・')}）</small>` : ''} → ${TH[th]}${n ? `<b>${n}</b>` : ''}</button>`;
   })).join('');
@@ -177,15 +177,54 @@ function bindLines() {
 
 function setupHTML() {
   const c = getCfg();
-  return `<div class="card"><h2>📱 サーバーに つなぐ</h2>
-    <p class="hint">iPad の「おうちのひと メニュー → 💌 おてがみ」に いれたのと おなじ アドレスと かぎを いれてください。</p>
+  return `<div class="card"><h2>📱 つなぐ ばんごう（6けた）で つなぐ</h2>
+    <p class="hint">つながっている スマホ（パパ）の この ページで「📲 つなぐ ばんごう」を おすと 6けたの ばんごうが でます。それを いれるだけ。</p>
+    <div class="row"><input id="pairIn" inputmode="numeric" maxlength="7" placeholder="123 456" style="max-width:170px;font-size:22px;letter-spacing:.1em;text-align:center"><button class="btn primary" id="pairGo">つなぐ</button></div>
+    <p class="hint" id="pairMsg"></p></div>
+  ${online() ? photosHTML() : ''}
+  <div class="card"><h2>🔑 かぎで つなぐ</h2>
+    <p class="hint">iPad の「おうちのひと メニュー → 💌 おてがみ」に いれたのと おなじ かぎを いれても つながります。</p>
     <label>サーバーの アドレス</label><input id="srv" value="${esc(c.server || '')}" placeholder="https://endogame-letters.xxxx.workers.dev" autocomplete="off">
     <label>かぞくの かぎ</label><input id="key" type="password" value="${esc(c.key || '')}" autocomplete="off">
     <div class="row" style="margin-top:10px"><button class="btn primary" id="save">ほぞんして つなぐ</button>${online() || msgs.length ? '<button class="btn" id="back">もどる</button>' : ''}</div>
     <p class="hint" id="msg"></p>
     <p class="hint">この ページを スマホの ホーム画面に ついかすると、アプリのように ひらけます。</p></div>`;
 }
+// パパ・ママの しゃしんを サーバーに いれて、ぜんぶの iPad に くばる
+function photosHTML() {
+  return `<div class="card"><h2>🖼️ しゃしんを iPad に くばる</h2>
+    <p class="hint">ここで えらんだ しゃしんが、こどもの iPad の「パパと はなす」「ママと はなす」の ボタンと アイコンに でます（かぞくの かぎが ないと みられません）。たてながで かおが 上の ほうの しゃしんが きれいです。</p>
+    <div class="row"><label class="btn">👨 パパの しゃしん<input type="file" accept="image/*" data-who="papa" class="sharePhoto" hidden></label>
+    <label class="btn">👩 ママの しゃしん<input type="file" accept="image/*" data-who="mama" class="sharePhoto" hidden></label></div>
+    <p class="hint" id="photoMsg"></p></div>`;
+}
+function cropTo(file, W, H, topBias) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => { const c = document.createElement('canvas'); c.width = W; c.height = H; const k = Math.max(W / img.width, H / img.height), w = img.width * k, h = img.height * k;
+      c.getContext('2d').drawImage(img, (W - w) / 2, Math.min(0, (H - h) * topBias), w, h); URL.revokeObjectURL(url); c.toBlob(b => res(b), 'image/jpeg', 0.86); };
+    img.onerror = rej; img.src = url;
+  });
+}
 function bindSetup() {
+  if ($('pairGo')) $('pairGo').onclick = async () => {
+    const code = ($('pairIn').value || '').replace(/\D/g, '');
+    if (code.length !== 6) { $('pairMsg').textContent = '6けたの ばんごうを いれてください'; return; }
+    $('pairMsg').textContent = 'つないでいます…';
+    try { await claimPairCode(code, getCfg().server); showSetup = false; $('pairMsg').textContent = '✅ つながりました'; await sync().catch(() => {}); render(); }
+    catch (e) { $('pairMsg').textContent = '❌ ' + e.message; }
+  };
+  document.querySelectorAll('.sharePhoto').forEach(inp => inp.addEventListener('change', async () => {
+    const file = inp.files?.[0]; if (!file) return; const who = inp.dataset.who;
+    $('photoMsg').textContent = 'おくっています…';
+    try {
+      const card = await cropTo(file, 600, 800, 0.2), icon = await cropTo(file, 256, 256, 0.25);
+      await send({ kidId: '*', kidName: '', thread: who, from: who, image: card, kind: who + 'Photo' });
+      await send({ kidId: '*', kidName: '', thread: who, from: who, image: icon, kind: who + 'Icon' });
+      await sync();
+      $('photoMsg').textContent = `✅ ${who === 'papa' ? 'パパ' : 'ママ'}の しゃしんを くばりました（iPad は つぎに ひらいた ときに かわります）`;
+    } catch (e) { $('photoMsg').textContent = '❌ おくれませんでした（' + e.message + '）'; }
+  }));
   $('save').onclick = async () => {
     const server = $('srv').value.trim(), key = $('key').value.trim();
     if (!server || !key) { $('msg').textContent = 'りょうほう いれてください'; return; }
@@ -226,8 +265,8 @@ $('pairBtn').onclick = async () => {
     const box = document.createElement('div');
     box.style.cssText = 'position:fixed;inset:0;z-index:50;background:rgba(20,30,50,.6);display:flex;align-items:center;justify-content:center;padding:16px';
     box.innerHTML = `<div style="background:#fff;border-radius:18px;padding:22px 20px;max-width:380px;width:100%;text-align:center;font-size:16px;line-height:1.6">
-      <b>📲 iPad を つなぐ</b>
-      <p style="margin:8px 0">iPad の「⚙️ おうちのひと → 💌 おてがみ」の<br>「つなぐ ばんごう」に いれてください</p>
+      <b>📲 つなぐ ばんごう</b>
+      <p style="margin:8px 0">iPad の「⚙️ おうちのひと → 💌 おてがみ」か<br>ママの スマホの へんじページ（⚙️）に いれてください</p>
       <div style="font:900 44px/1.2 ui-monospace,Menlo,monospace;letter-spacing:.12em;color:#2f7fe8;margin:10px 0">${r.code.slice(0, 3)} ${r.code.slice(3)}</div>
       <p class="hint" id="pairLeft">のこり 10:00（1だいに 1かい つかえます）</p>
       <button class="btn primary" id="pairClose" style="margin-top:8px">とじる</button></div>`;
