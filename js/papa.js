@@ -104,6 +104,27 @@ function bindSetup() {
   if ($('back')) $('back').onclick = () => { showSetup = false; render(); };
 }
 
+// かんたん せってい：QRコードの リンク（#setup=…）で アドレスと かぎを 入れる
+// ・かぎは「#」の あとに あるので サーバーには おくられない
+// ・iPhone の ホーム画面アプリは Safari と べつの ほぞん場所なので、ホーム画面に ついかするまで リンクを のこす
+const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
+if (location.hash.startsWith('#setup=')) {
+  try {
+    const b64 = location.hash.slice(7).replace(/-/g, '+').replace(/_/g, '/');
+    const { s, k } = JSON.parse(decodeURIComponent(escape(atob(b64))));
+    if (s && k) {
+      if (getCfg().key !== k || getCfg().server !== s) setCfg({ server: s, key: k, since: 0 });
+      if (standalone) history.replaceState(null, '', location.pathname);
+      else {
+        const b = document.createElement('div');
+        b.style.cssText = 'background:#fff7d6;border:2px solid #ffb21a;border-radius:12px;padding:12px 14px;margin:12px 16px 0;font-size:15px;line-height:1.6';
+        b.innerHTML = '✅ <b>せってい できました！</b><br>このまま 下の <b>共有ボタン（□↑）→「ホーム画面に追加」</b> を おしてください。つぎからは アイコンを おすだけで ひらけます。';
+        document.querySelector('header').after(b);
+      }
+    }
+  } catch (e) { console.warn('setup link', e); }
+}
+
 $('setBtn').onclick = () => { showSetup = true; render(); };
 $('syncBtn').onclick = async () => { $('syncBtn').textContent = '…'; try { await sync(); } catch (e) { alert(e.message); } $('syncBtn').textContent = '🔄 こうしん'; render(); };
 // ひらいている あいだは 20びょう ごとに あたらしい おてがみを みる
