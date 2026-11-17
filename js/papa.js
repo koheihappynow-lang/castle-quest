@@ -21,6 +21,7 @@ const LINES = [['greet', '👋 あいさつ（がめんを ひらいたとき）
 async function render() {
   msgs = await allMsgs();
   const main = $('main');
+  document.body.classList.remove('chat');
   if (showSetup || (!online() && !msgs.length)) { $('compose').hidden = true; main.innerHTML = setupHTML(); bindSetup(); return; }
   // こども × スレッド
   // こどもは「なまえ」で まとめる（ちがう 端末から でも おなじ こ）。へんじは その こ の ぜんぶの 端末に とどく
@@ -56,7 +57,7 @@ async function render() {
     ${list.length ? `<div style="text-align:right;margin:-4px 0 6px"><button class="btn" id="delAll" style="font-size:13px;padding:6px 10px">🗑️ この タブを ぜんぶ けす（${list.length}つう）</button></div>` : ''}
     ${online() || location.search.includes('demo') ? '' : '<p class="hint">いまは この端末の なかだけ（⚙️ で サーバーに つなぐと スマホから へんじできます）</p>'}
     ${cur.th === 'santa' ? await linesHTML() : ''}
-    <div class="card"><div class="msgs">${list.length ? list.map(m => `
+    <div class="card msgbox" id="msgbox"><div class="msgs">${list.length ? list.map(m => `
       <div class="m ${m.from} ${m.from === 'kid' && !s[m.id] ? 'unread' : ''}">
         <button class="del" data-del="${esc(m.id)}" title="けす">🗑️</button>
         <div class="meta">${m.from === 'kid' ? esc(m.kidName) + (m.device ? `（${esc(m.device)}）` : '') : TH[m.from]}・${when(m.ts)}${m.from !== 'kid' ? (m.heard ? '・✅ きいたよ' : '・まだ きいていない') : ''}${!m.synced && online() ? ` <span class="unsent">・⚠️ まだ おくれていない${m.lastError ? '（' + esc(m.lastError) + '）' : ''}</span> <button class="btn" data-retry="${esc(m.id)}" style="font-size:12px;padding:3px 8px">もういちど おくる</button>` : ''}</div>
@@ -76,7 +77,7 @@ async function render() {
   main.querySelectorAll('img[data-img]').forEach(async im => {
     const m = msgs.find(x => x.id === im.dataset.img);
     const b = m && await imageBlob(m).catch(() => null);
-    if (b) { const u = URL.createObjectURL(b); im.src = u; im.onclick = () => showBig(u); }
+    if (b) { const u = URL.createObjectURL(b); im.src = u; im.onclick = () => showBig(u); im.onload = () => { const box = $('msgbox'); if (box) box.scrollTop = box.scrollHeight; }; }
   });
   main.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
     const m = msgs.find(x => x.id === b.dataset.del); if (!m) return;
@@ -91,11 +92,12 @@ async function render() {
   };
   markSeen(list.filter(m => m.from === 'kid').map(m => m.id));
   renderCompose(name);
-  fitPad(); window.scrollTo(0, document.body.scrollHeight);
+  document.body.classList.add('chat');
+  fitPad(); const box = $('msgbox'); if (box) box.scrollTop = box.scrollHeight;
 }
 
 // 下の 入力欄の 高さに あわせて、ページの 下の よはくを かえる（サンタの ときは 入力欄が たかい）
-function fitPad() { const c = $('compose'); $('main').style.paddingBottom = (c.hidden ? 24 : c.offsetHeight + 24) + 'px'; }
+function fitPad() { const c = $('compose'); $('main').style.paddingBottom = document.body.classList.contains('chat') ? '' : (c.hidden ? 24 : c.offsetHeight + 24) + 'px'; }
 addEventListener('resize', fitPad);
 function renderCompose(name) {
   $('compose').hidden = false;

@@ -62,6 +62,15 @@
   .m.unread { outline: 2px solid #ffb21a; }
   .compose { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; border-top: 1px solid var(--line); padding: 10px 16px calc(env(safe-area-inset-bottom) + 10px); }
   .compose .in { max-width: 720px; margin: 0 auto; }
+  /* チャットの かたち：がめん ぜんたいは うごかさず、おてがみの わく だけ スクロール */
+  html, body { height: 100%; }
+  body.chat { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+  body.chat header { position: static; flex: none; }
+  body.chat main { flex: 1; min-height: 0; width: 100%; display: flex; flex-direction: column; padding: 10px 16px 8px; box-sizing: border-box; }
+  body.chat main > * { flex: none; }
+  body.chat main > .msgbox { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; margin-bottom: 0; }
+  body.chat .compose { position: static; flex: none; }
+  body.chat main > details.card { max-height: 40vh; overflow-y: auto; }
   .compose textarea { min-height: 52px; }
   .compose .row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .compose .row .btn { font-size: 14px; padding: 9px 8px; }
