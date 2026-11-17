@@ -1,5 +1,5 @@
 // EndoGame：パパの へんじページ（パパ または サンタさん として へんじする）
-import { allMsgs, send, audioURL, sync, online, getCfg, setCfg, testConnection, Recorder, pickMime, speakAs } from './letters.js';
+import { allMsgs, send, audioURL, audioBlob, sync, online, getCfg, setCfg, testConnection, Recorder, pickMime, speakAs, santaLine, playSanta, stopSanta, unlockAudio } from './letters.js';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -11,13 +11,16 @@ const seenKey = 'endogame.papaSeen';
 const seen = () => { try { return JSON.parse(localStorage.getItem(seenKey) || '{}'); } catch (e) { return {}; } };
 const markSeen = ids => { const s = seen(); ids.forEach(i => { s[i] = 1; }); localStorage.setItem(seenKey, JSON.stringify(s)); };
 let showSetup = false, rec = null, recBlob = null, msgs = [];
+let line = { kind: '', rec: null, blob: null };   // きまり文句の ろくおん
+const LINES = [['greet', '👋 あいさつ（がめんを ひらいたとき）', 'れい：「ホッホッホー！ メリークリスマス！ サンタさんだよ。きょうは どんな おはなしを してくれるのかな？」'],
+  ['thanks', '💌 おれい（おてがみが とどいたとき）', 'れい：「ホッホッホー！ おてがみ ありがとう。ちゃんと よんだら おへんじ するからね。」']];
 
 async function render() {
   msgs = await allMsgs();
   const main = $('main');
   if (showSetup || (!online() && !msgs.length)) { $('compose').hidden = true; main.innerHTML = setupHTML(); bindSetup(); return; }
   // こども × スレッド
-  const kids = [...new Map([...msgs.filter(m => m.from !== 'kid'), ...msgs.filter(m => m.from === 'kid')].map(m => [m.kidId, m.kidName])).entries()];
+  const kids = [...new Map([...msgs.filter(m => m.from !== 'kid'), ...msgs.filter(m => m.from === 'kid')].filter(m => m.kidId !== '*').map(m => [m.kidId, m.kidName])).entries()];
   if (!kids.length) { $('compose').hidden = true; main.innerHTML = `<div class="card empty">まだ おてがみは ありません。<br>こどもが おくると ここに でます。</div>${online() ? '' : '<p class="hint">いまは この端末の なかだけです（⚙️ で サーバーに つなげます）</p>'}`; return; }
   if (!cur.kid || !kids.some(([id]) => id === cur.kid)) cur = { kid: kids[0][0], th: 'papa' };
   const s = seen();
@@ -31,11 +34,12 @@ async function render() {
   main.innerHTML = `
     <div class="tabs">${tabs}</div>
     ${online() ? '' : '<p class="hint">いまは この端末の なかだけ（⚙️ で サーバーに つなぐと スマホから へんじできます）</p>'}
+    ${cur.th === 'santa' ? await linesHTML() : ''}
     <div class="card"><div class="msgs">${list.length ? list.map(m => `
       <div class="m ${m.from} ${m.from === 'kid' && !s[m.id] ? 'unread' : ''}">
         <div class="meta">${m.from === 'kid' ? esc(name) : TH[m.from]}・${when(m.ts)}${m.from !== 'kid' ? (m.heard ? '・✅ きいたよ' : '・まだ きいていない') : ''}${!m.synced && online() ? ' <span class="unsent">・まだ おくれていない</span>' : ''}</div>
         ${m.text ? `<div>${esc(m.text)}</div>` : ''}
-        ${m.hasAudio ? `<audio controls preload="none" data-aid="${esc(m.id)}"></audio>` : ''}
+        ${m.hasAudio && m.from === 'santa' ? `<button class="btn" data-santa="${esc(m.id)}" style="margin-top:4px">🎅 サンタの こえで きく</button>` : m.hasAudio ? `<audio controls preload="none" data-aid="${esc(m.id)}"></audio>` : ''}
         ${m.from === 'santa' && m.text ? `<button class="btn" data-say="${esc(m.id)}" style="margin-top:4px;font-size:13px">🔊 サンタの こえで きく</button>` : ''}
       </div>`).join('') : '<div class="empty">まだ ありません</div>'}</div></div>`;
   main.querySelectorAll('.tab').forEach(b => b.onclick = () => { cur = { kid: b.dataset.kid, th: b.dataset.th }; localStorage.setItem('endogame.papaView', JSON.stringify(cur)); recBlob = null; render(); });
@@ -43,6 +47,8 @@ async function render() {
     a.addEventListener('play', async () => { if (a.src) return; a.pause(); const m = msgs.find(x => x.id === a.dataset.aid); const u = await audioURL(m).catch(() => null); if (u) { a.src = u; a.play(); } else alert('こえを よみこめませんでした'); }, { once: false });
   });
   main.querySelectorAll('[data-say]').forEach(b => b.onclick = () => { const m = msgs.find(x => x.id === b.dataset.say); speakAs(m.text, 'santa'); });
+  main.querySelectorAll('[data-santa]').forEach(b => b.onclick = async () => { unlockAudio(); const m = msgs.find(x => x.id === b.dataset.santa); const bl = await audioBlob(m).catch(() => null); if (bl) playSanta(bl); else alert('こえを よみこめませんでした'); });
+  if (cur.th === 'santa') bindLines();
   markSeen(list.filter(m => m.from === 'kid').map(m => m.id));
   renderCompose(name);
   window.scrollTo(0, document.body.scrollHeight);
@@ -50,14 +56,14 @@ async function render() {
 
 function renderCompose(name) {
   $('compose').hidden = false;
-  const santa = cur.th === 'santa', canRec = !santa && pickMime() !== null && navigator.mediaDevices?.getUserMedia;
+  const santa = cur.th === 'santa', canRec = pickMime() !== null && navigator.mediaDevices?.getUserMedia;
   $('composeIn').innerHTML = `
-    <textarea id="txt" placeholder="${santa ? 'サンタさんとして へんじ（ひくい サンタの こえで よみあげます）' : esc(name) + 'へ へんじ'}"></textarea>
+    <textarea id="txt" placeholder="${santa ? 'サンタとして もじで へんじ（きかいの こえで よみあげます。🎤 で パパの こえを ろくおんする ほうが しぜんです）' : esc(name) + 'へ へんじ'}"></textarea>
     <div class="row" style="margin-top:6px">
       <button class="btn ${santa ? 'santa' : 'primary'}" id="sendTxt">${santa ? '🎅 サンタとして おくる' : '📮 おくる'}</button>
       ${santa ? `<button class="btn" id="preview">🔊 サンタの こえで ためす</button>` : ''}
-      ${canRec ? `<button class="btn" id="recBtn">${rec ? '⏹️ とめる' : recBlob ? '🎤 とりなおす' : '🎤 こえで へんじ'}</button>` : ''}
-      ${recBlob ? `<button class="btn" id="recPlay">▶️ きく</button><button class="btn primary" id="recSend">📮 こえを おくる</button>` : ''}
+      ${canRec ? `<button class="btn ${santa && !recBlob && !rec ? 'santa' : ''}" id="recBtn">${rec ? '⏹️ とめる' : recBlob ? '🎤 とりなおす' : santa ? '🎤 サンタとして こえで へんじ' : '🎤 こえで へんじ'}</button>` : ''}
+      ${recBlob ? `<button class="btn" id="recPlay">${santa ? '🎅 サンタの こえで きく' : '▶️ きく'}</button><button class="btn ${santa ? 'santa' : 'primary'}" id="recSend">📮 こえを おくる</button>` : ''}
       <span id="recMsg" class="recdot"></span>
     </div>`;
   $('sendTxt').onclick = async () => {
@@ -68,6 +74,7 @@ function renderCompose(name) {
   };
   if ($('preview')) $('preview').onclick = () => { const t = $('txt').value.trim(); if (t) speakAs(t, 'santa'); };
   if ($('recBtn')) $('recBtn').onclick = async () => {
+    unlockAudio(); stopSanta();
     if (rec) { rec.stop(); return; }
     try {
       rec = await new Recorder().start(60, s => { const m = $('recMsg'); if (m) m.textContent = `● ろくおん ${Math.floor(s)}びょう`; });
@@ -75,12 +82,50 @@ function renderCompose(name) {
       rec.done.then(b => { recBlob = b; rec = null; renderCompose(name); });
     } catch (e) { rec = null; alert('マイクが つかえません'); }
   };
-  if ($('recPlay')) $('recPlay').onclick = () => new Audio(URL.createObjectURL(recBlob)).play();
+  if ($('recPlay')) $('recPlay').onclick = () => { if (santa) playSanta(recBlob); else new Audio(URL.createObjectURL(recBlob)).play(); };
   if ($('recSend')) $('recSend').onclick = async () => {
     $('recSend').disabled = true;
     await send({ kidId: cur.kid, kidName: name, thread: cur.th, from: cur.th, audio: recBlob }); await sync().catch(() => {});
     recBlob = null; await render();
   };
+}
+
+async function linesHTML() {
+  const rows = [];
+  for (const [k, title, ex] of LINES) {
+    const m = await santaLine(k), busy = line.kind === k;
+    rows.push(`<div style="border-top:1px solid var(--line);padding:8px 0">
+      <b>${title}</b> <span class="hint">${m ? '✅ ろくおんずみ' : 'まだ（いまは きかいの こえ）'}</span>
+      <div class="hint">${ex}</div>
+      <div class="row" style="margin-top:4px">
+        ${m ? `<button class="btn" data-line-play="${k}">🎅 いまの こえを きく</button>` : ''}
+        <button class="btn ${busy && line.rec ? '' : 'santa'}" data-line-rec="${k}">${busy && line.rec ? '⏹️ とめる' : busy && line.blob ? '🎤 とりなおす' : '🎤 ろくおん'}</button>
+        ${busy && line.blob ? `<button class="btn" data-line-try="${k}">🎅 サンタの こえで きく</button><button class="btn primary" data-line-save="${k}">💾 これに する</button>` : ''}
+        ${busy && line.rec ? '<span class="recdot" id="lineMsg">● ろくおんちゅう</span>' : ''}
+      </div></div>`);
+  }
+  return `<details class="card" ${line.kind ? 'open' : ''}><summary><b>🎅 サンタの きまり文句（こども ぜんいん きょうつう）</b></summary>
+    <p class="hint">ろくおんした パパの こえは、こどもが きくとき ひくく・ゆっくりの サンタ風に なります。「ホッホッホー」から はじめると サンタらしく なります。</p>${rows.join('')}</details>`;
+}
+function bindLines() {
+  document.querySelectorAll('[data-line-play]').forEach(b => b.onclick = async () => { unlockAudio(); const m = await santaLine(b.dataset.linePlay); const bl = m && await audioBlob(m).catch(() => null); if (bl) playSanta(bl); });
+  document.querySelectorAll('[data-line-rec]').forEach(b => b.onclick = async () => {
+    unlockAudio(); stopSanta();
+    const k = b.dataset.lineRec;
+    if (line.rec && line.kind === k) { line.rec.stop(); return; }
+    try {
+      line = { kind: k, rec: await new Recorder().start(30, sec => { const el = document.getElementById('lineMsg'); if (el) el.textContent = `● ろくおん ${Math.floor(sec)}びょう`; }), blob: null };
+      render();
+      line.rec.done.then(bl => { line.blob = bl; line.rec = null; render(); });
+    } catch (e) { line = { kind: '', rec: null, blob: null }; alert('マイクが つかえません'); }
+  });
+  document.querySelectorAll('[data-line-try]').forEach(b => b.onclick = () => { if (line.blob) playSanta(line.blob); });
+  document.querySelectorAll('[data-line-save]').forEach(b => b.onclick = async () => {
+    b.disabled = true;
+    await send({ kidId: '*', kidName: '', thread: 'santa', from: 'santa', audio: line.blob, kind: b.dataset.lineSave });
+    await sync().catch(() => {});
+    line = { kind: '', rec: null, blob: null }; render();
+  });
 }
 
 function setupHTML() {

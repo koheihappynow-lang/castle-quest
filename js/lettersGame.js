@@ -1,5 +1,5 @@
 // EndoGame：サンタさんへの おてがみ ／ パパと おはなし（こどもの 画面）
-import { thread, unheard, send, markHeard, audioURL, sync, online, getCfg, setCfg, testConnection, Recorder, pickMime, speakAs } from './letters.js';
+import { thread, unheard, send, markHeard, audioURL, audioBlob, sync, online, getCfg, setCfg, testConnection, Recorder, pickMime, speakAs, santaLine, playSanta, stopSanta, unlockAudio } from './letters.js';
 
 const WHO = {
   santa: { name: 'サンタさん', title: '🎅 サンタさんへ おてがみ', img: 'cards/santa.jpg', emoji: '🎅',
@@ -105,14 +105,24 @@ export function installLetters(api) {
     clearInterval(poll);
     poll = setInterval(() => sync().then(n => { if (n) { sfx.bonus?.(); fillList(); } }).catch(() => {}), 15000);
     sync().then(n => n && fillList()).catch(() => {});
-    if (S.lettersTo === 'santa') setTimeout(() => speakAs('メリークリスマス！ サンタさんだよ。おはなし きかせてね。', 'santa'), 400);
+    if (S.lettersTo === 'santa') setTimeout(() => santaSays('greet', 'メリークリスマス！ サンタさんだよ。おはなし きかせてね。'), 400);
   };
-  LEAVE.letters = () => { clearInterval(poll); rec?.cancel(); rec = null; recBlob = null; player?.pause(); speechSynthesis.cancel(); };
+  LEAVE.letters = () => { clearInterval(poll); rec?.cancel(); rec = null; recBlob = null; player?.pause(); speechSynthesis.cancel(); stopSanta(); };
+  // サンタの きまり文句：パパが ろくおんした こえ（サンタ風）。なければ よみあげ
+  async function santaSays(kind, fallback) {
+    const m = await santaLine(kind).catch(() => null);
+    const b = m && await audioBlob(m).catch(() => null);
+    if (b) { try { await playSanta(b); return; } catch (e) {} }
+    speakAs(fallback, 'santa');
+  }
 
   async function playMsg(m) {
-    player?.pause(); speechSynthesis.cancel();
+    player?.pause(); speechSynthesis.cancel(); stopSanta();
     if (m.from !== 'kid' && !m.heard) { m.heard = true; markHeard(m.id).then(fillList); }
-    if (m.hasAudio) {
+    if (m.hasAudio && m.from === 'santa') {
+      const b = await audioBlob(m).catch(() => null);
+      if (b) { try { await playSanta(b); } catch (e) { toast('こえを よみこめなかったよ'); } } else toast('こえを よみこめなかったよ');
+    } else if (m.hasAudio) {
       const url = await audioURL(m).catch(() => null);
       if (url) { player = new Audio(url); await player.play().catch(() => {}); }
       else toast('こえを よみこめなかったよ');
@@ -128,13 +138,13 @@ export function installLetters(api) {
     await sync().catch(() => {});
     recBlob = null; await fillList(); recArea('idle');
     sfx.bonus?.();
-    if (th === 'santa') { toast('🎅 サンタさんに とどけたよ！', 2600); speakAs(WHO.santa.thanks, 'santa'); }
+    if (th === 'santa') { toast('🎅 サンタさんに とどけたよ！', 2600); santaSays('thanks', WHO.santa.thanks); }
     else toast('📮 パパに おくったよ！', 2600);
     setTimeout(fillList, 4000);
   }
 
   Object.assign(ACTIONS, {
-    openLetters: d => { sfx.tap(); go('letters', { lettersTo: d.th }); },
+    openLetters: d => { sfx.tap(); unlockAudio(); go('letters', { lettersTo: d.th }); },
     ltRec: async () => {
       try {
         speechSynthesis.cancel(); player?.pause();
@@ -150,7 +160,7 @@ export function installLetters(api) {
     ltSendText: () => { const t = document.getElementById('ltTxt')?.value.trim(); if (!t) { toast('なにか かいてね'); return; } deliver({ text: t.slice(0, 100) }); },
     ltSend: () => { if (recBlob) deliver({ audio: recBlob }); },
     ltStamp: d => { const [e, t] = WHO[S.lettersTo].stamps[Number(d.i)]; deliver({ text: `${e} ${t}` }); },
-    ltPlay: d => { const m = LIST.find(x => x.id === d.id); if (m) playMsg(m); },
+    ltPlay: d => { unlockAudio(); const m = LIST.find(x => x.id === d.id); if (m) playMsg(m); },
   });
 
   // ---------- おうちのひと メニュー（💌 おてがみ） ----------
@@ -172,7 +182,7 @@ export function installLetters(api) {
         <p class="hint" id="ltCfgMsg">${online() ? '✅ つながる せってい に なっています' : 'いまは この iPad の なかだけ'}</p>
       </div>
       <div class="card"><h3>✉️ おへんじを かく</h3>
-        <p class="hint">へんじページで、こどもの こえを きいて、パパ または サンタさん として おへんじを かけます。サンタさんの おへんじは、ひくい サンタさんの こえで よみあげられます。</p>
+        <p class="hint">へんじページで、こどもの こえを きいて、パパ または サンタさん として おへんじを かけます。サンタさんの おへんじは、パパの こえを ろくおんすると サンタさん風の こえ（ひくく・ゆっくり）に なります。</p>
         <a class="btn" href="papa.html" target="_blank" rel="noopener">✉️ へんじページを ひらく</a>
         <p class="hint">パパの スマホでは <b>${esc(location.origin + location.pathname.replace(/[^/]*$/, ''))}papa.html</b> を ひらいて、おなじ アドレスと かぎを いれてください。</p>
       </div>`;

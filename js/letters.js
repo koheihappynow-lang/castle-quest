@@ -36,9 +36,10 @@ export async function unheard(kidId) {
 }
 
 const rid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-export async function send({ kidId, kidName, thread: th, from, text = '', audio = null }) {
+// kind：'greet'（サンタの あいさつ）／'thanks'（おれい）。kidId '*' は こども ぜんいん むけ
+export async function send({ kidId, kidName, thread: th, from, text = '', audio = null, kind = '' }) {
   const now = Date.now();
-  const m = { id: rid(), kidId, kidName, thread: th, from, text: String(text).slice(0, 500), hasAudio: !!audio, mime: audio?.type || '', ts: now, u: now, heard: from === 'kid' ? true : false, synced: false };
+  const m = { id: rid(), kidId, kidName, thread: th, from, text: String(text).slice(0, 500), hasAudio: !!audio, mime: audio?.type || '', ts: now, u: now, heard: from === 'kid' || kidId === '*', synced: false, ...(kind ? { kind } : {}) };
   if (audio) await putAudio(m.id, audio);
   await putMsg(m);
   sync().catch(() => {});
@@ -49,14 +50,43 @@ export async function markHeard(id) {
   m.heard = true; m.u = Date.now(); m.synced = false; await putMsg(m);
   sync().catch(() => {});
 }
-// こえを ならす URL（この端末に なければ サーバーから もらう）
-export async function audioURL(m) {
+// こえ（この端末に なければ サーバーから もらう）
+export async function audioBlob(m) {
   let b = await getAudio(m.id);
   if (!b && online()) {
     const r = await api('GET', `/api/audio/${encodeURIComponent(m.id)}`);
     if (r?.audio) { b = await (await fetch(r.audio)).blob(); await putAudio(m.id, b); }
   }
-  return b ? URL.createObjectURL(b) : null;
+  return b || null;
+}
+export async function audioURL(m) { const b = await audioBlob(m); return b ? URL.createObjectURL(b) : null; }
+// サンタの きまり文句（いちばん あたらしい もの）
+export async function santaLine(kind) {
+  const list = (await allMsgs()).filter(m => m.kidId === '*' && m.kind === kind && m.hasAudio);
+  return list[list.length - 1] || null;
+}
+
+// ---------- サンタ風の こえ（ひくく・ゆっくり・すこし ひびく） ----------
+let actx, cur;
+export function unlockAudio() {
+  try { actx ||= new (window.AudioContext || window.webkitAudioContext)(); if (actx.state !== 'running') actx.resume(); } catch (e) {}
+}
+export function stopSanta() { try { cur?.stop(); } catch (e) {} cur = null; }
+export const SANTA_RATE = 0.8;
+export async function playSanta(blob) {
+  unlockAudio(); stopSanta();
+  const buf = await actx.decodeAudioData(await blob.arrayBuffer());
+  const src = actx.createBufferSource(); src.buffer = buf; src.playbackRate.value = SANTA_RATE;
+  const low = actx.createBiquadFilter(); low.type = 'lowshelf'; low.frequency.value = 220; low.gain.value = 5;
+  const air = actx.createBiquadFilter(); air.type = 'lowpass'; air.frequency.value = 5200;
+  // ちいさな へやの ひびき
+  const len = Math.floor(actx.sampleRate * 0.9), ir = actx.createBuffer(2, len, actx.sampleRate);
+  for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3); }
+  const verb = actx.createConvolver(); verb.buffer = ir;
+  const dry = actx.createGain(); dry.gain.value = 0.9; const wet = actx.createGain(); wet.gain.value = 0.18;
+  src.connect(low).connect(air); air.connect(dry).connect(actx.destination); air.connect(verb).connect(wet).connect(actx.destination);
+  cur = src; src.start();
+  return new Promise(res => { src.onended = res; });
 }
 
 // ---------- サーバーと やりとり ----------
