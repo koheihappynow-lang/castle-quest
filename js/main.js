@@ -18,9 +18,8 @@ import { installLetters } from './lettersGame.js';
 import { APP_VERSION } from './version.js';
 import { buildMathSession, mathRetry, MATH_LEVELS, MATH_TYPE_NAMES, mathLevelForAge } from './math.js';
 import { buildPuzzleSession, mountRobot } from './puzzle.js';
-// ひらめき パズルは さくせいちゅう：?dev=1 で ひらいた 端末だけ おためしできる
-if (new URLSearchParams(location.search).has('dev')) { try { localStorage.setItem('endogame.dev', '1'); } catch (e) {} }
-const puzzleOpen = () => { try { return localStorage.getItem('endogame.dev') === '1'; } catch (e) { return false; } };
+// ひらめき パズル：2026-11-17 から こども みんなに ひらいた
+const puzzleOpen = () => true;
 
 const app = document.getElementById('app');
 const AVATARS = ['🦁', '🐰', '🐻', '🐱', '🐶', '🐼', '🦊', '🐸', '🦄', '🐧', '🐯', '🐨'];

@@ -136,11 +136,26 @@ export async function santaLine(kind) {
 // 1) 声の 高さを さげる（体の 大きい 人の 声）。でも 話す はやさは そのまま（WSOLA で のびを もどす）
 // 2) 胸に ひびく 低音・すこし ずらした 声を かさねて 太く・暖炉の へやの ひびき
 // 3) まえに 鈴（シャンシャン）、さいごに ベル（キラーン）
-let actx, cur;
+// ながすのは <audio>（iPad は マイクを つかった あと、Web Audio の 音が とても 小さく なる／きこえなく なる ため）
+let santaEl = null, santaURL = '', unlocked = false;
+const SILENT = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=';
+const speakerMode = () => { try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {} };
+// タップした ときに よぶ：あとで（よみこみの あとでも）音を ながせるように しておく
 export function unlockAudio() {
-  try { actx ||= new (window.AudioContext || window.webkitAudioContext)(); if (actx.state !== 'running') actx.resume(); } catch (e) {}
+  speakerMode();
+  try { santaEl ||= new Audio(); santaEl.playsInline = true; if (!unlocked) { unlocked = true; santaEl.src = SILENT; santaEl.play().catch(() => {}); } } catch (e) {}
 }
-export function stopSanta() { try { cur?.stop(); } catch (e) {} cur = null; }
+export function stopSanta() { try { santaEl?.pause(); } catch (e) {} }
+// AudioBuffer → WAV（16bit）
+function toWav(buf) {
+  const ch = buf.numberOfChannels, sr = buf.sampleRate, n = buf.length, bytes = 44 + n * ch * 2;
+  const v = new DataView(new ArrayBuffer(bytes)); let o = 0;
+  const str = s => { for (const c of s) v.setUint8(o++, c.charCodeAt(0)); }, u32 = x => { v.setUint32(o, x, true); o += 4; }, u16 = x => { v.setUint16(o, x, true); o += 2; };
+  str('RIFF'); u32(bytes - 8); str('WAVE'); str('fmt '); u32(16); u16(1); u16(ch); u32(sr); u32(sr * ch * 2); u16(ch * 2); u16(16); str('data'); u32(n * ch * 2);
+  const d = []; for (let c = 0; c < ch; c++) d.push(buf.getChannelData(c));
+  for (let i = 0; i < n; i++) for (let c = 0; c < ch; c++) { const x = Math.max(-1, Math.min(1, d[c][i])); v.setInt16(o, x < 0 ? x * 0x8000 : x * 0x7fff, true); o += 2; }
+  return new Blob([v.buffer], { type: 'audio/wav' });
+}
 const PITCH = 0.76;     // 声の 高さ（やく 4.7はん音 さげる）
 const SPEED = 0.97;     // 話す はやさ（ほぼ そのまま。すこしだけ ゆったり）
 const LEAD = 1.15;      // 鈴の あいだ（びょう）
@@ -242,10 +257,14 @@ export async function renderSanta(blob) {
 }
 export async function playSanta(blob) {
   unlockAudio(); stopSanta();
-  const out = await renderSanta(blob);
-  const src = actx.createBufferSource(); src.buffer = out; src.connect(actx.destination);
-  cur = src; src.start();
-  return new Promise(res => { src.onended = res; });
+  let wav;
+  try { wav = toWav(await renderSanta(blob)); } catch (e) { wav = blob; }   // サンタに できなくても、パパの こえは そのまま きこえる ように
+  if (santaURL) URL.revokeObjectURL(santaURL);
+  santaURL = URL.createObjectURL(wav);
+  speakerMode();
+  santaEl.src = santaURL; santaEl.volume = 1;
+  await santaEl.play();
+  return new Promise(res => { santaEl.onended = res; santaEl.onpause = res; });
 }
 
 // ---------- サーバーと やりとり ----------
@@ -328,12 +347,13 @@ export function pickMime() {
 }
 export class Recorder {
   async start(maxSec = 30, onTick = () => {}) {
+    try { if (navigator.audioSession) navigator.audioSession.type = 'auto'; } catch (e) {}
     this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const mime = pickMime();
     this.rec = new MediaRecorder(this.stream, mime ? { mimeType: mime } : undefined);
     this.chunks = [];
     this.rec.ondataavailable = e => e.data.size && this.chunks.push(e.data);
-    this.done = new Promise(res => { this.rec.onstop = () => { this.stream.getTracks().forEach(t => t.stop()); res(new Blob(this.chunks, { type: this.rec.mimeType || mime || 'audio/mp4' })); }; });
+    this.done = new Promise(res => { this.rec.onstop = () => { this.stream.getTracks().forEach(t => t.stop()); speakerMode(); res(new Blob(this.chunks, { type: this.rec.mimeType || mime || 'audio/mp4' })); }; });
     this.rec.start(250);
     this.t0 = Date.now();
     this.timer = setInterval(() => { const s = (Date.now() - this.t0) / 1000; onTick(s); if (s >= maxSec) this.stop(); }, 200);
