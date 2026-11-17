@@ -1,0 +1,13 @@
+# おてがみ サーバー（Cloudflare Worker）の せってい
+# デプロイ：server フォルダで npx wrangler deploy
+name = "endogame-letters"
+main = "worker.js"
+compatibility_date = "2026-11-01"
+
+[vars]
+ALLOW_ORIGINS = "https://koheihappynow-lang.github.io"
+
+# id は「npx wrangler kv namespace create endogame-letters」で できた もの
+[[kv_namespaces]]
+binding = "LETTERS"
+id = "cb8bc2adfdca4631b2a3dfc129275001"

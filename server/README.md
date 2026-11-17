@@ -3,6 +3,11 @@
 こどもの iPad と パパの スマホの あいだで おてがみを あずかる、小さな サーバーです。
 Cloudflare Workers の **無料わく** で うごきます（1日 10万回まで。家族で つかうには 十分）。
 
+## いまの せってい（2026-11-17 設定ずみ）
+- アドレス：`https://endogame-letters.endogame-kids.workers.dev`
+- かぎ：`C:\Users\works\.endogame_family_key`（GitHub には のせない）
+- 更新：`server` フォルダで `npx wrangler deploy`
+
 ## じゅんび（1回だけ・15分くらい）
 
 1. **Cloudflare の アカウントを つくる**（無料）：https://dash.cloudflare.com/sign-up
