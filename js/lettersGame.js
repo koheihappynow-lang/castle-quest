@@ -10,6 +10,9 @@ const WHO = {
     thanks: null },
 };
 const PAPA_PHOTO = 'endogame.papaPhoto';
+const LIMIT = 5;   // へんじが くるまで おくれる かず
+// さいごの へんじの あとに こどもが おくった かず
+const streakOf = list => { let n = 0; for (let i = list.length - 1; i >= 0 && list[i].from === 'kid'; i--) n++; return n; };
 const papaPhoto = () => { try { return localStorage.getItem(PAPA_PHOTO); } catch (e) { return null; } };
 export function whoAvatar(th, cls = '') {
   const w = WHO[th];
@@ -48,24 +51,38 @@ export function installLetters(api) {
       <div class="lt-head">${whoAvatar(th, 'xl')}<div><h2>${w.title}</h2><p class="sub">${th === 'santa' ? 'マイクを おして、サンタさんに おはなし してね' : 'マイクを おして、パパに おはなし してね'}</p></div></div>
       <div class="lt-list" id="ltList"><p class="lt-empty">よみこみちゅう…</p></div>
       <div class="lt-rec" id="ltRec"></div>
-      <div class="lt-stamps">${w.stamps.map(([e, t], i) => `<button class="lt-stamp" data-act="ltStamp" data-i="${i}">${e} ${t}</button>`).join('')}</div>
+      <div class="lt-stamps" id="ltStamps">${w.stamps.map(([e, t], i) => `<button class="lt-stamp" data-act="ltStamp" data-i="${i}">${e} ${t}</button>`).join('')}</div>
     </div>`;
   };
+  let STREAK = 0;
   const recArea = (state, sec = 0) => {
     const el = document.getElementById('ltRec'); if (!el) return;
     const canRec = pickMime() !== null && navigator.mediaDevices?.getUserMedia;
-    el.innerHTML = state === 'rec'
+    const left = LIMIT - STREAK, who = WHO[S.lettersTo].name;
+    if (state === 'idle' && left <= 0) state = 'wait';
+    document.getElementById('ltStamps')?.classList.toggle('off', state === 'wait');
+    el.innerHTML = state === 'wait'
+      ? `<div class="lt-wait">📮 ${LIMIT}かい おくったよ！<br><b>${who}の おへんじを まってね</b><small>おへんじが きたら また おくれるよ</small></div>`
+      : state === 'text'
+      ? `<div class="lt-text"><textarea id="ltTxt" maxlength="100" placeholder="ここに かいてね（キーボードの 🎤 で しゃべっても かけるよ）"></textarea>
+          <div class="row center wrap"><button class="btn primary big" data-act="ltSendText">📮 おくる</button><button class="btn ghost" data-act="ltCancel">やめる</button></div></div>`
+      : state === 'rec'
       ? `<button class="lt-mic on" data-act="ltStop"><span>⏹️</span></button><div class="lt-rec-msg">はなしてね… <b>${Math.floor(sec)}</b> / 30びょう<br><small>おわったら もういちど おしてね</small></div>`
       : state === 'done'
       ? `<div class="row center wrap"><button class="btn" data-act="ltPreview">▶️ きいてみる</button><button class="btn primary big" data-act="ltSend">📮 おくる</button><button class="btn ghost" data-act="ltCancel">🗑️ やりなおす</button></div>`
       : state === 'sending' ? `<div class="lt-rec-msg">おくっているよ…</div>`
-      : canRec ? `<button class="lt-mic" data-act="ltRec"><span>🎤</span></button><div class="lt-rec-msg">おして はなす</div>`
-      : `<div class="lt-rec-msg">この たんまつでは こえが とれないよ。したの スタンプで おくってね</div>`;
+      : `${canRec ? `<button class="lt-mic" data-act="ltRec"><span>🎤</span></button><div class="lt-rec-msg">おして はなす</div>` : ''}
+         <button class="lt-pen" data-act="ltText">✏️<span>もじで かく</span></button>
+         <div class="lt-left">あと <b>${left}</b>かい おくれるよ</div>`;
+    if (state === 'text') setTimeout(() => document.getElementById('ltTxt')?.focus(), 50);
   };
   async function fillList() {
     const p = activeProfile(), th = S.lettersTo, el = document.getElementById('ltList');
     if (!el || !p) return;
     const list = await thread(p.id, th);
+    const before = STREAK; STREAK = streakOf(list);
+    const recNow = document.getElementById('ltRec');
+    if (before !== STREAK && recNow && !rec && !recBlob && !recNow.querySelector('#ltTxt')) recArea('idle');
     if (!list.length) { el.innerHTML = `<p class="lt-empty">${th === 'santa' ? 'サンタさんに はじめての おてがみを おくってみよう！' : 'パパに メッセージを おくってみよう！'}</p>`; return; }
     el.innerHTML = list.map(m => {
       const mine = m.from === 'kid';
@@ -84,7 +101,7 @@ export function installLetters(api) {
   }
   let LIST = [];
   AFTER.letters = () => {
-    recArea('idle'); fillList();
+    fillList().then(() => recArea('idle'));
     clearInterval(poll);
     poll = setInterval(() => sync().then(n => { if (n) { sfx.bonus?.(); fillList(); } }).catch(() => {}), 15000);
     sync().then(n => n && fillList()).catch(() => {});
@@ -105,10 +122,11 @@ export function installLetters(api) {
   }
   async function deliver({ text = '', audio = null }) {
     const p = activeProfile(), th = S.lettersTo;
+    if (streakOf(await thread(p.id, th)) >= LIMIT) { recArea('wait'); toast(`${WHO[th].name}の おへんじを まってね`); return; }
     recArea('sending');
     await send({ kidId: p.id, kidName: p.name, thread: th, from: 'kid', text, audio });
     await sync().catch(() => {});
-    recBlob = null; recArea('idle'); await fillList();
+    recBlob = null; await fillList(); recArea('idle');
     sfx.bonus?.();
     if (th === 'santa') { toast('🎅 サンタさんに とどけたよ！', 2600); speakAs(WHO.santa.thanks, 'santa'); }
     else toast('📮 パパに おくったよ！', 2600);
@@ -128,6 +146,8 @@ export function installLetters(api) {
     ltStop: () => { rec?.stop(); },
     ltPreview: () => { if (!recBlob) return; player?.pause(); player = new Audio(URL.createObjectURL(recBlob)); player.play().catch(() => {}); },
     ltCancel: () => { recBlob = null; recArea('idle'); },
+    ltText: () => { speechSynthesis.cancel(); recArea('text'); },
+    ltSendText: () => { const t = document.getElementById('ltTxt')?.value.trim(); if (!t) { toast('なにか かいてね'); return; } deliver({ text: t.slice(0, 100) }); },
     ltSend: () => { if (recBlob) deliver({ audio: recBlob }); },
     ltStamp: d => { const [e, t] = WHO[S.lettersTo].stamps[Number(d.i)]; deliver({ text: `${e} ${t}` }); },
     ltPlay: d => { const m = LIST.find(x => x.id === d.id); if (m) playMsg(m); },
