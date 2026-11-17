@@ -15,6 +15,7 @@ import {
 } from './castles.js';
 import { installDino } from './dinoGame.js';
 import { installLetters } from './lettersGame.js';
+import { APP_VERSION } from './version.js';
 import { buildMathSession, mathRetry, MATH_LEVELS, MATH_TYPE_NAMES, mathLevelForAge } from './math.js';
 
 const app = document.getElementById('app');
@@ -144,6 +145,7 @@ const SCREENS = {
           </button>
         </div>
         <button class="parent-link" data-act="parent">⚙️ おうちのひと</button>
+        <div class="app-ver">${APP_VERSION}</div>
       </div>
     </div>`;
   },
@@ -1002,6 +1004,7 @@ function parentScreen() {
   return `
   <header class="bar parent-bar"><button class="icon-btn" data-act="go" data-to="profiles">✕</button><div class="who"><b>おうちのひと メニュー</b></div><div></div></header>
   <div class="page">
+    <div class="card row between wrap" style="padding:10px 14px"><span>🧩 ゲームの 版：<b>${APP_VERSION}</b></span><button class="btn sm" data-act="forceUpdate">🔄 さいしんに する</button></div>
     <div class="tabs">${tabs.map(([k, l]) => `<button class="tab ${tab === k ? 'on' : ''}" data-act="ptab" data-v="${k}">${l}</button>`).join('')}</div>
     ${body}
   </div>`;
@@ -1156,6 +1159,13 @@ const ACTIONS = {
   statsFor: d => { S.statsId = d.id; S.parentTab = 'stats'; render(); },
   setMathLevel: d => { const p = db().profiles.find(x => x.id === d.id); p.mathLevel = Number(d.v); save(); render(); },
   setLevel: d => { const p = db().profiles.find(x => x.id === d.id); p.level = Number(d.v); save(); render(); },
+  // ふるい 版で とまった ときの ための ボタン：保存した プログラムと 画像を けして よみなおす（あそんだ きろくは けさない）
+  forceUpdate: async () => {
+    toast('さいしんに しています…', 4000);
+    try { for (const r of await navigator.serviceWorker?.getRegistrations?.() || []) await r.unregister(); } catch (e) {}
+    try { for (const k of await caches.keys()) await caches.delete(k); } catch (e) {}
+    location.replace(location.pathname + '?u=' + Date.now());
+  },
   removePhoto: d => { const p = db().profiles.find(x => x.id === d.id); p.photo = null; save(); render(); },
   delProfile: d => {
     const p = db().profiles.find(x => x.id === d.id);
@@ -1220,11 +1230,10 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
       if (navigator.connection?.saveData) return;
       const day = new Date().toDateString();
       if (localStorage.getItem('cq.photosDay') === day) return;
-      const c = await caches.open('cq-photos-v1');
+      // SW が 指紋つきで 保存する（保存ずみなら ネットに いかない）
       for (const src of Object.values(PHOTOS).map(p => p.src)) {
-        if (await c.match(src)) continue;
-        try { const r = await fetch(src); if (r.ok) await c.put(src, r); } catch (e) { return; }
-        await new Promise(r => setTimeout(r, 150));
+        try { await fetch(src); } catch (e) { return; }
+        await new Promise(r => setTimeout(r, 120));
       }
       localStorage.setItem('cq.photosDay', day);
     } catch (e) {}

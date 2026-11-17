@@ -1,10 +1,13 @@
 // オフラインでも動くように、ゲームのファイルをiPadに保存しておく
 // ・プログラム（html/js/css）：保存した ものを すぐ 使う。新しい 版は sw.js が かわると まとめて とりなおして 入れかわる
-// ・画像・3Dモデル：保存した ものを すぐ 使い、うらで 新しい ものが ないか 確かめる。
-//   画像の 保存場所（ASSETS）は 版を あげても けさない → 更新の たびに 全部 とりなおさない（起動が はやい）
-//   ※ 画像を さしかえた ときは ASSETS の 番号を あげる（cq-assets-v2 …）
-const VERSION = 'cq-v45';
-const ASSETS = 'cq-assets-v1';
+// ・画像・3Dモデル・写真：「中身の 指紋」（asset-hashes.js）つきで 保存。指紋が おなじ あいだは ネットに いかない（はやい）。
+//   絵を さしかえると 指紋が かわるので、自動で とりなおす。版を あげても 画像は けさない（更新が かるい）
+//   公開の まえに node tools/release.cjs（指紋の 作りなおし＋版あげ）
+try { importScripts('./asset-hashes.js'); } catch (e) {}
+const HASH = self.ASSET_HASH || {};
+const SCOPE = new URL('./', self.location).pathname;
+const VERSION = 'cq-v46';
+const ASSETS = 'cq-assets-v2';
 const BG_FILES = ['endogame-adventure', 'hero', 'title', 'hub', 'study', 'select', 'build-day', 'build-sunset', 'build-night', 'exchange', 'ghosts', 'workshop', 'habitat-jungle', 'habitat-volcano', 'habitat-coast']
   .map(n => `./bg/${n}.jpg`);
 const CASTLE_FILES = ['himeji', 'neuschwanstein', 'windsor', 'montsaintmichel', 'edinburgh', 'alhambra', 'chambord', 'hearst', 'forbiddencity', 'pena', 'tsuruga']
@@ -13,7 +16,7 @@ const CODE = [
   './', './index.html', './rally.html', './manifest.webmanifest', './css/style.css',
   './js/main.js', './js/store.js', './js/words.js', './js/quiz.js', './js/review.js',
   './js/speech.js', './js/sfx.js', './js/castles.js', './js/photos.js', './js/sentences.js', './js/math.js', './js/letters.js', './js/drawpad.js', './js/lettersGame.js', './papa.html', './js/papa.js', './js/diorama/engine.js', ...CASTLE_FILES,
-  './js/dinoGame.js', './js/dinos.js', './js/dino/view.js', './js/dino/trex.js', './js/dino/dinoBase.js', './js/dino/look.js', './js/dino/rig.js',
+  './asset-hashes.js', './js/version.js', './js/dinoGame.js', './js/dinos.js', './js/dino/view.js', './js/dino/trex.js', './js/dino/dinoBase.js', './js/dino/look.js', './js/dino/rig.js',
 ];
 const RALLY = ['chibi', 'taxi', 'truck', 'police', 'ambulance', 'bus', 'fire', 'sports', 'monster', 'camper', 'racer', 'rocket', 'limo', 'rainbow', 'star'].map(id => `./cards/rally-${id}.jpg`);
 const IMAGES = [
@@ -36,15 +39,30 @@ self.addEventListener('install', e => {
 });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys()
-    .then(keys => Promise.all(keys.filter(k => k !== VERSION && k !== ASSETS && !k.startsWith('cq-photos')).map(k => caches.delete(k))))
+    .then(keys => Promise.all(keys.filter(k => k !== VERSION && k !== ASSETS).map(k => caches.delete(k))))
+    .then(pruneAssets)
     .then(() => self.clients.claim())
     .then(() => { fillAssets(); }));
 });
-// 画像・3Dの 部品で まだ 保存して いない ものを うらで あつめる
+// 保存する ときの 名前（指紋つき）
+function assetKey(url) {
+  const rel = url.pathname.startsWith(SCOPE) ? decodeURIComponent(url.pathname.slice(SCOPE.length)) : '';
+  return HASH[rel] ? url.origin + url.pathname + '?h=' + HASH[rel] : url.origin + url.pathname;
+}
+// 指紋が かわった（さしかえた）古い 画像を けす
+async function pruneAssets() {
+  const c = await caches.open(ASSETS);
+  for (const req of await c.keys()) {
+    const u = new URL(req.url);
+    if (u.origin !== location.origin) continue;
+    if (req.url !== assetKey(u) || (u.searchParams.get('h') && !Object.values(HASH).includes(u.searchParams.get('h')))) await c.delete(req);
+  }
+}
+// まだ 保存して いない 絵を うらで あつめる（写真は main.js が 1日1かい すこしずつ）
 async function fillAssets() {
   const c = await caches.open(ASSETS);
-  for (const u of [...IMAGES, ...CDN]) {
-    try { if (!(await c.match(u))) { const r = await fetch(u); if (r.ok) await c.put(u, r); } } catch (e) {}
+  for (const u of [...IMAGES.map(p => new URL(p, self.location).href), ...CDN]) {
+    try { const key = u.startsWith(location.origin) ? assetKey(new URL(u)) : u; if (!(await c.match(key))) { const r = await fetch(u, { cache: 'reload' }); if (r.ok) await c.put(key, r); } } catch (e) {}
   }
 }
 
@@ -65,11 +83,12 @@ self.addEventListener('fetch', e => {
     }));
     return;
   }
-  // 画像・3Dの 部品：保存した ものを つかう（ない ときだけ とりにいく）。絵を さしかえた ときは ASSETS の 名前を かえる
+  // 画像・3Dの 部品・写真：指紋つきで 保存した ものを つかう（ない／さしかえた ときだけ とりにいく）
+  const key = url.origin === location.origin ? assetKey(url) : e.request.url;
   e.respondWith(caches.open(ASSETS).then(async cache => {
-    const hit = await cache.match(e.request, { ignoreSearch: true });
+    const hit = await cache.match(key);
     if (hit) return hit;
-    try { const res = await fetch(e.request); if (res.ok) cache.put(e.request, res.clone()); return res; }
+    try { const res = await fetch(url.origin === location.origin ? new Request(url.origin + url.pathname, { cache: 'reload' }) : e.request); if (res.ok) cache.put(key, res.clone()); return res; }
     catch (err) { return Response.error(); }
   }));
 });
