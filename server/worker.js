@@ -1,11 +1,11 @@
-// EndoGame おてがみ サーバー（Cloudflare Worker ＋ KV）
+// EndoGame おてがみ サーバー（Cloudflare Worker ＋ D1（一覧）＋ KV（声・絵・つなぐ ばんごう））
 // こどもの iPad と パパの スマホの あいだで おてがみを あずかる。
-// せってい：KV バインディング LETTERS、ひみつの へんすう FAMILY_KEY、ALLOW_ORIGINS（カンマくぎり）
+// せってい：D1 バインディング DB、KV バインディング LETTERS、ひみつの へんすう FAMILY_KEY、ALLOW_ORIGINS（カンマくぎり）
 //   GET  /api/msgs?since=ミリ秒   … それ いこうに かわった おてがみ（こえ ぬき）
 //   POST /api/msgs {msg, audio?}  … おてがみを ついか／こうしん（audio は data:URL）
 //   GET  /api/audio/:id           … こえ（data:URL）
 //   GET  /api/image/:id           … 絵（data:URL）
-const KEEP_DAYS = 180, MAX_AUDIO = 3_000_000, MAX_IMAGE = 2_000_000, MAX_INDEX = 1000;
+const KEEP_DAYS = 180, MAX_AUDIO = 3_000_000, MAX_IMAGE = 2_000_000;
 const THREADS = ['santa', 'papa'], FROMS = ['kid', 'papa', 'santa'];
 
 export default {
@@ -45,27 +45,34 @@ export default {
       return J({ code, expires: Date.now() + 600000 });
     }
 
-    const readIndex = async () => JSON.parse((await env.LETTERS.get('index')) || '[]');
-
+    // おてがみの 一覧は D1（つねに 最新）。声・絵は KV（1かい かいたら かわらない）
+    const row2msg = r => ({ id: r.id, kidId: r.kidId, kidName: r.kidName, thread: r.thread, from: r.frm, text: r.text || '', hasAudio: !!r.hasAudio, hasImage: !!r.hasImage, mime: r.mime || '', device: r.device || '', ts: r.ts, heard: !!r.heard, u: r.u, ...(r.kind ? { kind: r.kind } : {}), ...(r.deleted ? { deleted: true } : {}) });
+    // いちどだけ：KV の 一覧を D1 に うつす
+    if (req.method === 'POST' && url.pathname === '/api/migrate-kv') {
+      const idx = JSON.parse((await env.LETTERS.get('index')) || '[]');
+      let n = 0;
+      for (const m of idx) {
+        await env.DB.prepare('INSERT OR IGNORE INTO msgs (id,kidId,kidName,thread,frm,text,hasAudio,hasImage,mime,device,kind,ts,heard,deleted,u) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
+          .bind(m.id, m.kidId || '', m.kidName || '', m.thread, m.from, m.text || '', m.hasAudio ? 1 : 0, m.hasImage ? 1 : 0, m.mime || '', m.device || '', m.kind || null, m.ts || 0, m.heard ? 1 : 0, m.deleted ? 1 : 0, m.u || Date.now()).run();
+        n++;
+      }
+      return J({ ok: true, migrated: n });
+    }
     // おてがみを けす：{ ids: [...] }。ほかの 端末も けせるように「けした しるし」を のこす
     if (req.method === 'POST' && url.pathname === '/api/delete') {
       let body; try { body = await req.json(); } catch (e) { return J({ error: 'bad json' }, 400); }
       const ids = Array.isArray(body?.ids) ? body.ids.filter(x => typeof x === 'string').slice(0, 500) : [];
-      const idx = await readIndex(), now = Date.now();
+      const now = Date.now();
       for (const id of ids) {
-        const i = idx.findIndex(x => x.id === id);
-        if (i < 0) continue;
-        const o = idx[i];
-        idx[i] = { id: o.id, kidId: o.kidId, kidName: o.kidName, thread: o.thread, from: o.from, ts: o.ts, deleted: true, u: now };
+        await env.DB.prepare("UPDATE msgs SET deleted = 1, text = '', hasAudio = 0, hasImage = 0, u = ? WHERE id = ?").bind(now, id).run();
         await env.LETTERS.delete('a:' + id); await env.LETTERS.delete('i:' + id);
       }
-      await env.LETTERS.put('index', JSON.stringify(idx));
       return J({ ok: true, deleted: ids.length, u: now });
     }
     if (req.method === 'GET' && url.pathname === '/api/msgs') {
       const since = Number(url.searchParams.get('since') || 0);
-      const idx = await readIndex();
-      return J({ now: Date.now(), msgs: idx.filter(m => (m.u || 0) > since) });
+      const { results } = await env.DB.prepare('SELECT * FROM msgs WHERE u > ? ORDER BY ts LIMIT 2000').bind(since).all();
+      return J({ now: Date.now(), msgs: results.map(row2msg) });
     }
     if (req.method === 'GET' && url.pathname.startsWith('/api/audio/')) {
       const id = decodeURIComponent(url.pathname.slice('/api/audio/'.length));
@@ -82,29 +89,24 @@ export default {
       const m = body?.msg;
       if (!m || typeof m.id !== 'string' || m.id.length > 40 || !THREADS.includes(m.thread) || !FROMS.includes(m.from)) return J({ error: 'bad msg' }, 400);
       const now = Date.now();
-      const clean = {
-        id: m.id, kidId: String(m.kidId || '').slice(0, 40), kidName: String(m.kidName || '').slice(0, 20),
-        thread: m.thread, from: m.from, text: String(m.text || '').slice(0, 500),
-        hasAudio: !!m.hasAudio, hasImage: !!m.hasImage, device: String(m.device || '').slice(0, 30), mime: String(m.mime || '').slice(0, 40), ts: Number(m.ts) || now, heard: !!m.heard, u: now,
-        ...(['greet', 'thanks', 'papaPhoto', 'papaIcon'].includes(m.kind) ? { kind: m.kind } : {}),
-      };
+      const old = await env.DB.prepare('SELECT deleted FROM msgs WHERE id = ?').bind(m.id).first();
+      if (old?.deleted) return J({ ok: true, u: now, deleted: true });   // けした ものは もどさない
       if (body.audio) {
         if (typeof body.audio !== 'string' || !body.audio.startsWith('data:audio/') || body.audio.length > MAX_AUDIO) return J({ error: 'bad audio' }, 400);
-        await env.LETTERS.put('a:' + clean.id, body.audio, { expirationTtl: KEEP_DAYS * 86400 });
+        await env.LETTERS.put('a:' + m.id, body.audio, { expirationTtl: KEEP_DAYS * 86400 });
       }
       if (body.image) {
         if (typeof body.image !== 'string' || !body.image.startsWith('data:image/') || body.image.length > MAX_IMAGE) return J({ error: 'bad image' }, 400);
-        await env.LETTERS.put('i:' + clean.id, body.image, { expirationTtl: KEEP_DAYS * 86400 });
+        await env.LETTERS.put('i:' + m.id, body.image, { expirationTtl: KEEP_DAYS * 86400 });
       }
-      const idx = await readIndex();
-      const i = idx.findIndex(x => x.id === clean.id);
-      if (i >= 0 && idx[i].deleted) return J({ ok: true, u: now, deleted: true });   // けした ものは もどさない
-      if (i >= 0) { const old = idx[i]; idx[i] = { ...old, heard: old.heard || clean.heard, text: clean.text || old.text, hasAudio: old.hasAudio || clean.hasAudio, hasImage: old.hasImage || clean.hasImage, u: now }; }
-      else idx.push(clean);
-      idx.sort((a, b) => a.ts - b.ts);
-      const cut = Date.now() - KEEP_DAYS * 86400000;
-      const kept = idx.filter(x => x.ts > cut).slice(-MAX_INDEX);
-      await env.LETTERS.put('index', JSON.stringify(kept));
+      const kind = ['greet', 'thanks', 'papaPhoto', 'papaIcon'].includes(m.kind) ? m.kind : null;
+      await env.DB.prepare(`INSERT INTO msgs (id,kidId,kidName,thread,frm,text,hasAudio,hasImage,mime,device,kind,ts,heard,deleted,u) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,0,?)
+        ON CONFLICT(id) DO UPDATE SET heard = MAX(heard, excluded.heard), text = CASE WHEN excluded.text <> '' THEN excluded.text ELSE text END,
+          hasAudio = MAX(hasAudio, excluded.hasAudio), hasImage = MAX(hasImage, excluded.hasImage), u = excluded.u`)
+        .bind(m.id, String(m.kidId || '').slice(0, 40), String(m.kidName || '').slice(0, 20), m.thread, m.from, String(m.text || '').slice(0, 500),
+          m.hasAudio ? 1 : 0, m.hasImage ? 1 : 0, String(m.mime || '').slice(0, 40), String(m.device || '').slice(0, 30), kind, Number(m.ts) || now, m.heard ? 1 : 0, now).run();
+      // ふるい もの（180日）は ときどき けす
+      if (Math.random() < 0.02) await env.DB.prepare('DELETE FROM msgs WHERE ts < ?').bind(now - KEEP_DAYS * 86400000).run();
       return J({ ok: true, u: now });
     }
     return J({ error: 'not found' }, 404);

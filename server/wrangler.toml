@@ -11,3 +11,9 @@ ALLOW_ORIGINS = "https://koheihappynow-lang.github.io"
 [[kv_namespaces]]
 binding = "LETTERS"
 id = "cb8bc2adfdca4631b2a3dfc129275001"
+
+# おてがみの 一覧（つねに 最新を かえす データベース）。声・絵・つなぐ ばんごうは KV
+[[d1_databases]]
+binding = "DB"
+database_name = "endogame-letters"
+database_id = "c68b9891-b66f-4b34-ac2a-79765b191d81"

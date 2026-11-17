@@ -6,7 +6,9 @@ Cloudflare Workers の **無料わく** で うごきます（1日 10万回ま�
 ## いまの せってい（2026-11-17 設定ずみ）
 - アドレス：`https://endogame-letters.endogame-kids.workers.dev`
 - かぎ：`C:\Users\works\.endogame_family_key`（GitHub には のせない）
+- おてがみの 一覧：D1 データベース `endogame-letters`（つねに 最新）。声・絵・つなぐ ばんごう：KV
 - 更新：`server` フォルダで `npx wrangler deploy`
+- テーブルの つくりかた：`schema.sql`
 
 ## じゅんび（1回だけ・15分くらい）
 

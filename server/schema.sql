@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS msgs (
+  id TEXT PRIMARY KEY,
+  kidId TEXT, kidName TEXT, thread TEXT, frm TEXT, text TEXT,
+  hasAudio INTEGER DEFAULT 0, hasImage INTEGER DEFAULT 0, mime TEXT, device TEXT, kind TEXT,
+  ts INTEGER, heard INTEGER DEFAULT 0, deleted INTEGER DEFAULT 0, u INTEGER
+);
+CREATE INDEX IF NOT EXISTS msgs_u ON msgs(u);
