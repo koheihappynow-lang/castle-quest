@@ -1,5 +1,6 @@
 // EndoGame：パパの へんじページ（パパ または サンタさん として へんじする）
 import { openDrawPad, showBig } from './drawpad.js';
+import { nameKey } from './letters.js';
 import { allMsgs, send, audioURL, audioBlob, imageBlob, sync, online, getCfg, setCfg, testConnection, Recorder, pickMime, speakAs, santaLine, playSanta, stopSanta, unlockAudio } from './letters.js';
 
 const $ = id => document.getElementById(id);
@@ -12,6 +13,7 @@ const seenKey = 'endogame.papaSeen';
 const seen = () => { try { return JSON.parse(localStorage.getItem(seenKey) || '{}'); } catch (e) { return {}; } };
 const markSeen = ids => { const s = seen(); ids.forEach(i => { s[i] = 1; }); localStorage.setItem(seenKey, JSON.stringify(s)); };
 let showSetup = false, rec = null, recBlob = null, msgs = [];
+let idOf = k => k;
 let line = { kind: '', rec: null, blob: null };   // きまり文句の ろくおん
 const LINES = [['greet', '👋 あいさつ（がめんを ひらいたとき）', 'れい：「ホッホッホー！ メリークリスマス！ サンタさんだよ。きょうは どんな おはなしを してくれるのかな？」'],
   ['thanks', '💌 おれい（おてがみが とどいたとき）', 'れい：「ホッホッホー！ おてがみ ありがとう。ちゃんと よんだら おへんじ するからね。」']];
@@ -21,16 +23,26 @@ async function render() {
   const main = $('main');
   if (showSetup || (!online() && !msgs.length)) { $('compose').hidden = true; main.innerHTML = setupHTML(); bindSetup(); return; }
   // こども × スレッド
-  const kids = [...new Map([...msgs.filter(m => m.from !== 'kid'), ...msgs.filter(m => m.from === 'kid')].filter(m => m.kidId !== '*').map(m => [m.kidId, m.kidName])).entries()];
+  // こどもは「なまえ」で まとめる（ちがう 端末から でも おなじ こ）。へんじは その こ の ぜんぶの 端末に とどく
+  const info = new Map();
+  for (const m of msgs) {
+    if (m.kidId === '*' || !m.kidName) continue;
+    const k = nameKey(m.kidName);
+    const o = info.get(k) || { name: m.kidName, ids: [], devices: new Set() };
+    if (m.from === 'kid') { o.name = m.kidName; if (!o.ids.includes(m.kidId)) o.ids.push(m.kidId); if (m.device) o.devices.add(m.device); }
+    info.set(k, o);
+  }
+  const kids = [...info.entries()].map(([k, o]) => [k, o.name]);
+  idOf = k => info.get(k)?.ids.at(-1) || k;
   if (!kids.length) { $('compose').hidden = true; main.innerHTML = `<div class="card empty">まだ おてがみは ありません。<br>こどもが おくると ここに でます。</div>${online() ? '' : '<p class="hint">いまは この端末の なかだけです（⚙️ で サーバーに つなげます）</p>'}`; return; }
   if (!cur.kid || !kids.some(([id]) => id === cur.kid)) cur = { kid: kids[0][0], th: 'papa' };
   const s = seen();
-  const unread = (kid, th) => msgs.filter(m => m.kidId === kid && m.thread === th && m.from === 'kid' && !s[m.id]).length;
+  const unread = (kid, th) => msgs.filter(m => m.kidId !== '*' && nameKey(m.kidName) === kid && m.thread === th && m.from === 'kid' && !s[m.id]).length;
   const tabs = kids.flatMap(([id, name]) => ['papa', 'santa'].map(th => {
     const n = unread(id, th);
-    return `<button class="tab ${cur.kid === id && cur.th === th ? 'on' : ''}" data-kid="${esc(id)}" data-th="${th}">${esc(name)} → ${TH[th]}${n ? `<b>${n}</b>` : ''}</button>`;
+    return `<button class="tab ${cur.kid === id && cur.th === th ? 'on' : ''}" data-kid="${esc(id)}" data-th="${th}">${esc(name)}${info.get(id).devices.size ? `<small style="opacity:.7">（${[...info.get(id).devices].map(esc).join('・')}）</small>` : ''} → ${TH[th]}${n ? `<b>${n}</b>` : ''}</button>`;
   })).join('');
-  const list = msgs.filter(m => m.kidId === cur.kid && m.thread === cur.th);
+  const list = msgs.filter(m => m.kidId !== '*' && nameKey(m.kidName) === cur.kid && m.thread === cur.th);
   const name = kids.find(([id]) => id === cur.kid)[1];
   main.innerHTML = `
     <div class="tabs">${tabs}</div>
@@ -38,7 +50,7 @@ async function render() {
     ${cur.th === 'santa' ? await linesHTML() : ''}
     <div class="card"><div class="msgs">${list.length ? list.map(m => `
       <div class="m ${m.from} ${m.from === 'kid' && !s[m.id] ? 'unread' : ''}">
-        <div class="meta">${m.from === 'kid' ? esc(name) : TH[m.from]}・${when(m.ts)}${m.from !== 'kid' ? (m.heard ? '・✅ きいたよ' : '・まだ きいていない') : ''}${!m.synced && online() ? ' <span class="unsent">・まだ おくれていない</span>' : ''}</div>
+        <div class="meta">${m.from === 'kid' ? esc(m.kidName) + (m.device ? `（${esc(m.device)}）` : '') : TH[m.from]}・${when(m.ts)}${m.from !== 'kid' ? (m.heard ? '・✅ きいたよ' : '・まだ きいていない') : ''}${!m.synced && online() ? ' <span class="unsent">・まだ おくれていない</span>' : ''}</div>
         ${m.hasImage ? `<img data-img="${esc(m.id)}" alt="え" style="display:block;width:240px;max-width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;background:#fff;margin-top:4px;cursor:zoom-in">` : ''}
         ${m.text ? `<div>${esc(m.text)}</div>` : ''}
         ${m.hasAudio && m.from === 'santa' ? `<button class="btn" data-santa="${esc(m.id)}" style="margin-top:4px">🎅 サンタの こえで きく</button>` : m.hasAudio ? `<audio controls preload="none" data-aid="${esc(m.id)}"></audio>` : ''}
@@ -77,7 +89,7 @@ function renderCompose(name) {
   $('sendTxt').onclick = async () => {
     const t = $('txt').value.trim(); if (!t) return;
     $('sendTxt').disabled = true;
-    await send({ kidId: cur.kid, kidName: name, thread: cur.th, from: cur.th, text: t }); await sync().catch(() => {});
+    await send({ kidId: idOf(cur.kid), kidName: name, thread: cur.th, from: cur.th, text: t }); await sync().catch(() => {});
     await render();
   };
   if ($('preview')) $('preview').onclick = () => { const t = $('txt').value.trim(); if (t) speakAs(t, 'santa'); };
@@ -93,13 +105,13 @@ function renderCompose(name) {
   $('drawBtn').onclick = async () => {
     const img = await openDrawPad({ title: santa ? 'サンタとして えを かく' : esc(name) + 'へ えを かく' });
     if (!img) return;
-    await send({ kidId: cur.kid, kidName: name, thread: cur.th, from: cur.th, image: img }); await sync().catch(() => {});
+    await send({ kidId: idOf(cur.kid), kidName: name, thread: cur.th, from: cur.th, image: img }); await sync().catch(() => {});
     render();
   };
   if ($('recPlay')) $('recPlay').onclick = () => { if (santa) playSanta(recBlob); else new Audio(URL.createObjectURL(recBlob)).play(); };
   if ($('recSend')) $('recSend').onclick = async () => {
     $('recSend').disabled = true;
-    await send({ kidId: cur.kid, kidName: name, thread: cur.th, from: cur.th, audio: recBlob }); await sync().catch(() => {});
+    await send({ kidId: idOf(cur.kid), kidName: name, thread: cur.th, from: cur.th, audio: recBlob }); await sync().catch(() => {});
     recBlob = null; await render();
   };
 }

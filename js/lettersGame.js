@@ -1,6 +1,6 @@
 // EndoGame：サンタさんへの おてがみ ／ パパと おはなし（こどもの 画面）
 import { openDrawPad, showBig } from './drawpad.js';
-import { sharedImage } from './letters.js';
+import { sharedImage, parseSetup, deviceName, setDeviceName, DEFAULT_SERVER } from './letters.js';
 import { thread, unheard, send, markHeard, audioURL, audioBlob, imageBlob, sync, online, getCfg, setCfg, testConnection, Recorder, pickMime, speakAs, santaLine, playSanta, stopSanta, unlockAudio } from './letters.js';
 
 const WHO = {
@@ -51,10 +51,8 @@ export function installLetters(api) {
   Object.assign(BG, { letters: 'hub' });
   // かんたん せってい：#setup=…（サーバーと かぎ）の リンクで ひらくと つながる。かぎは「#」の あとなので サーバーには おくられない
   if (location.hash.startsWith('#setup=')) {
-    try {
-      const { s, k } = JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(7).replace(/-/g, '+').replace(/_/g, '/')))));
-      if (s && k) { setCfg({ server: s, key: k, since: 0 }); setTimeout(() => toast('✅ おてがみサーバーに つながりました', 3000), 800); }
-    } catch (e) {}
+    const c = parseSetup(location.hash);
+    if (c) { setCfg({ server: c.s, key: c.k, since: 0 }); setTimeout(() => toast('✅ おてがみサーバーに つながりました', 3000), 800); }
     history.replaceState(null, '', location.pathname);
   }
   let rec = null, recBlob = null, player = null, poll = null;
@@ -63,13 +61,13 @@ export function installLetters(api) {
   const hubGames = SCREENS.games;
   SCREENS.games = () => hubGames().replace(/<\/div>\s*$/, `
       <div class="talk-row">
-        <button class="talk-card santa" data-act="openLetters" data-th="santa">${cardArt('santa')}<span class="tc-body"><span class="tb-t">サンタさんと<br>はなす</span><span class="tb-s">🎤 こえで おてがみを おくろう</span></span><b class="tb-badge" id="badge-santa" hidden></b></button>
-        <button class="talk-card papa" data-act="openLetters" data-th="papa">${cardArt('papa')}<span class="tc-body"><span class="tb-t">パパと<br>はなす</span><span class="tb-s">🎤 こえで メッセージを おくろう</span></span><b class="tb-badge" id="badge-papa" hidden></b></button>
+        <button class="talk-card santa" data-act="openLetters" data-th="santa">${cardArt('santa')}<span class="tc-body"><span class="tb-t">サンタさんと<br>はなす</span><span class="tb-s">🎤 こえで おてがみを おくろう</span>${online() ? '' : '<span class="tb-off">📡 まだ つながっていないよ</span>'}</span><b class="tb-badge" id="badge-santa" hidden></b></button>
+        <button class="talk-card papa" data-act="openLetters" data-th="papa">${cardArt('papa')}<span class="tc-body"><span class="tb-t">パパと<br>はなす</span><span class="tb-s">🎤 こえで メッセージを おくろう</span>${online() ? '' : '<span class="tb-off">📡 まだ つながっていないよ</span>'}</span><b class="tb-badge" id="badge-papa" hidden></b></button>
       </div>
     </div>`);
   const badges = async () => {
     const p = activeProfile(); if (!p) return;
-    const n = await unheard(p.id);
+    const n = await unheard(p);
     for (const th of ['santa', 'papa']) { const b = document.getElementById('badge-' + th); if (b) { b.hidden = !n[th]; b.textContent = n[th] ? `おへんじ ${n[th]}` : ''; } }
   };
   // パパの しゃしんが サーバーに あれば この iPad に とりこむ（この iPad で えらんだ ものより あたらしい ときだけ）
@@ -92,6 +90,8 @@ export function installLetters(api) {
       return true;
     } catch (e) { return false; }
   }
+  // おきた とき：つながって いれば すぐ あたらしい ものと パパの しゃしんを もらう
+  if (online()) setTimeout(() => sync().then(async () => { if (await pullPapaPhoto() && S.screen === 'games') render(); else badges(); }).catch(() => {}), 300);
   const prevGames = AFTER.games;
   AFTER.games = () => { prevGames?.(); badges(); sync().then(async n => { if (n) badges(); if (await pullPapaPhoto() && S.screen === 'games') render(); }).catch(() => {}); };
 
@@ -101,7 +101,7 @@ export function installLetters(api) {
     return `
     ${header(p, { back: 'games' })}
     <div class="page letters ${th}">
-      <div class="lt-head">${whoAvatar(th, 'xl')}<div><h2>${w.title}</h2><p class="sub">${th === 'santa' ? 'こえ・え・もじ で サンタさんに おてがみを おくろう' : 'こえ・え・もじ で パパに おくろう'}</p></div></div>
+      <div class="lt-head">${whoAvatar(th, 'xl')}<div><h2>${w.title}</h2><p class="sub">${th === 'santa' ? 'こえ・え・もじ で サンタさんに おてがみを おくろう' : 'こえ・え・もじ で パパに おくろう'}</p>${online() ? '' : '<p class="lt-off">📡 まだ つながっていないので、おくった ものは この たんまつに たまるよ（おうちのひとに つないでもらってね）</p>'}</div></div>
       <div class="lt-list" id="ltList"><p class="lt-empty">よみこみちゅう…</p></div>
       <div class="lt-rec" id="ltRec"></div>
       <div class="lt-stamps" id="ltStamps">${w.stamps.map(([e, t], i) => `<button class="lt-stamp" data-act="ltStamp" data-i="${i}">${e} ${t}</button>`).join('')}</div>
@@ -135,7 +135,7 @@ export function installLetters(api) {
   async function fillList() {
     const p = activeProfile(), th = S.lettersTo, el = document.getElementById('ltList');
     if (!el || !p) return;
-    const list = await thread(p.id, th);
+    const list = await thread(p, th);
     const before = STREAK + PICS * 100; STREAK = streakOf(list); PICS = picsOf(list);
     if (before !== STREAK + PICS * 100) { const r = document.getElementById('ltRec'); if (r && !rec && !recBlob && !r.querySelector('#ltTxt')) recArea('idle'); }
     if (!list.length) { el.innerHTML = `<p class="lt-empty">${th === 'santa' ? 'サンタさんに はじめての おてがみを おくってみよう！' : 'パパに メッセージを おくってみよう！'}</p>`; return; }
@@ -197,7 +197,7 @@ export function installLetters(api) {
     }
   }
   async function deliver({ text = '', audio = null, image = null }) {
-    const p = activeProfile(), th = S.lettersTo, cur = await thread(p.id, th);
+    const p = activeProfile(), th = S.lettersTo, cur = await thread(p, th);
     if (streakOf(cur) >= LIMIT) { recArea('wait'); toast(`${WHO[th].name}の おへんじを まってね`); return; }
     if (image && picsOf(cur) >= PIC_LIMIT) { toast('え は 2まいまで。おへんじを まってね'); return; }
     recArea('sending');
@@ -247,17 +247,21 @@ export function installLetters(api) {
           <label class="btn sm">📷 しゃしんを えらぶ<input type="file" accept="image/*" id="papaPhotoInput" hidden></label>
           ${ph ? '<button class="btn sm ghost" data-act="ltPapaPhotoOff">しゃしんを はずす</button>' : ''}</div>
       </div>
-      <div class="card"><h3>📱 パパの スマホと つなぐ</h3>
-        <p class="hint">おてがみを あずかる サーバーの アドレスと「かぞくの かぎ」を いれると、こどもの おてがみが パパの スマホに とどき、スマホから おへんじ（パパ／サンタさん）が できます。いれない あいだは、この iPad の なかだけで やりとりします（へんじは この iPad で へんじページを ひらいて かきます）。</p>
-        <label class="field"><span>サーバーの アドレス</span><input id="ltServer" placeholder="https://endogame-letters.xxxx.workers.dev" value="${esc(c.server || '')}" autocomplete="off"></label>
-        <label class="field"><span>かぞくの かぎ</span><input id="ltKey" type="password" value="${esc(c.key || '')}" autocomplete="off"></label>
-        <div class="row wrap"><button class="btn sm primary" data-act="ltSaveCfg">ほぞんして つながるか ためす</button>${c.server ? '<button class="btn sm ghost" data-act="ltClearCfg">つなぐのを やめる</button>' : ''}</div>
-        <p class="hint" id="ltCfgMsg">${online() ? '✅ つながる せってい に なっています' : 'いまは この iPad の なかだけ'}</p>
+      <div class="card"><h3>📱 かぞくの サーバーに つなぐ ${online() ? '<span style="color:#2a9d4a">✅ つながっています</span>' : '<span style="color:#d9343a">📡 まだ</span>'}</h3>
+        <p class="hint">「かぞくの かぎ」を いれるだけで つながります。つながると、こどもの おてがみが パパの スマホに とどき、パパの しゃしんや おへんじが この たんまつに とどきます。かぎの かわりに「かんたん せっていの リンク」を まるごと はりつけても OK です。</p>
+        <label class="field"><span>かぞくの かぎ</span><input id="ltKey" type="password" value="${esc(c.key || '')}" autocomplete="off" placeholder="xxxxx-xxxxx-xxxxx-xxxxx"></label>
+        <details><summary class="hint">くわしい せってい（サーバーの アドレス）</summary><label class="field"><span>サーバーの アドレス</span><input id="ltServer" value="${esc(c.server || DEFAULT_SERVER)}" autocomplete="off"></label></details>
+        <div class="row wrap"><button class="btn sm primary" data-act="ltSaveCfg">つなぐ</button>${online() ? '<button class="btn sm ghost" data-act="ltClearCfg">つなぐのを やめる</button>' : ''}</div>
+        <p class="hint" id="ltCfgMsg"></p>
+      </div>
+      <div class="card"><h3>📛 この たんまつの なまえ</h3>
+        <p class="hint">パパの へんじページで「どの たんまつから きたか」が わかるように なります（れい：はるとの iPad）。</p>
+        <div class="row wrap"><input id="ltDevice" value="${esc(deviceName())}" maxlength="20" style="max-width:240px"><button class="btn sm" data-act="ltSaveDevice">ほぞん</button></div>
       </div>
       <div class="card"><h3>✉️ おへんじを かく</h3>
         <p class="hint">へんじページで、こどもの こえを きいて、パパ または サンタさん として おへんじを かけます。サンタさんの おへんじは、パパの こえを ろくおんすると サンタさん風の こえ（ひくく・ゆっくり）に なります。</p>
         <a class="btn" href="papa.html" target="_blank" rel="noopener">✉️ へんじページを ひらく</a>
-        <p class="hint">パパの スマホでは <b>${esc(location.origin + location.pathname.replace(/[^/]*$/, ''))}papa.html</b> を ひらいて、おなじ アドレスと かぎを いれてください。</p>
+        <p class="hint">パパの スマホでは <b>${esc(location.origin + location.pathname.replace(/[^/]*$/, ''))}papa.html</b> を ひらいて、おなじ かぎを いれてください。</p>
       </div>`;
     },
     bindParent: () => {
@@ -270,15 +274,20 @@ export function installLetters(api) {
     actions: {
       ltPapaPhotoOff: () => { localStorage.removeItem(PAPA_PHOTO); localStorage.removeItem(PAPA_CARD); render(); },
       ltSaveCfg: async () => {
-        const server = document.getElementById('ltServer').value.trim(), key = document.getElementById('ltKey').value.trim();
         const msg = document.getElementById('ltCfgMsg');
-        if (!server || !key) { msg.textContent = 'アドレスと かぎを りょうほう いれてください'; return; }
-        if (!/^https:\/\//.test(server) && !/^http:\/\/(127\.0\.0\.1|localhost)/.test(server)) { msg.textContent = 'アドレスは https:// で はじまります'; return; }
-        msg.textContent = 'ためしています…';
-        try { await testConnection(server, key); setCfg({ server, key, since: 0 }); msg.textContent = '✅ つながりました！'; sync().catch(() => {}); }
-        catch (e) { msg.textContent = '❌ つながりませんでした（' + e.message + '）'; }
+        const c = parseSetup(document.getElementById('ltKey').value);
+        const server = (c?.s !== DEFAULT_SERVER ? c?.s : '') || document.getElementById('ltServer')?.value.trim() || DEFAULT_SERVER;
+        if (!c?.k) { msg.textContent = 'かぞくの かぎを いれてください'; return; }
+        msg.textContent = 'つないでいます…';
+        try {
+          await testConnection(server, c.k); setCfg({ server, key: c.k, since: 0 });
+          msg.textContent = '✅ つながりました！ パパの しゃしんや おへんじを うけとっています…';
+          await sync().catch(() => {}); await pullPapaPhoto();
+          toast('✅ つながりました', 2500); render();
+        } catch (e) { msg.textContent = '❌ つながりませんでした（' + e.message + '）'; }
       },
-      ltClearCfg: () => { setCfg({ server: '', key: '' }); render(); },
+      ltClearCfg: () => { setCfg({ key: '' }); render(); },
+      ltSaveDevice: () => { setDeviceName(document.getElementById('ltDevice').value.trim()); toast('ほぞんしました'); render(); },
     },
   };
 }

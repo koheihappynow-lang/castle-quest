@@ -1,8 +1,9 @@
 // オフラインでも動くように、ゲームのファイルをiPadに保存しておく
-// ・プログラム（html/js/css）：ネット優先（更新がすぐ反映）。ネットが おそい・ない ときは 保存した もの
+// ・プログラム（html/js/css）：保存した ものを すぐ 使う。新しい 版は sw.js が かわると まとめて とりなおして 入れかわる
 // ・画像・3Dモデル：保存した ものを すぐ 使い、うらで 新しい ものが ないか 確かめる。
 //   画像の 保存場所（ASSETS）は 版を あげても けさない → 更新の たびに 全部 とりなおさない（起動が はやい）
-const VERSION = 'cq-v42';
+//   ※ 画像を さしかえた ときは ASSETS の 番号を あげる（cq-assets-v2 …）
+const VERSION = 'cq-v43';
 const ASSETS = 'cq-assets-v1';
 const BG_FILES = ['endogame-adventure', 'hero', 'title', 'hub', 'study', 'select', 'build-day', 'build-sunset', 'build-night', 'exchange', 'ghosts', 'workshop', 'habitat-jungle', 'habitat-volcano', 'habitat-coast']
   .map(n => `./bg/${n}.jpg`);
@@ -48,28 +49,27 @@ async function fillAssets() {
 }
 
 const isCode = url => url.origin === location.origin && (/\.(html|js|css|webmanifest)$/.test(url.pathname) || url.pathname.endsWith('/'));
-// ネットが おそい ときは 2.5びょうで あきらめて 保存した ものを つかう
-const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
   // ほかの サイト（おてがみサーバー など）は さわらない。ほぞんするのは 3Dの 部品（jsdelivr）だけ
   if (url.origin !== location.origin && !url.hostname.endsWith('jsdelivr.net')) return;
+  // プログラム：ほぞんした ものを すぐ つかう（あたらしい 版は sw.js の こうしんで まとめて いれかわる）
   if (isCode(url)) {
     e.respondWith(caches.open(VERSION).then(async cache => {
       const hit = await cache.match(e.request, { ignoreSearch: true });
-      const net = fetch(e.request, { cache: 'no-cache' }).then(res => { if (res.ok) cache.put(e.request, res.clone()); return res; });
-      try { return await withTimeout(net, hit ? 2500 : 15000); }
-      catch (err) { return hit || net.catch(() => Response.error()); }
+      if (hit) return hit;
+      try { const res = await fetch(e.request); if (res.ok) cache.put(e.request, res.clone()); return res; }
+      catch (err) { return Response.error(); }
     }));
     return;
   }
-  // 画像・3Dの 部品：保存した ものを すぐ かえし、うらで 新しく する
+  // 画像・3Dの 部品：保存した ものを つかう（ない ときだけ とりにいく）。絵を さしかえた ときは ASSETS の 名前を かえる
   e.respondWith(caches.open(ASSETS).then(async cache => {
     const hit = await cache.match(e.request, { ignoreSearch: true });
-    const net = fetch(e.request).then(res => { if (res.ok) cache.put(e.request, res.clone()); return res; });
-    if (hit) { e.waitUntil(net.catch(() => {})); return hit; }
-    try { return await net; } catch (err) { return Response.error(); }
+    if (hit) return hit;
+    try { const res = await fetch(e.request); if (res.ok) cache.put(e.request, res.clone()); return res; }
+    catch (err) { return Response.error(); }
   }));
 });

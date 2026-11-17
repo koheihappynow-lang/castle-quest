@@ -5,9 +5,34 @@
 // メッセージ：{ id, kidId, kidName, thread:'santa'|'papa', from:'kid'|'papa'|'santa', text, hasAudio, mime, ts, u, heard, synced }
 
 const CFG_KEY = 'endogame.letters';
-export function getCfg() { try { return JSON.parse(localStorage.getItem(CFG_KEY) || '{}'); } catch (e) { return {}; } }
-export function setCfg(c) { localStorage.setItem(CFG_KEY, JSON.stringify({ ...getCfg(), ...c })); }
-export const online = () => { const c = getCfg(); return !!(c.server && c.key); };
+// かぞくの サーバー（アドレスは ひみつでは ない。よむには「かぞくの かぎ」が いる）
+export const DEFAULT_SERVER = 'https://endogame-letters.endogame-kids.workers.dev';
+function rawCfg() { try { return JSON.parse(localStorage.getItem(CFG_KEY) || '{}'); } catch (e) { return {}; } }
+export function getCfg() { const c = rawCfg(); if (!c.server) c.server = DEFAULT_SERVER; return c; }
+export function setCfg(c) { localStorage.setItem(CFG_KEY, JSON.stringify({ ...rawCfg(), ...c })); }
+export const online = () => !!getCfg().key;
+// 「かんたん せっていの リンク」か かぎ そのものから { s, k } を とりだす
+export function parseSetup(text) {
+  const t = String(text || '').trim();
+  const m = t.match(/#setup=([A-Za-z0-9_-]+)/);
+  if (m) { try { const o = JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g, '+').replace(/_/g, '/'))))); if (o.k) return { s: o.s || DEFAULT_SERVER, k: o.k }; } catch (e) {} }
+  return t ? { s: DEFAULT_SERVER, k: t } : null;
+}
+// この 端末の なまえ（おうちのひとが かえられる）
+export function deviceName() {
+  try { const n = localStorage.getItem('endogame.deviceName'); if (n) return n; } catch (e) {}
+  const ua = navigator.userAgent;
+  const ipad = /iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  if (ipad) return 'iPad';
+  if (/iPhone/.test(ua)) return 'iPhone';
+  if (/Android/.test(ua)) return 'Android';
+  const br = /Edg\//.test(ua) ? 'Edge' : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : '';
+  return (/Mac/.test(ua) ? 'Mac' : 'PC') + (br ? '・' + br : '');
+}
+export function setDeviceName(n) { try { if (n) localStorage.setItem('endogame.deviceName', n.slice(0, 20)); else localStorage.removeItem('endogame.deviceName'); } catch (e) {} }
+// こどもは「なまえ」で まとめる（ちがう 端末でも おなじ なまえなら おなじ こ）
+export const nameKey = s => String(s || '').trim().toLowerCase();
+const isKid = (m, kid) => m.kidId !== '*' && (m.kidId === kid.id || nameKey(m.kidName) === nameKey(kid.name));
 const base = () => getCfg().server.replace(/\/+$/, '');
 
 // ---------- IndexedDB ----------
@@ -27,11 +52,12 @@ async function putMsg(m) { return reqP((await st('msgs', 'readwrite')).put(m)); 
 async function getAudio(id) { return reqP((await st('audio')).get(id)); }
 async function putAudio(id, blob) { return reqP((await st('audio', 'readwrite')).put(blob, id)); }
 
-export async function thread(kidId, th) { return (await allMsgs()).filter(m => m.kidId === kidId && m.thread === th); }
+// kid：{ id, name }（ぼうけんしゃ）
+export async function thread(kid, th) { return (await allMsgs()).filter(m => isKid(m, kid) && m.thread === th); }
 // まだ きいていない へんじの かず { santa: n, papa: n }
-export async function unheard(kidId) {
+export async function unheard(kid) {
   const out = { santa: 0, papa: 0 };
-  for (const m of await allMsgs()) if (m.kidId === kidId && m.from !== 'kid' && !m.heard) out[m.thread]++;
+  for (const m of await allMsgs()) if (isKid(m, kid) && m.from !== 'kid' && !m.heard) out[m.thread]++;
   return out;
 }
 
@@ -39,7 +65,7 @@ const rid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 // kind：'greet'（サンタの あいさつ）／'thanks'（おれい）。kidId '*' は こども ぜんいん むけ
 export async function send({ kidId, kidName, thread: th, from, text = '', audio = null, image = null, kind = '' }) {
   const now = Date.now();
-  const m = { id: rid(), kidId, kidName, thread: th, from, text: String(text).slice(0, 500), hasAudio: !!audio, mime: audio?.type || '', hasImage: !!image, ts: now, u: now, heard: from === 'kid' || kidId === '*', synced: false, ...(kind ? { kind } : {}) };
+  const m = { id: rid(), kidId, kidName, thread: th, from, text: String(text).slice(0, 500), hasAudio: !!audio, mime: audio?.type || '', hasImage: !!image, device: deviceName(), ts: now, u: now, heard: from === 'kid' || kidId === '*', synced: false, ...(kind ? { kind } : {}) };
   if (audio) await putAudio(m.id, audio);
   if (image) await putAudio('img:' + m.id, image);
   await putMsg(m);

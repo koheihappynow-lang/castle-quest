@@ -1214,9 +1214,21 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   // ラリーから もどってきたら、また 読み直しを ゆるす
   window.addEventListener('pageshow', ev => { if (ev.persisted) window.__leaving = false; });
   // 写真もiPadに保存しておく（オフラインでも出るように）
-  setTimeout(() => {
-    caches?.open('cq-photos-v1').then(c => c.addAll(Object.values(PHOTOS).map(p => p.src))).catch(() => {});
-  }, 5000);
+  // ・ほぞんして いない 写真だけを、1日 1かい、すこしずつ（まえは 毎回 11MB を とりなおしていた）
+  setTimeout(async () => {
+    try {
+      if (navigator.connection?.saveData) return;
+      const day = new Date().toDateString();
+      if (localStorage.getItem('cq.photosDay') === day) return;
+      const c = await caches.open('cq-photos-v1');
+      for (const src of Object.values(PHOTOS).map(p => p.src)) {
+        if (await c.match(src)) continue;
+        try { const r = await fetch(src); if (r.ok) await c.put(src, r); } catch (e) { return; }
+        await new Promise(r => setTimeout(r, 150));
+      }
+      localStorage.setItem('cq.photosDay', day);
+    } catch (e) {}
+  }, 15000);
 }
 
 // 開発用：?shot=お城のID で、3Dだけを全画面で表示する（データは保存しない）
