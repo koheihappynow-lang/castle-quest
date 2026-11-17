@@ -3,7 +3,7 @@
 // ・画像・3Dモデル：保存した ものを すぐ 使い、うらで 新しい ものが ないか 確かめる。
 //   画像の 保存場所（ASSETS）は 版を あげても けさない → 更新の たびに 全部 とりなおさない（起動が はやい）
 //   ※ 画像を さしかえた ときは ASSETS の 番号を あげる（cq-assets-v2 …）
-const VERSION = 'cq-v43';
+const VERSION = 'cq-v44';
 const ASSETS = 'cq-assets-v1';
 const BG_FILES = ['endogame-adventure', 'hero', 'title', 'hub', 'study', 'select', 'build-day', 'build-sunset', 'build-night', 'exchange', 'ghosts', 'workshop', 'habitat-jungle', 'habitat-volcano', 'habitat-coast']
   .map(n => `./bg/${n}.jpg`);

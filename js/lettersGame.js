@@ -1,6 +1,6 @@
 // EndoGame：サンタさんへの おてがみ ／ パパと おはなし（こどもの 画面）
 import { openDrawPad, showBig } from './drawpad.js';
-import { sharedImage, parseSetup, deviceName, setDeviceName, DEFAULT_SERVER } from './letters.js';
+import { sharedImage, parseSetup, deviceName, setDeviceName, DEFAULT_SERVER, claimPairCode } from './letters.js';
 import { thread, unheard, send, markHeard, audioURL, audioBlob, imageBlob, sync, online, getCfg, setCfg, testConnection, Recorder, pickMime, speakAs, santaLine, playSanta, stopSanta, unlockAudio } from './letters.js';
 
 const WHO = {
@@ -248,7 +248,12 @@ export function installLetters(api) {
           ${ph ? '<button class="btn sm ghost" data-act="ltPapaPhotoOff">しゃしんを はずす</button>' : ''}</div>
       </div>
       <div class="card"><h3>📱 かぞくの サーバーに つなぐ ${online() ? '<span style="color:#2a9d4a">✅ つながっています</span>' : '<span style="color:#d9343a">📡 まだ</span>'}</h3>
-        <p class="hint">「かぞくの かぎ」を いれるだけで つながります。つながると、こどもの おてがみが パパの スマホに とどき、パパの しゃしんや おへんじが この たんまつに とどきます。かぎの かわりに「かんたん せっていの リンク」を まるごと はりつけても OK です。</p>
+        <div style="background:#eef6ff;border-radius:14px;padding:12px 14px;margin:6px 0 12px">
+          <b>いちばん かんたん：つなぐ ばんごう（6けた）</b>
+          <p class="hint" style="margin:4px 0 8px">パパの スマホの へんじページで「📲 iPadを つなぐ」を おすと 6けたの ばんごうが でます。それを いれて「つなぐ」。</p>
+          <div class="row wrap"><input id="ltPair" inputmode="numeric" maxlength="7" placeholder="123 456" style="max-width:160px;font-size:1.4rem;letter-spacing:.1em;text-align:center"><button class="btn primary" data-act="ltPairGo">つなぐ</button></div>
+        </div>
+        <p class="hint">または「かぞくの かぎ」を いれても つながります。つながると、こどもの おてがみが パパの スマホに とどき、パパの しゃしんや おへんじが この たんまつに とどきます。かぎの かわりに「かんたん せっていの リンク」を まるごと はりつけても OK です。</p>
         <label class="field"><span>かぞくの かぎ</span><input id="ltKey" type="password" value="${esc(c.key || '')}" autocomplete="off" placeholder="xxxxx-xxxxx-xxxxx-xxxxx"></label>
         <details><summary class="hint">くわしい せってい（サーバーの アドレス）</summary><label class="field"><span>サーバーの アドレス</span><input id="ltServer" value="${esc(c.server || DEFAULT_SERVER)}" autocomplete="off"></label></details>
         <div class="row wrap"><button class="btn sm primary" data-act="ltSaveCfg">つなぐ</button>${online() ? '<button class="btn sm ghost" data-act="ltClearCfg">つなぐのを やめる</button>' : ''}</div>
@@ -285,6 +290,18 @@ export function installLetters(api) {
           await sync().catch(() => {}); await pullPapaPhoto();
           toast('✅ つながりました', 2500); render();
         } catch (e) { msg.textContent = '❌ つながりませんでした（' + e.message + '）'; }
+      },
+      ltPairGo: async () => {
+        const msg = document.getElementById('ltCfgMsg');
+        const code = (document.getElementById('ltPair').value || '').replace(/\D/g, '');
+        if (code.length !== 6) { msg.textContent = '6けたの ばんごうを いれてください'; return; }
+        msg.textContent = 'つないでいます…';
+        try {
+          await claimPairCode(code, getCfg().server);
+          msg.textContent = '✅ つながりました！ パパの しゃしんや おへんじを うけとっています…';
+          await sync().catch(() => {}); await pullPapaPhoto();
+          toast('✅ つながりました', 2500); render();
+        } catch (e) { msg.textContent = '❌ ' + e.message; }
       },
       ltClearCfg: () => { setCfg({ key: '' }); render(); },
       ltSaveDevice: () => { setDeviceName(document.getElementById('ltDevice').value.trim()); toast('ほぞんしました'); render(); },

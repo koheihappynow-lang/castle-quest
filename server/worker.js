@@ -23,7 +23,27 @@ export default {
     const J = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
     if (!url.pathname.startsWith('/api/')) return J({ ok: true, name: 'endogame-letters' });
+    // つなぐ ばんごう（6けた）で かぎを もらう：かぎ なしで よべる。10ぷんで きえる・1かい つかうと きえる・まちがいは 1じかん 20かいまで
+    if (req.method === 'POST' && url.pathname === '/api/pair/claim') {
+      const ip = req.headers.get('CF-Connecting-IP') || 'x', rk = 'r:' + ip;
+      const tries = Number((await env.LETTERS.get(rk)) || 0);
+      if (tries >= 20) return J({ error: 'too many' }, 429);
+      let body; try { body = await req.json(); } catch (e) { return J({ error: 'bad json' }, 400); }
+      const code = String(body?.code || '').replace(/\D/g, '');
+      if (code.length !== 6) return J({ error: 'bad code' }, 400);
+      const ok = await env.LETTERS.get('p:' + code);
+      if (!ok) { await env.LETTERS.put(rk, String(tries + 1), { expirationTtl: 3600 }); return J({ error: 'not found' }, 404); }
+      await env.LETTERS.delete('p:' + code);
+      return J({ key: env.FAMILY_KEY });
+    }
     if (!env.FAMILY_KEY || !same(req.headers.get('X-Family-Key') || '', env.FAMILY_KEY)) return J({ error: 'unauthorized' }, 401);
+    // つなぐ ばんごうを つくる（かぎを もっている パパの ページから）
+    if (req.method === 'POST' && url.pathname === '/api/pair') {
+      const a = new Uint32Array(1); crypto.getRandomValues(a);
+      const code = String(a[0] % 1000000).padStart(6, '0');
+      await env.LETTERS.put('p:' + code, '1', { expirationTtl: 600 });
+      return J({ code, expires: Date.now() + 600000 });
+    }
 
     const readIndex = async () => JSON.parse((await env.LETTERS.get('index')) || '[]');
 

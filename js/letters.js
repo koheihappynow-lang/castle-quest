@@ -168,6 +168,15 @@ async function doSync() {
   setCfg({ since: Math.max(0, (r.now || Date.now()) - 120000) });
   return fresh;
 }
+// つなぐ ばんごう
+export async function makePairCode() { return api('POST', '/api/pair', {}); }
+export async function claimPairCode(code, server = DEFAULT_SERVER) {
+  const res = await fetch(server.replace(/\/+$/, '') + '/api/pair/claim', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }), cache: 'no-store' });
+  if (res.status === 404) throw new Error('ばんごうが ちがうか、じかんぎれです（だしたばかりなら 1ぷん まって もういちど）');
+  if (res.status === 429) throw new Error('まちがいが おおいので、しばらく まってね');
+  if (!res.ok) throw new Error('サーバー ' + res.status);
+  const j = await res.json(); setCfg({ server, key: j.key, since: 0 }); return true;
+}
 export async function testConnection(server, key) {
   const res = await fetch(server.replace(/\/+$/, '') + '/api/msgs?since=' + Date.now(), { headers: { 'X-Family-Key': key }, cache: 'no-store' });
   if (res.status === 401) throw new Error('かぎが ちがいます');

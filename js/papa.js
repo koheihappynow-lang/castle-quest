@@ -1,6 +1,6 @@
 // EndoGame：パパの へんじページ（パパ または サンタさん として へんじする）
 import { openDrawPad, showBig } from './drawpad.js';
-import { nameKey } from './letters.js';
+import { nameKey, makePairCode } from './letters.js';
 import { allMsgs, send, audioURL, audioBlob, imageBlob, sync, online, getCfg, setCfg, testConnection, Recorder, pickMime, speakAs, santaLine, playSanta, stopSanta, unlockAudio } from './letters.js';
 
 const $ = id => document.getElementById(id);
@@ -197,6 +197,24 @@ if (location.hash.startsWith('#setup=')) {
 }
 
 $('setBtn').onclick = () => { showSetup = true; render(); };
+// 📲 iPad を つなぐ：6けたの ばんごうを だす（10ぷん）
+$('pairBtn').onclick = async () => {
+  if (!online()) { alert('さきに この ページを サーバーに つないでください（⚙️）'); return; }
+  try {
+    const r = await makePairCode();
+    const box = document.createElement('div');
+    box.style.cssText = 'position:fixed;inset:0;z-index:50;background:rgba(20,30,50,.6);display:flex;align-items:center;justify-content:center;padding:16px';
+    box.innerHTML = `<div style="background:#fff;border-radius:18px;padding:22px 20px;max-width:380px;width:100%;text-align:center;font-size:16px;line-height:1.6">
+      <b>📲 iPad を つなぐ</b>
+      <p style="margin:8px 0">iPad の「⚙️ おうちのひと → 💌 おてがみ」の<br>「つなぐ ばんごう」に いれてください</p>
+      <div style="font:900 44px/1.2 ui-monospace,Menlo,monospace;letter-spacing:.12em;color:#2f7fe8;margin:10px 0">${r.code.slice(0, 3)} ${r.code.slice(3)}</div>
+      <p class="hint" id="pairLeft">のこり 10:00（1だいに 1かい つかえます）</p>
+      <button class="btn primary" id="pairClose" style="margin-top:8px">とじる</button></div>`;
+    document.body.appendChild(box);
+    const t = setInterval(() => { const s = Math.max(0, Math.round((r.expires - Date.now()) / 1000)); const el = document.getElementById('pairLeft'); if (el) el.textContent = s ? `のこり ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}（1だいに 1かい つかえます）` : 'じかんぎれ。もういちど おしてください'; if (!s) clearInterval(t); }, 1000);
+    document.getElementById('pairClose').onclick = () => { clearInterval(t); box.remove(); };
+  } catch (e) { alert('ばんごうを つくれませんでした（' + e.message + '）'); }
+};
 $('syncBtn').onclick = async () => { $('syncBtn').textContent = '…'; try { await sync(); } catch (e) { alert(e.message); } $('syncBtn').textContent = '🔄 こうしん'; render(); };
 // ひらいている あいだは 20びょう ごとに あたらしい おてがみを みる
 setInterval(async () => { if (rec || document.activeElement?.id === 'txt') return; try { const n = await sync(); if (n !== undefined) { const before = msgs.length; const all = await allMsgs(); if (all.length !== before) render(); } } catch (e) {} }, 20000);
