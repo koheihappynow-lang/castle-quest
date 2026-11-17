@@ -6,9 +6,9 @@
 try { importScripts('./asset-hashes.js'); } catch (e) {}
 const HASH = self.ASSET_HASH || {};
 const SCOPE = new URL('./', self.location).pathname;
-const VERSION = 'cq-v66';
+const VERSION = 'cq-v67';
 const ASSETS = 'cq-assets-v2';
-const BG_FILES = ['endogame-adventure', 'hero', 'title', 'hub', 'study', 'select', 'build-day', 'build-sunset', 'build-night', 'exchange', 'ghosts', 'workshop', 'habitat-jungle', 'habitat-volcano', 'habitat-coast']
+const BG_FILES = ['top', 'dino-study', 'dino-result', 'dino-exchange', 'dino-home', 'dino-nest', 'dino-shop', 'dino-zukan', 'santa', 'papa', 'rest', 'night', 'endogame-adventure', 'hero', 'title', 'hub', 'study', 'select', 'build-day', 'build-sunset', 'build-night', 'exchange', 'ghosts', 'workshop', 'habitat-jungle', 'habitat-volcano', 'habitat-coast']
   .map(n => `./bg/${n}.jpg`);
 const CASTLE_FILES = ['himeji', 'neuschwanstein', 'windsor', 'montsaintmichel', 'edinburgh', 'alhambra', 'chambord', 'hearst', 'forbiddencity', 'pena', 'tsuruga']
   .map(id => `./js/diorama/castles/${id}.js`);
@@ -21,7 +21,7 @@ const CODE = [
 const RALLY = ['chibi', 'taxi', 'truck', 'police', 'ambulance', 'bus', 'fire', 'sports', 'monster', 'camper', 'racer', 'rocket', 'limo', 'rainbow', 'star'].map(id => `./cards/rally-${id}.jpg`);
 const IMAGES = [
   './cards/himeji.jpg', './cards/dino-trex.jpg', './cards/dino-trex-baby.jpg', './cards/dino-care.jpg', './cards/santa.jpg', './cards/santa-card.jpg', './cards/rally-card.jpg', ...RALLY,
-  './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', ...BG_FILES,
+  ...['english', 'math', 'puzzle', 'review', 'castle', 'exchange', 'ghostbook', 'dinobook', 'shop', 'care', 'egg'].map(n => `./icons/ui/icon-${n}.png`), './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', ...BG_FILES,
 ];
 const CDN = [
   'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js',

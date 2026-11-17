@@ -38,7 +38,7 @@ const RARE_GHOSTS = 20;
 export function installDino(api) {
   const { S, SCREENS, ACTIONS, AFTER, BG, LEAVE, go, render, db, save, activeProfile, esc, fmt, toast, sfx, say, sayJa, sayEn, stopSpeech, header, dueIds, startQuiz, rate, money, wallet, exchange, today, puzzleOpen, easyLevelOf } = api;
 
-  Object.assign(BG, { dhome: 'dino', deggs: 'dino', hatch: 'dino', dshop: 'dino', dzukan: 'dino', dcare: 'dino' });
+  Object.assign(BG, { dhome: 'dino-home', deggs: 'dino-nest', hatch: 'dino-nest', dshop: 'dino-shop', dzukan: 'dino-zukan', dcare: 'dino' });
   S.shopTab = 'food';
 
   const D = () => activeProfile().dino;
@@ -63,30 +63,30 @@ export function installDino(api) {
           <span class="bi">🌈</span><span class="bt">かんがえて あそぼう</span><span class="bs">みて・きいて・タッチ</span>
         </button>` : ''}
         <button class="big-btn quiz" data-act="startQuiz" data-mode="normal">
-          <span class="bi">🔤</span><span class="bt">えいごに ちょうせん</span><span class="bs">ことばで おかねを ためよう</span>
+          <span class="bi"><img class="bi-img" src="icons/ui/icon-english.png" alt=""></span><span class="bt">えいごに ちょうせん</span><span class="bs">ことばで おかねを ためよう</span>
         </button>
         <button class="big-btn math" data-act="startQuiz" data-mode="math">
-          <span class="bi">🔢</span><span class="bt">さんすうに ちょうせん</span><span class="bs">かずで おかねを ためよう</span>
+          <span class="bi"><img class="bi-img" src="icons/ui/icon-math.png" alt=""></span><span class="bt">さんすうに ちょうせん</span><span class="bs">かずで おかねを ためよう</span>
         </button>
         <button class="big-btn puzzle ${puzzleOpen() ? '' : 'wip'}" data-act="puzzleTry">
-          <span class="bi">🧩</span><span class="bt">ひらめき パズル</span><span class="bs">${puzzleOpen() ? 'かんがえて おかねを ためよう' : '🚧 さくせいちゅう'}</span>
+          <span class="bi"><img class="bi-img" src="icons/ui/icon-puzzle.png" alt=""></span><span class="bt">ひらめき パズル</span><span class="bs">${puzzleOpen() ? 'かんがえて おかねを ためよう' : '🚧 さくせいちゅう'}</span>
         </button>
         <button class="big-btn review ${due ? 'alert' : ''}" data-act="startQuiz" data-mode="review">
-          <span class="bi">👻</span><span class="bt">きょうの ふくしゅう</span><span class="bs">${due ? `おばけが ${due}ひき まってるよ！ おかね 2ばい` : 'いまは おばけ いないよ'}</span>
+          <span class="bi"><img class="bi-img" src="icons/ui/icon-review.png" alt=""></span><span class="bt">きょうの ふくしゅう</span><span class="bs">${due ? `おばけが ${due}ひき まってるよ！ おかね 2ばい` : 'いまは おばけ いないよ'}</span>
         </button>
         <button class="big-btn d-care" data-act="go" data-to="dcare">
-          <span class="bi">${ICON[d.active]}</span><span class="bt">${info.name}の おせわ</span><span class="bs">${stageOf(m.growth).name}・${hungry(m) ? '🍖 おなか ぺこぺこ' : '😊 げんき'}</span>
+          <span class="bi"><img class="bi-img" src="icons/ui/icon-care.png" alt=""></span><span class="bt">${info.name}の おせわ</span><span class="bs">${stageOf(m.growth).name}・${hungry(m) ? '🍖 おなか ぺこぺこ' : '😊 げんき'}</span>
         </button>
         <button class="big-btn d-shop" data-act="go" data-to="dshop">
-          <span class="bi">🛒</span><span class="bt">おみせ</span><span class="bs">えさ・すみか・かざり</span>
+          <span class="bi"><img class="bi-img" src="icons/ui/icon-shop.png" alt=""></span><span class="bt">おみせ</span><span class="bs">えさ・すみか・かざり</span>
         </button>
         <button class="big-btn exchange" data-act="go" data-to="exchange">
-          <span class="bi">💱</span><span class="bt">りょうがえじょ</span><span class="bs">💴 ${fmt(d.wallet.yen)}えん</span>
+          <span class="bi"><img class="bi-img" src="icons/ui/icon-exchange.png" alt=""></span><span class="bt">りょうがえじょ</span><span class="bs">💴 ${fmt(d.wallet.yen)}えん</span>
         </button>
         <button class="big-btn ghosts" data-act="go" data-to="dzukan">
-          <span class="bi">📕</span><span class="bt">きょうりゅう ずかん</span><span class="bs">あえた なかま ${d.order.length}</span>
+          <span class="bi"><img class="bi-img" src="icons/ui/icon-dinobook.png" alt=""></span><span class="bt">きょうりゅう ずかん</span><span class="bs">あえた なかま ${d.order.length}</span>
         </button>
-        ${d.eggs > 0 ? `<button class="big-btn d-egg" data-act="go" data-to="deggs"><span class="bi">🥚</span><span class="bt">たまごが あるよ！</span><span class="bs">あたらしい なかまを えらぼう</span></button>` : ''}
+        ${d.eggs > 0 ? `<button class="big-btn d-egg" data-act="go" data-to="deggs"><span class="bi"><img class="bi-img" src="icons/ui/icon-egg.png" alt=""></span><span class="bt">たまごが あるよ！</span><span class="bs">あたらしい なかまを えらぼう</span></button>` : ''}
       </div>
     </div>`;
   };

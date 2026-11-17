@@ -316,7 +316,7 @@ h3 { font-size: 1.15rem; }
 
 /* ===== 背景画像（画面ごと） ===== */
 body::before { content: ''; position: fixed; inset: 0; z-index: -1; background-size: cover; background-position: center; background-color: #bfe3ff; }
-body[data-bg="hero"]::before { background-image: url(../bg/endogame-adventure.jpg); background-position: center 35%; }
+body[data-bg="hero"]::before { background-image: url(../bg/top.jpg); background-position: center 40%; }
 body[data-bg="hub"]::before { background-image: linear-gradient(rgba(255, 255, 255, .10), rgba(255, 255, 255, .25)), url(../bg/hub.jpg); }
 body[data-bg="study"]::before { background-image: linear-gradient(rgba(255, 255, 255, .15), rgba(255, 255, 255, .30)), url(../bg/study.jpg); }
 body[data-bg="title"]::before { background-image: linear-gradient(rgba(255, 255, 255, .10), rgba(255, 255, 255, .25)), url(../bg/title.jpg); }
@@ -760,3 +760,19 @@ body { word-break: keep-all; overflow-wrap: anywhere; line-break: strict; }
 .ez-num { font-size: .9em; color: #4a2b10; }
 .ez-dots { font-size: .32em; color: #ff7a1a; letter-spacing: .05em; max-width: 6em; word-break: break-all; text-align: center; }
 @media (max-width: 640px) { .options.ez-opts.n4 { grid-template-columns: 1fr 1fr; } }
+
+/* あたらしい 背景（2026-11-18） */
+body[data-bg="dino-study"]::before { background-image: linear-gradient(rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.3)), url(../bg/dino-study.jpg); }
+body[data-bg="dino-result"]::before { background-image: linear-gradient(rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.28)), url(../bg/dino-result.jpg); }
+body[data-bg="dino-exchange"]::before { background-image: linear-gradient(rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.28)), url(../bg/dino-exchange.jpg); }
+body[data-bg="dino-home"]::before { background-image: linear-gradient(rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.28)), url(../bg/dino-home.jpg); }
+body[data-bg="dino-nest"]::before { background-image: linear-gradient(rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.28)), url(../bg/dino-nest.jpg); }
+body[data-bg="dino-shop"]::before { background-image: linear-gradient(rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.28)), url(../bg/dino-shop.jpg); }
+body[data-bg="dino-zukan"]::before { background-image: linear-gradient(rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.3)), url(../bg/dino-zukan.jpg); }
+body[data-bg="santa"]::before { background-image: linear-gradient(rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.22)), url(../bg/santa.jpg); }
+body[data-bg="papa"]::before { background-image: linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.25)), url(../bg/papa.jpg); }
+body[data-bg="rest"]::before { background-image: url(../bg/rest.jpg); }
+body[data-bg="night"]::before { background-image: url(../bg/night.jpg); }
+/* ボタンの 絵 */
+.big-btn .bi .bi-img { width: 84px; height: 84px; object-fit: contain; display: block; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .25)); }
+@media (max-width: 640px) { .big-btn .bi .bi-img { width: 64px; height: 64px; } }

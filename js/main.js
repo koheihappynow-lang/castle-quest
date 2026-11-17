@@ -72,11 +72,17 @@ function go(screen, opts = {}) {
 const BG = {
   boot: 'hero', profiles: 'hero', games: 'hero', newProfile: 'workshop', setupPin: 'workshop', pin: 'workshop', parent: 'workshop',
   home: 'hub', quiz: 'study', result: 'title', castles: 'select', collection: 'select', castle: 'castle',
-  exchange: 'exchange', ghosts: 'ghosts', limit: 'build-night', rest: 'build-sunset',
+  exchange: 'exchange', ghosts: 'ghosts', limit: 'night', rest: 'rest',
 };
+// ダイナソーで あそんでいる ときは、おなじ 画面でも 恐竜の 世界に する
+const GAME_BG = { dino: { quiz: 'dino-study', result: 'dino-result', exchange: 'dino-exchange' } };
+function bgFor(sc) {
+  if (sc === 'letters') return S.lettersTo === 'santa' ? 'santa' : 'papa';
+  return GAME_BG[S.game]?.[sc] || BG[sc] || 'hub';
+}
 function render() {
   const fn = SCREENS[S.screen] || SCREENS.profiles;
-  document.body.dataset.bg = BG[S.screen] || 'hub';
+  document.body.dataset.bg = bgFor(S.screen);
   app.innerHTML = fn();
   window.scrollTo(0, 0);
   AFTER[S.screen]?.();
@@ -228,26 +234,26 @@ const SCREENS = {
           <span class="bi">🌈</span><span class="bt">かんがえて あそぼう</span><span class="bs">みて・きいて・タッチ</span>
         </button>` : ''}
         <button class="big-btn quiz" data-act="startQuiz" data-mode="normal">
-          <span class="bi">🔤</span><span class="bt">えいごに ちょうせん</span><span class="bs">${LEVEL_NAMES[p.level]}・${SESSION_LEN}もん・1もん ${fmt(YEN_PER_LEVEL[p.level])}えん</span>
+          <span class="bi"><img class="bi-img" src="icons/ui/icon-english.png" alt=""></span><span class="bt">えいごに ちょうせん</span><span class="bs">${LEVEL_NAMES[p.level]}・${SESSION_LEN}もん・1もん ${fmt(YEN_PER_LEVEL[p.level])}えん</span>
         </button>
         <button class="big-btn math" data-act="startQuiz" data-mode="math">
-          <span class="bi">🔢</span><span class="bt">さんすうに ちょうせん</span><span class="bs">${MATH_LEVELS[mathLevelOf(p)].name}・10もん・1もん ${fmt(YEN_PER_LEVEL[p.level])}えん</span>
+          <span class="bi"><img class="bi-img" src="icons/ui/icon-math.png" alt=""></span><span class="bt">さんすうに ちょうせん</span><span class="bs">${MATH_LEVELS[mathLevelOf(p)].name}・10もん・1もん ${fmt(YEN_PER_LEVEL[p.level])}えん</span>
         </button>
         <button class="big-btn puzzle ${puzzleOpen() ? '' : 'wip'}" data-act="puzzleTry">
-          <span class="bi">🧩</span><span class="bt">ひらめき パズル</span><span class="bs">${puzzleOpen() ? 'かんがえる ちから・10もん' : '🚧 さくせいちゅう'}</span>
+          <span class="bi"><img class="bi-img" src="icons/ui/icon-puzzle.png" alt=""></span><span class="bt">ひらめき パズル</span><span class="bs">${puzzleOpen() ? 'かんがえる ちから・10もん' : '🚧 さくせいちゅう'}</span>
         </button>
         <button class="big-btn review ${due ? 'alert' : ''}" data-act="startQuiz" data-mode="review">
-          <span class="bi">👻</span><span class="bt">きょうの ふくしゅう</span>
+          <span class="bi"><img class="bi-img" src="icons/ui/icon-review.png" alt=""></span><span class="bt">きょうの ふくしゅう</span>
           <span class="bs">${due ? `おばけが ${due}ひき まってるよ！ おかね 2ばい` : 'いまは おばけ いないよ'}</span>
         </button>
         <button class="big-btn castle" data-act="go" data-to="castles">
-          <span class="bi">🏰</span><span class="bt">おしろを つくる</span><span class="bs">かんせい ${doneN}/${total}</span>
+          <span class="bi"><img class="bi-img" src="icons/ui/icon-castle.png" alt=""></span><span class="bt">おしろを つくる</span><span class="bs">かんせい ${doneN}/${total}</span>
         </button>
         <button class="big-btn exchange" data-act="go" data-to="exchange">
-          <span class="bi">💱</span><span class="bt">りょうがえじょ</span><span class="bs">💴 ${fmt(p.wallet.yen)}えん</span>
+          <span class="bi"><img class="bi-img" src="icons/ui/icon-exchange.png" alt=""></span><span class="bt">りょうがえじょ</span><span class="bs">💴 ${fmt(p.wallet.yen)}えん</span>
         </button>
         <button class="big-btn ghosts" data-act="go" data-to="ghosts">
-          <span class="bi">📕</span><span class="bt">おばけずかん</span><span class="bs">ともだち ${friendIds(p).length}</span>
+          <span class="bi"><img class="bi-img" src="icons/ui/icon-ghostbook.png" alt=""></span><span class="bt">おばけずかん</span><span class="bs">ともだち ${friendIds(p).length}</span>
         </button>
       </div>
     </div>`;
