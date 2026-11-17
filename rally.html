@@ -227,7 +227,7 @@ function glass(c,y0,y1){const g=c.createLinearGradient(0,y0,0,y1);g.addColorStop
 function drawCar(c,car,x,y,t,o={}){
   const L=car.len,Wd=car.wid,hw=Wd/2,y0=-L/2,y1=L/2,st=car.style;
   c.save();c.translate(x,y);if(o.s)c.scale(o.s,o.s);if(o.rot)c.rotate(o.rot);c.lineJoin='round';c.lineCap='round';
-  let col=car.col;if(st==='rainbow')col=hsl2hex((t*80)%360,85,58);
+  let col=car.col;if(st==='rainbow')col='#f4f0ff';
   c.fillStyle='rgba(0,0,0,.28)';c.beginPath();c.roundRect(-hw+4,y0+7,Wd,L,14);c.fill();
   if(o.turbo){for(let i=-1;i<=1;i+=2){const fl=18+Math.random()*16;const g=c.createLinearGradient(0,y1,0,y1+fl);g.addColorStop(0,'#fff6a8');g.addColorStop(.4,'#ffb21a');g.addColorStop(1,'rgba(255,60,0,0)');c.fillStyle=g;c.beginPath();c.moveTo(i*hw*.45-6,y1-2);c.lineTo(i*hw*.45+6,y1-2);c.lineTo(i*hw*.45,y1+fl);c.fill()}}
   const mon=st==='monster',rac=st==='racer',boxy=['bus','fire','camper','ambulance'].includes(st);
@@ -264,6 +264,8 @@ function drawCar(c,car,x,y,t,o={}){
     if(st==='pickup'){ws=[.22,.34];rf=[.34,.52];rw=[.52,.56]}
     if(st==='compact'){ws=[.24,.37];rf=[.37,.65];rw=[.65,.78]}
     if(st==='sports'){c.fillStyle=car.col2;c.fillRect(-7,y0+2,4,L-4);c.fillRect(3,y0+2,4,L-4)}
+    if(st==='compact'){c.fillStyle='#ffffff';c.fillRect(-6,y0+2,4.5,L-4);c.fillRect(1.5,y0+2,4.5,L-4)}
+    if(st==='pickup'){c.fillStyle='#ffffff';c.fillRect(-6,y0+3,3.5,L*.2);c.fillRect(2.5,y0+3,3.5,L*.2)}
     if(mon){c.fillStyle=car.col2;for(let s of[-1,1]){c.beginPath();c.moveTo(s*4,y0+6);c.lineTo(s*hw*.8,y0+L*.24);c.lineTo(s*hw*.3,y0+L*.18);c.lineTo(s*hw*.5,y0+L*.27);c.lineTo(s*4,y0+L*.2);c.fill()}}
     if(st==='rocket'){c.fillStyle=car.col2;c.beginPath();c.moveTo(0,y0);c.bezierCurveTo(hw*.5,y0,hw*.7,y0+6,hw*.7,y0+L*.12);c.lineTo(-hw*.7,y0+L*.12);c.bezierCurveTo(-hw*.7,y0+6,-hw*.5,y0,0,y0);c.fill();
       for(const s of[-1,1]){c.beginPath();c.moveTo(s*hw,y1-L*.32);c.lineTo(s*(hw+9),y1-2);c.lineTo(s*hw,y1-6);c.closePath();c.fill();c.lineWidth=1.5;c.strokeStyle=OUTL;c.stroke()}}
@@ -277,14 +279,36 @@ function drawCar(c,car,x,y,t,o={}){
       c.fillStyle='#1f2b44';c.fillRect(-hw*.86,y0+L*rf[0]+3,2.5,L*(rf[1]-rf[0])-6);c.fillRect(hw*.86-2.5,y0+L*rf[0]+3,2.5,L*(rf[1]-rf[0])-6);
       trap(c,y0+L*rw[0],hw*.82,y0+L*rw[1],hw*.66);glass(c,y0+L*rw[0],y0+L*rw[1]);
     }
-    if(st==='taxi'){c.fillStyle='#ff9a1a';c.beginPath();c.roundRect(-11,y0+L*.48,22,10,3);c.fill();c.lineWidth=1;c.strokeStyle=OUTL;c.stroke();c.fillStyle='#3d2a00';c.font='800 7px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText('TAXI',0,y0+L*.48+5.5);
+    if(st==='taxi'){c.fillStyle='#ff9a1a';c.beginPath();c.roundRect(-11,y0+L*.48,22,10,3);c.fill();c.lineWidth=1;c.strokeStyle=OUTL;c.stroke();c.fillStyle='rgba(255,255,255,.55)';c.fillRect(-8,y0+L*.48+2,16,2);
       c.fillStyle='#222';for(let k=0;k<6;k++){c.fillRect(-hw+1,y0+L*.42+k*5,3,k%2?0:2.5);c.fillRect(hw-4,y0+L*.42+k*5,3,k%2?0:2.5)}}
     if(st==='police')lightbar(c,y0+L*.5,hw*.7,t,'#ff3030','#3a7bff');
     if(st==='pickup'){c.fillStyle=shade(col,-.45);c.beginPath();c.roundRect(-hw+4,y0+L*.6,Wd-8,L*.34,3);c.fill();c.strokeStyle=shade(col,-.2);c.lineWidth=1.5;for(let k=1;k<4;k++){c.beginPath();c.moveTo(-hw+4+k*(Wd-8)/4,y0+L*.62);c.lineTo(-hw+4+k*(Wd-8)/4,y0+L*.92);c.stroke()}
-      c.fillStyle='#c9894a';c.beginPath();c.roundRect(-8,y0+L*.66,16,12,2);c.fill()}
+      for(const [cx,cy] of [[-9,.64],[3,.74]]){c.fillStyle='#c9894a';c.beginPath();c.roundRect(cx,y0+L*cy,14,12,2);c.fill();c.lineWidth=1.2;c.strokeStyle='#8a5a2b';c.stroke();c.beginPath();c.moveTo(cx+2,y0+L*cy+6);c.lineTo(cx+12,y0+L*cy+6);c.stroke()}
+      for(let k=-1;k<=1;k++){c.fillStyle='#fff3b0';c.beginPath();c.arc(k*6,y0+L*.37,2.4,0,7);c.fill();c.lineWidth=1;c.strokeStyle=OUTL;c.stroke()}}
     if(st==='sports'){c.fillStyle='#22252e';c.beginPath();c.roundRect(-hw-3,y1-8,Wd+6,6,2);c.fill();c.fillStyle=car.col2;c.fillRect(-7,y1-8,4,6);c.fillRect(3,y1-8,4,6)}
-    if(st==='limo'){c.fillStyle='rgba(255,255,255,.25)';c.fillRect(-hw*.7,y0+L*.55,hw*1.4,2)}
+    if(st==='limo'){c.fillStyle='rgba(255,255,255,.25)';c.fillRect(-hw*.7,y0+L*.55,hw*1.4,2);
+      // シルクハット（うえから）
+      const hy=y0+L*.52;c.fillStyle='#1b1b22';c.beginPath();c.arc(0,hy,hw*.52,0,7);c.fill();c.fillStyle='#2e2e3a';c.beginPath();c.arc(0,hy,hw*.34,0,7);c.fill();
+      c.lineWidth=2.4;c.strokeStyle='#c99a2e';c.beginPath();c.arc(0,hy,hw*.37,0,7);c.stroke();c.fillStyle='rgba(255,255,255,.25)';c.beginPath();c.arc(-hw*.12,hy-hw*.12,hw*.1,0,7);c.fill();
+      // ちょうネクタイ
+      c.fillStyle='#1b1b22';c.beginPath();c.moveTo(0,y0+3);c.lineTo(-7,y0);c.lineTo(-7,y0+6);c.closePath();c.moveTo(0,y0+3);c.lineTo(7,y0);c.lineTo(7,y0+6);c.closePath();c.fill();c.beginPath();c.arc(0,y0+3,1.8,0,7);c.fill()}
+    if(mon){for(let k=0;k<4;k++){const lx=-hw*.48+k*hw*.32;c.fillStyle='#2a2d36';c.beginPath();c.arc(lx,y0+L*rf[0]+3,3.6,0,7);c.fill();c.fillStyle='#fff3b0';c.beginPath();c.arc(lx,y0+L*rf[0]+3,2.5,0,7);c.fill()}}
+    if(st==='star'){const my=y0+L*.55;c.fillStyle='#ffe27a';c.beginPath();c.arc(0,my,hw*.3,0,7);c.fill();c.fillStyle=shade(col,.2);c.beginPath();c.arc(hw*.12,my-hw*.08,hw*.26,0,7);c.fill()}
   }
+  if(st==='camper'){
+    // サーフボードと テント（やねの うえ）
+    c.fillStyle='#2bb3a3';c.beginPath();c.ellipse(hw*.5,y0+L*.62,4.5,L*.25,0,0,7);c.fill();c.lineWidth=1.2;c.strokeStyle=OUTL;c.stroke();c.fillStyle='#ffffff';c.fillRect(hw*.5-.8,y0+L*.4,1.6,L*.44);
+    c.fillStyle='#e0a14a';c.beginPath();c.roundRect(-hw*.62,y0+L*.24,hw*1.0,9,4);c.fill();c.stroke();c.strokeStyle='#9b6a2a';c.beginPath();c.moveTo(-hw*.4,y0+L*.24);c.lineTo(-hw*.4,y0+L*.24+9);c.moveTo(0,y0+L*.24);c.lineTo(0,y0+L*.24+9);c.stroke()}
+  if(st==='rainbow'){
+    // にじいろの からだ（すこしずつ ながれる）
+    c.save();bodyPath(c,Wd,L,.74,.86);c.clip();c.globalCompositeOperation='multiply';const off=(t*.15)%1,rb=c.createLinearGradient(-hw,y0,hw,y1);
+    const hues=['#ff4d4d','#ff9a1a','#ffe14a','#3ddc84','#3a8bff','#9b5cff'];for(let k=0;k<=12;k++){rb.addColorStop(k/12,hues[(k+Math.floor(off*6))%6])}
+    c.fillStyle=rb;c.fillRect(-hw,y0,Wd,L);c.restore()}
+  // め と くち
+  {let cy,rx=hw*.31,ry=hw*.36;
+    if(st==='rocket')cy=y0+L*.46;else if(boxy)cy=y0+L*.15;else if(st==='sports')cy=y0+L*.44;else if(st==='limo')cy=y0+L*.31;else if(st==='pickup')cy=y0+L*.32;else cy=y0+L*.36;
+    if(boxy){rx=hw*.27;ry=hw*.3}
+    drawEyes(c,car,cy,rx,ry,t);if(st!=='limo')drawSmile(c,y0+5,hw*.26)}
   for(const s of[-1,1]){
     c.fillStyle=col;c.beginPath();c.ellipse(s*(hw+2),y0+L*(boxy?.12:.33),3.5,2.5,0,0,7);c.fill();c.lineWidth=1;c.strokeStyle=OUTL;c.stroke();
     c.fillStyle='#fffbe0';c.beginPath();c.ellipse(s*hw*.58,y0+3.5,st==='compact'?5:6,3,0,0,7);c.fill();c.strokeStyle='rgba(0,0,0,.3)';c.stroke();
@@ -295,6 +319,20 @@ function drawCar(c,car,x,y,t,o={}){
   if((car.g>=4||st==='limo')&&!o.noSpark){for(let i=0;i<(car.g===5?3:2);i++){const a=t*1.4+i*2.2,k=(Math.sin(t*5+i*1.7)+1)/2,s=o.s||1;
     twinkle(c,x+Math.cos(a)*(hw+12)*s,y+Math.sin(a)*(L*.45)*s,(2+k*4)*s,car.g===5?hsl2hex((t*160+i*90)%360,100,80):'#ffffff')}}
 }
+// イラストと おなじ 大きな め（フロントガラスの ところ）。ときどき まばたき
+const BROW={truck:.25,police:.2,fire:.3,sports:.35,monster:.45,racer:.3};
+function drawEyes(c,car,cy,rx,ry,t){
+  const seed=car.len*.37+car.wid,bl=((t*.55+seed)%4.2)<.13,br=BROW[car.style]||0;
+  for(const s of[-1,1]){const ex=s*rx*1.08;
+    c.fillStyle='#ffffff';c.beginPath();c.ellipse(ex,cy,rx,bl?ry*.18:ry,0,0,7);c.fill();c.lineWidth=1.4;c.strokeStyle='rgba(16,18,28,.75)';c.stroke();
+    if(!bl){c.fillStyle='#6b3a14';c.beginPath();c.ellipse(ex,cy-ry*.28,rx*.66,ry*.62,0,0,7);c.fill();
+      c.fillStyle='#120c08';c.beginPath();c.ellipse(ex,cy-ry*.34,rx*.38,ry*.38,0,0,7);c.fill();
+      c.fillStyle='#ffffff';c.beginPath();c.arc(ex-rx*.28,cy-ry*.55,Math.max(1.2,rx*.24),0,7);c.fill();c.beginPath();c.arc(ex+rx*.22,cy-ry*.12,Math.max(.7,rx*.11),0,7);c.fill()}
+    if(br){c.strokeStyle='rgba(16,18,28,.85)';c.lineWidth=Math.max(1.6,rx*.28);c.beginPath();c.moveTo(ex+s*rx*.9,cy-ry*1.2-br*ry*.3);c.lineTo(ex-s*rx*.7,cy-ry*1.2+br*ry*.9);c.stroke()}
+  }
+}
+function drawSmile(c,y,r){c.strokeStyle='rgba(60,14,14,.85)';c.lineWidth=Math.max(1.6,r*.22);c.beginPath();c.arc(0,y-r*.35,r,.22*Math.PI,.78*Math.PI);c.stroke()}
+
 function lightbar(c,y,w,t,c1,c2){const on=Math.floor(t*6)%2;c.fillStyle='#2a2d36';c.beginPath();c.roundRect(-w,y,w*2,7,3);c.fill();
   c.fillStyle=on?c1:shade(c1,-.5);c.beginPath();c.roundRect(-w+1,y+1,w-1.5,5,2);c.fill();c.fillStyle=on?shade(c2,-.5):c2;c.beginPath();c.roundRect(.5,y+1,w-1.5,5,2);c.fill();
   c.save();c.globalCompositeOperation='lighter';c.fillStyle=on?'rgba(255,60,60,.35)':'rgba(70,120,255,.35)';c.beginPath();c.arc(on?-w/2:w/2,y+3,16,0,7);c.fill();c.restore()}
@@ -308,6 +346,7 @@ function drawRacer(c,car,col,L,Wd,t){
   c.fillStyle=car.col2;c.beginPath();c.arc(0,y0+L*.47,hw*.2,0,7);c.fill();c.fillStyle='rgba(255,255,255,.6)';c.beginPath();c.arc(-2,y0+L*.45,2,0,7);c.fill();
   c.fillStyle='#fff';c.font='800 10px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText('1',0,y0+L*.24);
   c.fillStyle=car.col2;c.beginPath();c.roundRect(-hw*.85,y1-9,Wd*.85,8,2);c.fill();c.lineWidth=1.5;c.strokeStyle=OUTL;c.stroke();
+  drawEyes(c,car,y0+L*.5,hw*.27,hw*.3,t);
 }
 
 function drawObs(c,o,x,y,t){
@@ -700,6 +739,9 @@ renderHome();show('home');
 // 開発用：?demo=車の番号 で その車の レースを すぐ はじめる（保存しない）
 const DEMO=new URLSearchParams(location.search).get('demo');
 if(DEMO!==null){sel=Math.max(0,Math.min(CARS.length-1,Number(DEMO)));startRace(Number(new URLSearchParams(location.search).get('course')||0),0);const AT=Number(new URLSearchParams(location.search).get('at')||0);for(let i=0;i<AT*30;i++)update(1/30)}
+if(new URLSearchParams(location.search).has('lineup')){document.body.innerHTML='<canvas id="lu" width="1500" height="900" style="width:100%;background:#4a4f5c"></canvas>';const lc=document.getElementById('lu').getContext('2d');const imgs=CHARA.map(ch=>{const im=new Image();im.src='cards/rally-'+ch.id+'.jpg';return im});
+  const drawLU=()=>{lc.fillStyle='#4a4f5c';lc.fillRect(0,0,1500,900);CARS.forEach((car,i)=>{const cx=(i%5)*300,cy=Math.floor(i/5)*300;if(imgs[i].complete)lc.drawImage(imgs[i],cx+8,cy+40,140,140);lc.fillStyle='#5d636f';lc.fillRect(cx+155,cy+8,140,284);drawCar(lc,car,cx+225,cy+150,2.2,{s:2,noSpark:true});lc.fillStyle='#fff';lc.font='bold 18px sans-serif';lc.fillText(CHARA[i].nick,cx+10,cy+28)});document.title='lineup ready'};
+  Promise.all(imgs.map(im=>new Promise(r=>{im.onload=im.onerror=r}))).then(drawLU);drawLU()}
 const GAR=new URLSearchParams(location.search).get('garage');if(GAR!==null){show('garage');renderGarage()}
 requestAnimationFrame(frame);
 </script>
