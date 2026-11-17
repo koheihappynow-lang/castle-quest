@@ -172,7 +172,7 @@ const SCREENS = {
           <span class="gc-badge soon">🥚 もうすぐ できるよ（おためし）</span>
         </button>
         <button class="game-card rally" data-act="playGame" data-g="rally">
-          <span class="gc-art rally-art"><span>🚗</span></span>
+          <span class="gc-art rally-art"><img src="cards/rally-card.jpg" alt="" onload="this.nextElementSibling.remove()" onerror="this.remove()"><span>🚗</span></span>
           <span class="gc-name">ぶーぶーラリー</span>
           <span class="gc-sub">コインを あつめて くるまを ふやそう</span>
           <span class="gc-badge">🏁 コース 10・くるま 15</span>

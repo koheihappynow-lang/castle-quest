@@ -557,3 +557,5 @@ body[data-bg="dino"]::before { background-image: linear-gradient(rgba(255, 255, 
 .big-btn.quiz { grid-column: auto; min-height: 190px; }
 .big-btn.math { background: linear-gradient(135deg, #4dc3ff, #2f7fe8); min-height: 190px; }
 body[data-bg="hub"] .big-btn.math { min-height: 150px; }
+.rally-art { position: relative; overflow: hidden; }
+.rally-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
