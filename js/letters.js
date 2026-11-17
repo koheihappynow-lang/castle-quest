@@ -49,8 +49,17 @@ async function st(name, mode = 'readonly') { return (await idb()).transaction(na
 export async function allMsgs() { return (await reqP((await st('msgs')).getAll())).sort((a, b) => a.ts - b.ts); }
 async function getMsg(id) { return reqP((await st('msgs')).get(id)); }
 async function putMsg(m) { return reqP((await st('msgs', 'readwrite')).put(m)); }
-async function getAudio(id) { return reqP((await st('audio')).get(id)); }
-async function putAudio(id, blob) { return reqP((await st('audio', 'readwrite')).put(blob, id)); }
+// 声・絵は { buf: ArrayBuffer, type } で ほぞん（iPhone の Safari は Blob の ほぞんに しっぱいする ことが ある）
+async function getAudio(id) {
+  const v = await reqP((await st('audio')).get(id));
+  if (!v) return null;
+  if (v instanceof Blob) return v;
+  return new Blob([v.buf], { type: v.type || '' });
+}
+async function putAudio(id, blob) {
+  const v = { buf: await blob.arrayBuffer(), type: blob.type || '' };
+  return reqP((await st('audio', 'readwrite')).put(v, id));
+}
 async function dropLocal(id) {
   await reqP((await st('msgs', 'readwrite')).delete(id));
   const a = await st('audio', 'readwrite'); await reqP(a.delete(id)); await reqP((await st('audio', 'readwrite')).delete('img:' + id));
@@ -81,6 +90,12 @@ export async function send({ kidId, kidName, thread: th, from, text = '', audio 
   await putMsg(m);
   sync().catch(() => {});
   return m;
+}
+// おくれなかった ものを もういちど おくる
+export async function retrySend(id) {
+  const m = await getMsg(id); if (!m) return;
+  delete m.failed; delete m.lastError; m.synced = false; await putMsg(m);
+  return sync();
 }
 export async function markHeard(id) {
   const m = await getMsg(id); if (!m || m.heard) return;
@@ -263,7 +278,9 @@ async function doSync() {
       m.synced = true; m.audioSent = true; m.u = r.u || m.u; await putMsg(m);
     } catch (e) {
       if (/かぎ/.test(e.message)) throw e;
-      if (/サーバー 4\d\d/.test(e.message)) { m.failed = true; await putMsg(m); }   // おくれない もの（大きすぎる など）は あきらめる
+      m.lastError = String(e.message || e).slice(0, 80);
+      if (/サーバー 4\d\d/.test(e.message)) m.failed = true;   // おくれない もの（大きすぎる など）は いったん とめる
+      await putMsg(m);
     }
   }
   // 2) うけとる：おきた ときは ぜんぶ、そのあとは 10ぷん さかのぼって（とりこぼし ふせぎ）

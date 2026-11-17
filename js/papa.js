@@ -1,6 +1,6 @@
 // EndoGame：パパの へんじページ（パパ または サンタさん として へんじする）
 import { openDrawPad, showBig } from './drawpad.js';
-import { nameKey, makePairCode, deleteMsgs } from './letters.js';
+import { nameKey, makePairCode, deleteMsgs, retrySend } from './letters.js';
 import { allMsgs, send, audioURL, audioBlob, imageBlob, sync, online, getCfg, setCfg, testConnection, Recorder, pickMime, speakAs, santaLine, playSanta, stopSanta, unlockAudio } from './letters.js';
 
 const $ = id => document.getElementById(id);
@@ -52,7 +52,7 @@ async function render() {
     <div class="card"><div class="msgs">${list.length ? list.map(m => `
       <div class="m ${m.from} ${m.from === 'kid' && !s[m.id] ? 'unread' : ''}">
         <button class="del" data-del="${esc(m.id)}" title="けす">🗑️</button>
-        <div class="meta">${m.from === 'kid' ? esc(m.kidName) + (m.device ? `（${esc(m.device)}）` : '') : TH[m.from]}・${when(m.ts)}${m.from !== 'kid' ? (m.heard ? '・✅ きいたよ' : '・まだ きいていない') : ''}${!m.synced && online() ? ' <span class="unsent">・まだ おくれていない</span>' : ''}</div>
+        <div class="meta">${m.from === 'kid' ? esc(m.kidName) + (m.device ? `（${esc(m.device)}）` : '') : TH[m.from]}・${when(m.ts)}${m.from !== 'kid' ? (m.heard ? '・✅ きいたよ' : '・まだ きいていない') : ''}${!m.synced && online() ? ` <span class="unsent">・⚠️ まだ おくれていない${m.lastError ? '（' + esc(m.lastError) + '）' : ''}</span> <button class="btn" data-retry="${esc(m.id)}" style="font-size:12px;padding:3px 8px">もういちど おくる</button>` : ''}</div>
         ${m.hasImage ? `<img data-img="${esc(m.id)}" alt="え" style="display:block;width:240px;max-width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;background:#fff;margin-top:4px;cursor:zoom-in">` : ''}
         ${m.text ? `<div>${esc(m.text)}</div>` : ''}
         ${m.hasAudio && m.from === 'santa' ? `<button class="btn" data-santa="${esc(m.id)}" style="margin-top:4px">🎅 サンタの こえで きく</button>` : m.hasAudio ? `<audio controls preload="none" data-aid="${esc(m.id)}"></audio>` : ''}
@@ -65,6 +65,7 @@ async function render() {
   main.querySelectorAll('[data-say]').forEach(b => b.onclick = () => { const m = msgs.find(x => x.id === b.dataset.say); speakAs(m.text, 'santa'); });
   main.querySelectorAll('[data-santa]').forEach(b => b.onclick = async () => { unlockAudio(); const m = msgs.find(x => x.id === b.dataset.santa); const bl = await audioBlob(m).catch(() => null); if (bl) playSanta(bl); else alert('こえを よみこめませんでした'); });
   if (cur.th === 'santa') bindLines();
+  main.querySelectorAll('[data-retry]').forEach(b => b.onclick = async () => { b.disabled = true; b.textContent = 'おくっています…'; try { await retrySend(b.dataset.retry); } catch (e) { alert('おくれませんでした（' + e.message + '）'); } render(); });
   main.querySelectorAll('img[data-img]').forEach(async im => {
     const m = msgs.find(x => x.id === im.dataset.img);
     const b = m && await imageBlob(m).catch(() => null);
@@ -128,7 +129,10 @@ function renderCompose(name) {
   if ($('recPlay')) $('recPlay').onclick = () => { if (santa) playSanta(recBlob); else new Audio(URL.createObjectURL(recBlob)).play(); };
   if ($('recSend')) $('recSend').onclick = async () => {
     $('recSend').disabled = true;
-    await send({ kidId: idOf(cur.kid), kidName: name, thread: cur.th, from: cur.th, audio: recBlob }); await sync().catch(() => {});
+    if (!recBlob || !recBlob.size) { alert('ろくおんが からっぽでした。もういちど ろくおんしてください'); recBlob = null; renderCompose(name); return; }
+    try { await send({ kidId: idOf(cur.kid), kidName: name, thread: cur.th, from: cur.th, audio: recBlob }); }
+    catch (e) { alert('こえを ほぞんできませんでした（' + e.message + '）'); $('recSend').disabled = false; return; }
+    await sync().catch(e => alert('おくれませんでした（' + e.message + '）。あとで「もういちど おくる」を おしてください'));
     recBlob = null; await render();
   };
 }
