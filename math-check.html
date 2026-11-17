@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><title>さんすう確認（開発用）</title>
+<link rel="stylesheet" href="css/style.css">
+<style>body{background:#f4efe2;padding:12px} .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px} .cell{background:#fffaf0;border-radius:16px;padding:8px;box-shadow:0 2px 6px rgba(0,0,0,.1);font-size:13px} .cell h4{margin:0 0 4px;font-size:13px;color:#6b2c00} .cell .q-math{transform:scale(.62);transform-origin:top center;height:190px} .opts{display:flex;gap:6px;flex-wrap:wrap} .opts span{background:#fff;border:2px solid #ddd;border-radius:10px;padding:2px 8px} .opts span.ans{border-color:#3fa34d;font-weight:900}</style>
+</head><body><div class="grid" id="g"></div>
+<script type="module">
+import { makeMathQuestion, MATH_TYPE_NAMES } from './js/math.js';
+const seen = new Set(), cells = [];
+for (const lv of [1, 2, 3, 4, 5]) for (let i = 0; i < 400; i++) {
+  const q = makeMathQuestion(lv); const k = q.mtype + (q.mtype === 'clock' ? lv : '');
+  if (seen.has(k)) continue; seen.add(k);
+  cells.push(`<div class="cell"><h4>L${lv} ${MATH_TYPE_NAMES[q.mtype]}：${q.prompt.text}</h4><div class="q-math">${q.prompt.html}</div><div class="opts">${q.options.map(o => `<span class="${o === q.answer ? 'ans' : ''}">${o.slice(4)}</span>`).join('')}</div></div>`);
+}
+document.getElementById('g').innerHTML = cells.join('');
+document.title = 'ready ' + cells.length;
+</script></body></html>

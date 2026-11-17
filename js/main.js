@@ -14,6 +14,7 @@ import {
   GHOSTS_PER_TSURUGA_PART, DEFAULT_RATES, RATES_DATE,
 } from './castles.js';
 import { installDino } from './dinoGame.js';
+import { buildMathSession, mathRetry, MATH_LEVELS, MATH_TYPE_NAMES, mathLevelForAge } from './math.js';
 
 const app = document.getElementById('app');
 const AVATARS = ['🦁', '🐰', '🐻', '🐱', '🐶', '🐼', '🦊', '🐸', '🦄', '🐧', '🐯', '🐨'];
@@ -223,6 +224,9 @@ const SCREENS = {
           <span class="bi">👻</span><span class="bt">きょうの ふくしゅう</span>
           <span class="bs">${due ? `おばけが ${due}ひき まってるよ！ おかね 2ばい` : 'いまは おばけ いないよ'}</span>
         </button>
+        <button class="big-btn math" data-act="startQuiz" data-mode="math">
+          <span class="bi">🔢</span><span class="bt">さんすうに ちょうせん</span><span class="bs">${MATH_LEVELS[mathLevelOf(p)].name}・10もん・1もん ${fmt(YEN_PER_LEVEL[p.level])}えん</span>
+        </button>
         <button class="big-btn castle" data-act="go" data-to="castles">
           <span class="bi">🏰</span><span class="bt">おしろを つくる</span><span class="bs">かんせい ${doneN}/${total}</span>
         </button>
@@ -244,7 +248,8 @@ const SCREENS = {
     const P = q.prompt || {};
     const sentenceHTML = s => esc(s).replace('___', '<span class="blank">？</span>');
     const promptHTML = [
-      `<div class="q-type">${TYPE_NAMES[q.type]}</div>`,
+      `<div class="q-type">${q.math ? '🔢 ' + MATH_TYPE_NAMES[q.mtype] : TYPE_NAMES[q.type]}</div>`,
+      P.html ? `<div class="q-math">${P.html}</div>` : '',
       P.pic ? `<div class="q-pic">${picHTML(BY_ID[P.pic], 'xl')}</div>` : '',
       P.emojiRow ? `<div class="q-emoji">${esc(P.emojiRow)}</div>` : '',
       P.big ? `<div class="q-letter">${esc(P.big)}</div>` : '',
@@ -595,11 +600,15 @@ function startQuiz(mode) {
   const p = activeProfile();
   if (overLimit(p)) { go('limit'); return; }
   if (onBreak(p)) { go('rest'); return; }
-  const qs = buildSession(p, mode, { boost: S.game === 'dino' ? 'dino' : null });
+  const qs = mode === 'math' ? buildMathSession(mathLevelOf(p)) : buildSession(p, mode, { boost: S.game === 'dino' ? 'dino' : null });
   if (!qs.length) { toast('きょうの ふくしゅうは おわり！ 👻 は いないよ'); return; }
   S.quiz = { mode, qs, i: 0, correct: 0, streak: 0, answered: false, graduated: 0, tsuruga: 0, yen: { base: 0, streak: 0, challenge: 0, perfect: 0, retry: 0 }, retried: new Set() };
   go('quiz');
 }
+// さんすうの レベル（おうちのひとが かえられる。きめていなければ ねんれいから）
+function mathLevelOf(p) { return p.mathLevel || mathLevelForAge(p.age); }
+// 「2/3」を よみやすく（3ぶんの2）
+const mathYomi = t => String(t).replace(/(\d+)\/(\d+)/g, (_, a, b) => `${b}分の${a}`).replace(/×/g, 'かける').replace(/÷/g, 'わる').replace(/−/g, 'ひく').replace(/＋/g, 'たす').replace(/＝/g, 'は');
 function speakQuestion() {
   const q = S.quiz.qs[S.quiz.i];
   setTimeout(() => say(q.say || []), 250);
@@ -622,9 +631,9 @@ function answer(id, btn) {
   const ans = q.answer || q.wid;
   const ok = id === ans;
   const ansObj = ans.startsWith('txt:') ? w : BY_ID[ans];
-  p.history.push({ d: today(), ts: Date.now(), w: q.wid, ty: q.type, c: id, ok, m: Q.mode, r: q.retry ? 1 : 0, ch: q.challenge ? 1 : 0 });
+  p.history.push({ d: today(), ts: Date.now(), w: q.math ? 'math:' + q.mtype : q.wid, ty: q.type, c: id, ok, m: Q.mode, r: q.retry ? 1 : 0, ch: q.challenge ? 1 : 0, ...(q.math ? { ml: q.mlevel } : {}) });
   if (p.history.length > HISTORY_MAX) p.history.splice(0, p.history.length - HISTORY_MAX);
-  if (!q.retry) p.recent = [...(p.recent || []).filter(x => x !== q.wid), q.wid].slice(-50);
+  if (!q.retry && !q.math) p.recent = [...(p.recent || []).filter(x => x !== q.wid), q.wid].slice(-50);
   document.querySelectorAll('.opt').forEach(b => { b.disabled = true; if (b.dataset.id === ans) b.classList.add('right'); });
 
   if (ok) {
@@ -640,7 +649,7 @@ function answer(id, btn) {
     if (sb) { addYen(sb, 'streak'); setTimeout(() => { sfx.bonus(); toast(`🔥 ${Q.streak}れんぞく！ ボーナス +${fmt(sb)}えん`); }, 300); }
     if (S.game !== 'dino' && Q.streak === 10 && Math.random() < 0.1) { p.tsurugaBonus = (p.tsurugaBonus || 0) + 1; Q.tsuruga++; setTimeout(() => { sfx.fanfare(); toast('✨ ちょうげきレア！ なぞの おしろの パーツを みつけた！', 3200); }, 900); }
     const before = tsurugaParts(p);
-    const res = markCorrect(p, q.wid);
+    const res = q.math ? null : markCorrect(p, q.wid);
     if (res === 'graduated') {
       Q.graduated++;
       setTimeout(() => { sfx.ghost(); toast(`👻→🌟 おばけが ともだちに なった！<br>${w.pic} ${esc(w.en)}`, 2600); }, 600);
@@ -655,6 +664,24 @@ function answer(id, btn) {
     btn.classList.add('wrong', 'shake');
     sfx.wrong();
     Q.streak = 0;
+    if (q.math) {
+      // さんすう：おなじ しゅるいの べつの もんだいで もういちど
+      if (!q.retry && !Q.retried.has('m' + Q.i)) { Q.retried.add('m' + Q.i); Q.qs.push(mathRetry(q)); }
+      save();
+      const ansText = ans.slice(4);
+      document.getElementById('feedback').innerHTML = `
+        <div class="feedback-card">
+          <p>せいかいは…</p>
+          <div class="fb-answer"><div class="fb-math">${esc(ansText)}</div></div>
+          ${q.explain ? `<p class="fb-sentence">${esc(q.explain)}</p>` : ''}
+          <div class="row center">
+            <button class="btn" data-act="sayAfter">🔊 もういちど きく</button>
+            <button class="btn primary" data-act="said">👍 わかった！</button>
+          </div>
+        </div>`;
+      setTimeout(() => say([{ t: '正解は、' + mathYomi(ansText) + '。', l: 'ja' }, ...(q.explain ? [{ t: mathYomi(q.explain), l: 'ja' }] : [])]), 400);
+      return;
+    }
     markWrong(p, q.wid);
     if (!q.retry && !Q.retried.has(q.wid)) { Q.retried.add(q.wid); Q.qs.push(retryOf(q, p.level)); }
     save();
@@ -884,6 +911,9 @@ function parentScreen() {
         <div class="field"><span>むずかしさ</span><div class="row wrap">
           ${[1, 2, 3].map(l => `<button class="pill ${p.level === l ? 'on' : ''}" data-act="setLevel" data-id="${p.id}" data-v="${l}">${LEVEL_NAMES[l]}</button>`).join('')}
         </div></div>
+        <div class="field"><span>さんすうの むずかしさ</span><div class="row wrap">
+          ${[1, 2, 3, 4, 5].map(l => `<button class="pill ${mathLevelOf(p) === l ? 'on' : ''}" data-act="setMathLevel" data-id="${p.id}" data-v="${l}">${MATH_LEVELS[l].name}</button>`).join('')}
+        </div><small class="hint">${MATH_LEVELS[mathLevelOf(p)].sub}</small></div>
         <div class="field"><span>アイコン</span><div class="row wrap">
           <label class="btn sm">📷 しゃしんを えらぶ<input type="file" accept="image/*" class="photoFor" data-id="${p.id}" hidden></label>
           ${p.photo ? `<button class="btn sm ghost" data-act="removePhoto" data-id="${p.id}">しゃしんを はずす</button>` : ''}
@@ -1085,8 +1115,8 @@ const ACTIONS = {
   answer: (d, el) => answer(d.id, el),
   sayOpt: (d, el, e) => { e.stopPropagation(); sayEn(BY_ID[d.id].en); },
   sayWord: d => sayEn(BY_ID[d.id].en),
-  replay: () => { const q = S.quiz.qs[S.quiz.i]; say(q.say && q.say.some(x => x.l === 'en') ? q.say.filter(x => x.l === 'en') : [{ t: BY_ID[q.wid].en, l: 'en' }]); },
-  sayAfter: () => { const q = S.quiz.qs[S.quiz.i]; sayEn(q.after || BY_ID[q.wid].en); },
+  replay: () => { const q = S.quiz.qs[S.quiz.i]; if (q.math) { say(q.say); return; } say(q.say && q.say.some(x => x.l === 'en') ? q.say.filter(x => x.l === 'en') : [{ t: BY_ID[q.wid].en, l: 'en' }]); },
+  sayAfter: () => { const q = S.quiz.qs[S.quiz.i]; if (q.math) { say([{ t: '正解は、' + mathYomi(q.answer.slice(4)) + '。', l: 'ja' }, ...(q.explain ? [{ t: mathYomi(q.explain), l: 'ja' }] : [])]); return; } sayEn(q.after || BY_ID[q.wid].en); },
   said: () => { sfx.tap(); nextQuestion(); },
   quitQuiz: () => { if (confirm('やめる？（もらった おかねは そのままだよ）')) go(homeScreen()); },
   openCastle: d => { sfx.tap(); go('castle', { castleId: d.id, previewing: false }); },
@@ -1121,6 +1151,7 @@ const ACTIONS = {
   pinCancel: () => { if (S.pin.next === 'extend') go('limit'); else if (S.pin.next === 'endBreak') go('rest'); else if (S.pin.next === 'preview') go('castle', { previewing: false }); else { S.parentTab = 'home'; go('parent'); } },
   ptab: d => { if (d.v === 'settings' && !S.pinOK) { askPin('settings'); return; } S.parentTab = d.v; render(); },
   statsFor: d => { S.statsId = d.id; S.parentTab = 'stats'; render(); },
+  setMathLevel: d => { const p = db().profiles.find(x => x.id === d.id); p.mathLevel = Number(d.v); save(); render(); },
   setLevel: d => { const p = db().profiles.find(x => x.id === d.id); p.level = Number(d.v); save(); render(); },
   removePhoto: d => { const p = db().profiles.find(x => x.id === d.id); p.photo = null; save(); render(); },
   delProfile: d => {

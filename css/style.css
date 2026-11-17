@@ -528,3 +528,27 @@ body[data-bg="dino"]::before { background-image: linear-gradient(rgba(255, 255, 
 .game-card.rally .gc-name { color: #1d3f7a; }
 .rally-art { display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 75%, #ffd36a, #ff8a3a 45%, #3a6fd8 75%, #1d3f7a); }
 .rally-art span { font-size: clamp(4rem, 12vw, 7rem); filter: drop-shadow(0 6px 8px rgba(0,0,0,.35)); animation: logoFloat 3s ease-in-out infinite; }
+
+/* ---------- さんすう ---------- */
+.big-btn.math { background: linear-gradient(180deg, #e6f4ff, #9fd0ff); }
+.q-math { display: flex; justify-content: center; align-items: center; flex-direction: column; gap: 10px; margin: 6px auto 4px; max-width: 640px; }
+.m-items { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; font-size: clamp(2rem, 7vw, 3rem); line-height: 1.1; max-width: 520px; }
+.m-items.sm { font-size: clamp(1.5rem, 5vw, 2.2rem); max-width: 220px; }
+.m-items .gone { opacity: .25; filter: grayscale(1); position: relative; }
+.m-tens { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+.m-ten { border: 3px dashed #c9a46a; border-radius: 14px; padding: 4px 8px; }
+.m-row { display: flex; gap: 4px; font-size: clamp(1.6rem, 5.5vw, 2.4rem); }
+.m-cmp { display: flex; flex-direction: column; gap: 10px; }
+.m-cmp-row { display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,.8); border-radius: 16px; padding: 6px 14px; }
+.m-cmp-row b { font-size: 1.2rem; color: #6b2c00; min-width: 2.5em; }
+.m-cmp-row .m-items { justify-content: flex-start; max-width: 460px; }
+.m-eq { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.m-op { font-size: 2.6rem; font-weight: 900; color: #d9343a; }
+.m-big { font: 900 clamp(2.2rem, 8vw, 3.6rem)/1.2 "Arial Rounded MT Bold", "Hiragino Maru Gothic ProN", sans-serif; color: #2b2b4a; background: rgba(255,255,255,.85); border-radius: 20px; padding: 10px 26px; letter-spacing: .04em; }
+.m-big.sm { font-size: clamp(1.5rem, 5.5vw, 2.4rem); }
+.m-clock, .m-frac, .m-shape { filter: drop-shadow(0 6px 10px rgba(0,0,0,.18)); }
+.m-coins { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; background: rgba(255,255,255,.85); border-radius: 20px; padding: 12px 18px; }
+.m-groups { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.m-grp { display: flex; flex-wrap: wrap; gap: 2px; max-width: 120px; justify-content: center; background: #fff7e0; border: 3px solid #e0a526; border-radius: 50%; padding: 12px; font-size: 1.5rem; }
+.m-story { font-size: 4rem; }
+.fb-math { font: 900 2.6rem/1.2 "Arial Rounded MT Bold", "Hiragino Maru Gothic ProN", sans-serif; color: #2f6fd8; padding: 4px 18px; }

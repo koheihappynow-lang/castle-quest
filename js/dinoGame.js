@@ -65,6 +65,9 @@ export function installDino(api) {
         <button class="big-btn review ${due ? 'alert' : ''}" data-act="startQuiz" data-mode="review">
           <span class="bi">👻</span><span class="bt">きょうの ふくしゅう</span><span class="bs">${due ? `おばけが ${due}ひき まってるよ！ おかね 2ばい` : 'いまは おばけ いないよ'}</span>
         </button>
+        <button class="big-btn math" data-act="startQuiz" data-mode="math">
+          <span class="bi">🔢</span><span class="bt">さんすうに ちょうせん</span><span class="bs">こたえて おかねを ためよう</span>
+        </button>
         <button class="big-btn d-care" data-act="go" data-to="dcare">
           <span class="bi">${ICON[d.active]}</span><span class="bt">${info.name}の おせわ</span><span class="bs">${stageOf(m.growth).name}・${hungry(m) ? '🍖 おなか ぺこぺこ' : '😊 げんき'}</span>
         </button>
