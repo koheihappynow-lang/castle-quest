@@ -1092,7 +1092,7 @@ const ACTIONS = {
   playGame: d => {
     sfx.tap();
     const p = activeProfile();
-    if (d.g === 'rally') { location.href = 'rally.html'; return; }
+    if (d.g === 'rally') { window.__leaving = true; location.assign('rally.html'); return; }
     S.game = d.g;
     if (d.g === 'castle') { go('home'); sayJa(`${p.name}、一緒にがんばろう！`); }
     else { go(p.dino.order.length ? 'dhome' : 'deggs'); sayJa(p.dino.order.length ? `${p.name}、恐竜が待ってるよ！` : 'たまごを選んでね！'); }
@@ -1201,10 +1201,12 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   // 新しい版が届いたら、トップ画面にいるときだけ1回読み直す（遊んでいる途中はじゃましない）
   let reloaded = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!hadController || reloaded) return;
-    const tryReload = () => { if (['profiles', 'boot', 'home', 'games', 'dhome'].includes(S.screen)) { reloaded = true; location.reload(); } else setTimeout(tryReload, 3000); };
+    if (!hadController || reloaded || window.__leaving) return;
+    const tryReload = () => { if (window.__leaving) return; if (['profiles', 'boot', 'home', 'games', 'dhome'].includes(S.screen)) { reloaded = true; location.reload(); } else setTimeout(tryReload, 3000); };
     tryReload();
   });
+  // ラリーから もどってきたら、また 読み直しを ゆるす
+  window.addEventListener('pageshow', ev => { if (ev.persisted) window.__leaving = false; });
   // 写真もiPadに保存しておく（オフラインでも出るように）
   setTimeout(() => {
     caches?.open('cq-photos-v1').then(c => c.addAll(Object.values(PHOTOS).map(p => p.src))).catch(() => {});
