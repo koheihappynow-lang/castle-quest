@@ -1,5 +1,6 @@
 // EndoGame：パパの へんじページ（パパ または サンタさん として へんじする）
 import { openDrawPad, showBig } from './drawpad.js';
+import { APP_VERSION } from './version.js';
 import { nameKey, makePairCode, deleteMsgs, retrySend, claimPairCode, VAPID_PUBLIC, pushSubscribe, pushUnsubscribe, pushTest } from './letters.js';
 import { allMsgs, send, audioURL, audioBlob, imageBlob, sync, online, getCfg, setCfg, testConnection, Recorder, pickMime, speakAs, santaLine, playSanta, stopSanta, unlockAudio } from './letters.js';
 
@@ -187,19 +188,20 @@ function bindLines() {
 function setupHTML() {
   const c = getCfg();
   const back = '<div class="card"><button class="btn primary" id="back">⬅ もどる</button></div>';
+  const ver = `<div class="card row" style="justify-content:space-between"><span class="hint">🧩 この ページの 版：<b>${APP_VERSION}</b></span><button class="btn" id="forceUpd">🔄 さいしんに する</button></div>`;
   const keyCard = (open) => `<details class="card" ${open ? 'open' : ''}><summary><b>🔑 かぎで つなぐ</b></summary>
     <p class="hint">iPad の「おうちのひと メニュー → 💌 おてがみ」に いれたのと おなじ かぎを いれても つながります。</p>
     <label>サーバーの アドレス</label><input id="srv" value="${esc(c.server || '')}" autocomplete="off">
     <label>かぞくの かぎ</label><input id="key" type="password" value="${esc(c.key || '')}" autocomplete="off">
     <div class="row" style="margin-top:10px"><button class="btn primary" id="save">ほぞんして つなぐ</button></div>
     <p class="hint" id="msg"></p></details>`;
-  if (online()) return back + notifyHTML() + photosHTML() + keyCard(false) + back;
+  if (online()) return back + notifyHTML() + photosHTML() + keyCard(false) + ver + back;
   return `<div class="card"><h2>📱 つなぐ ばんごう（6けた）で つなぐ</h2>
     <p class="hint">つながっている スマホ（パパ）の この ページで「📲 つなぐ」を おすと 6けたの ばんごうが でます。それを いれるだけ。</p>
     <div class="row"><input id="pairIn" inputmode="numeric" maxlength="7" placeholder="123 456" style="max-width:170px;font-size:22px;letter-spacing:.1em;text-align:center"><button class="btn primary" id="pairGo">つなぐ</button></div>
     <p class="hint" id="pairMsg"></p>
     <p class="hint">この ページを スマホの ホーム画面に ついかすると、アプリのように ひらけます（通知も うけとれます）。</p></div>
-  ${keyCard(false)}${msgs.length ? back : ''}`;
+  ${keyCard(false)}${ver}${msgs.length ? back : ''}`;
 }
 // 🔔 通知
 const ROLE_KEY = 'endogame.parentRole';
@@ -265,6 +267,13 @@ function cropTo(file, W, H, topBias) {
 }
 function bindSetup() {
   bindNotify();
+  // ふるい 版で とまった ときの ため：保存した プログラムを けして よみなおす（おてがみと せっていは けさない）
+  if ($('forceUpd')) $('forceUpd').onclick = async () => {
+    $('forceUpd').textContent = '…';
+    try { const reg = await navigator.serviceWorker?.getRegistration?.(); if (reg) await reg.update(); } catch (e) {}
+    try { for (const k of await caches.keys()) if (!k.startsWith('cq-assets')) await caches.delete(k); } catch (e) {}
+    location.replace(location.pathname + '?u=' + Date.now());
+  };
   if ($('pairGo')) $('pairGo').onclick = async () => {
     const code = ($('pairIn').value || '').replace(/\D/g, '');
     if (code.length !== 6) { $('pairMsg').textContent = '6けたの ばんごうを いれてください'; return; }
