@@ -46,7 +46,6 @@ async function render() {
   const name = kids.find(([id]) => id === cur.kid)[1];
   main.innerHTML = `
     <div class="tabs">${tabs}</div>
-    <div style="text-align:right;margin:-4px 0 6px"><button class="btn" id="delKid" style="font-size:13px;padding:6px 10px;color:#d6303f">🗑️ 「${esc(kids.find(([k]) => k === cur.kid)[1])}」を まるごと けす</button></div>
     ${list.length ? `<div style="text-align:right;margin:-4px 0 6px"><button class="btn" id="delAll" style="font-size:13px;padding:6px 10px">🗑️ この タブを ぜんぶ けす（${list.length}つう）</button></div>` : ''}
     ${online() ? '' : '<p class="hint">いまは この端末の なかだけ（⚙️ で サーバーに つなぐと スマホから へんじできます）</p>'}
     ${cur.th === 'santa' ? await linesHTML() : ''}
@@ -77,12 +76,6 @@ async function render() {
     try { await deleteMsgs([m.id]); } catch (e) { alert('けせませんでした（' + e.message + '）'); }
     render();
   });
-  $('delKid').onclick = async () => {
-    const all = msgs.filter(m => m.kidId !== '*' && nameKey(m.kidName) === cur.kid);
-    if (!confirm(`「${name}」の おてがみを ぜんぶ（パパあて・サンタあて あわせて ${all.length}つう）けしますか？\nこどもの 端末からも きえます。もとに もどせません。`)) return;
-    try { await deleteMsgs(all.map(m => m.id)); } catch (e) { alert('けせませんでした（' + e.message + '）'); }
-    cur = {}; localStorage.removeItem('endogame.papaView'); render();
-  };
   if ($('delAll')) $('delAll').onclick = async () => {
     if (!confirm(`「${name}」の この タブの おてがみ ${list.length}つうを ぜんぶ けしますか？（こどもの 端末からも きえます。もとに もどせません）`)) return;
     try { await deleteMsgs(list.map(m => m.id)); } catch (e) { alert('けせませんでした（' + e.message + '）'); }
