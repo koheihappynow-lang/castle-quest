@@ -36,7 +36,7 @@ const TALK_YEN = 300, TALK_MAX = 10;   // 1日に 10かいまで おこづかい
 const RARE_GHOSTS = 20;
 
 export function installDino(api) {
-  const { S, SCREENS, ACTIONS, AFTER, BG, LEAVE, go, render, db, save, activeProfile, esc, fmt, toast, sfx, say, sayJa, sayEn, stopSpeech, header, dueIds, startQuiz, rate, money, wallet, exchange, today } = api;
+  const { S, SCREENS, ACTIONS, AFTER, BG, LEAVE, go, render, db, save, activeProfile, esc, fmt, toast, sfx, say, sayJa, sayEn, stopSpeech, header, dueIds, startQuiz, rate, money, wallet, exchange, today, puzzleOpen } = api;
 
   Object.assign(BG, { dhome: 'dino', deggs: 'dino', hatch: 'dino', dshop: 'dino', dzukan: 'dino', dcare: 'dino' });
   S.shopTab = 'food';
@@ -64,6 +64,9 @@ export function installDino(api) {
         </button>
         <button class="big-btn math" data-act="startQuiz" data-mode="math">
           <span class="bi">🔢</span><span class="bt">さんすうに ちょうせん</span><span class="bs">かずで おかねを ためよう</span>
+        </button>
+        <button class="big-btn puzzle ${puzzleOpen() ? '' : 'wip'}" data-act="puzzleTry">
+          <span class="bi">🧩</span><span class="bt">ひらめき パズル</span><span class="bs">${puzzleOpen() ? 'かんがえて おかねを ためよう' : '🚧 さくせいちゅう'}</span>
         </button>
         <button class="big-btn review ${due ? 'alert' : ''}" data-act="startQuiz" data-mode="review">
           <span class="bi">👻</span><span class="bt">きょうの ふくしゅう</span><span class="bs">${due ? `おばけが ${due}ひき まってるよ！ おかね 2ばい` : 'いまは おばけ いないよ'}</span>

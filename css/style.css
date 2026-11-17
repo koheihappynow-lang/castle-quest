@@ -665,3 +665,23 @@ body { word-break: keep-all; overflow-wrap: anywhere; line-break: strict; }
 .talk-card .tb-s, .talk-card .tb-off, .gc-sub { text-wrap: balance; }
 /* iPad を たてに しても 3つの ゲームを よこに ならべる */
 @media (min-width: 640px) { .game-cards { grid-template-columns: repeat(3, 1fr); gap: 16px; } .game-card .gc-name { font-size: clamp(1.15rem, 2.6vw, 1.9rem); } .game-card .gc-sub { font-size: clamp(.75rem, 1.6vw, 1rem); } }
+
+/* 🧩 ひらめき パズル */
+.big-btn.puzzle { background: linear-gradient(135deg, #b38cff, #7b5cff); }
+.big-btn.puzzle.wip { filter: grayscale(.35); opacity: .8; }
+.pz-row { display: flex; gap: 10px; justify-content: center; align-items: flex-end; flex-wrap: wrap; font-size: clamp(2.2rem, 7vw, 3.4rem); background: rgba(255,255,255,.85); border-radius: 20px; padding: 10px 18px; }
+.pz-cell { position: relative; line-height: 1.1; }
+.pz-tag { position: absolute; top: -.35em; left: -.2em; font: 900 .32em/1 sans-serif; background: #2b2b4a; color: #fff; border-radius: 999px; padding: 2px 6px; }
+.pz-sizes { gap: 22px; padding-top: 20px; }
+.pz-grid { display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: 6px; width: min(78vw, 300px); background: #b8e0a0; border-radius: 18px; padding: 8px; }
+.pz-g { aspect-ratio: 1; background: #eaf7dd; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: clamp(1.6rem, 6vw, 2.4rem); }
+.pz-note { font-size: .95rem; color: #4a2b10; background: rgba(255,255,255,.85); border-radius: 12px; padding: 4px 12px; }
+.pz-if { display: flex; flex-direction: column; gap: 8px; font-size: clamp(1.4rem, 4.5vw, 2rem); font-weight: 800; color: #2b2b4a; background: rgba(255,255,255,.88); border-radius: 18px; padding: 12px 22px; }
+.pz-now { color: #d9343a; border-top: 2px dashed #ccc; padding-top: 6px; }
+.pz-scales { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; }
+.pz-scale { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,.88); border-radius: 18px; padding: 10px 16px; font-size: clamp(2rem, 6vw, 2.8rem); }
+.pz-scale .lo { transform: translateY(14px); }
+.pz-scale .hi { transform: translateY(-14px); }
+.pz-scale .beam { font-size: .9em; }
+.pz-opts .opt-text { font-size: clamp(2.2rem, 6vw, 3.2rem); line-height: 1.1; font-family: "Segoe UI Emoji", "Apple Color Emoji", sans-serif; }
+.pz-row { flex-wrap: nowrap; font-size: clamp(1.6rem, 5vw, 3rem); }

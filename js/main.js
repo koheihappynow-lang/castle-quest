@@ -17,6 +17,10 @@ import { installDino } from './dinoGame.js';
 import { installLetters } from './lettersGame.js';
 import { APP_VERSION } from './version.js';
 import { buildMathSession, mathRetry, MATH_LEVELS, MATH_TYPE_NAMES, mathLevelForAge } from './math.js';
+import { buildPuzzleSession } from './puzzle.js';
+// ひらめき パズルは さくせいちゅう：?dev=1 で ひらいた 端末だけ おためしできる
+if (new URLSearchParams(location.search).has('dev')) { try { localStorage.setItem('endogame.dev', '1'); } catch (e) {} }
+const puzzleOpen = () => { try { return localStorage.getItem('endogame.dev') === '1'; } catch (e) { return false; } };
 
 const app = document.getElementById('app');
 const AVATARS = ['🦁', '🐰', '🐻', '🐱', '🐶', '🐼', '🦊', '🐸', '🦄', '🐧', '🐯', '🐨'];
@@ -226,6 +230,9 @@ const SCREENS = {
         <button class="big-btn math" data-act="startQuiz" data-mode="math">
           <span class="bi">🔢</span><span class="bt">さんすうに ちょうせん</span><span class="bs">${MATH_LEVELS[mathLevelOf(p)].name}・10もん・1もん ${fmt(YEN_PER_LEVEL[p.level])}えん</span>
         </button>
+        <button class="big-btn puzzle ${puzzleOpen() ? '' : 'wip'}" data-act="puzzleTry">
+          <span class="bi">🧩</span><span class="bt">ひらめき パズル</span><span class="bs">${puzzleOpen() ? 'かんがえる ちから・10もん' : '🚧 さくせいちゅう'}</span>
+        </button>
         <button class="big-btn review ${due ? 'alert' : ''}" data-act="startQuiz" data-mode="review">
           <span class="bi">👻</span><span class="bt">きょうの ふくしゅう</span>
           <span class="bs">${due ? `おばけが ${due}ひき まってるよ！ おかね 2ばい` : 'いまは おばけ いないよ'}</span>
@@ -251,7 +258,7 @@ const SCREENS = {
     const P = q.prompt || {};
     const sentenceHTML = s => esc(s).replace('___', '<span class="blank">？</span>');
     const promptHTML = [
-      `<div class="q-type">${q.math ? '🔢 ' + MATH_TYPE_NAMES[q.mtype] : TYPE_NAMES[q.type]}</div>`,
+      `<div class="q-type">${q.math ? (q.puzzle ? '🧩 ' : '🔢 ') + MATH_TYPE_NAMES[q.mtype] : TYPE_NAMES[q.type]}</div>`,
       P.html ? `<div class="q-math">${P.html}</div>` : '',
       P.pic ? `<div class="q-pic">${picHTML(BY_ID[P.pic], 'xl')}</div>` : '',
       P.emojiRow ? `<div class="q-emoji">${esc(P.emojiRow)}</div>` : '',
@@ -291,7 +298,7 @@ const SCREENS = {
         <button class="icon-btn sm" data-act="quitQuiz" aria-label="やめる">✕</button>
       </div>
       <div class="prompt">${promptHTML}</div>
-      <div class="options">${opts}</div>
+      <div class="options ${q.puzzle ? 'pz-opts' : ''}">${opts}</div>
       <div id="feedback"></div>
     </div>`;
   },
@@ -603,7 +610,7 @@ function startQuiz(mode) {
   const p = activeProfile();
   if (overLimit(p)) { go('limit'); return; }
   if (onBreak(p)) { go('rest'); return; }
-  const qs = mode === 'math' ? buildMathSession(mathLevelOf(p)) : buildSession(p, mode, { boost: S.game === 'dino' ? 'dino' : null });
+  const qs = mode === 'puzzle' ? buildPuzzleSession(mathLevelOf(p)) : mode === 'math' ? buildMathSession(mathLevelOf(p)) : buildSession(p, mode, { boost: S.game === 'dino' ? 'dino' : null });
   if (!qs.length) { toast('きょうの ふくしゅうは おわり！ 👻 は いないよ'); return; }
   S.quiz = { mode, qs, i: 0, correct: 0, streak: 0, answered: false, graduated: 0, tsuruga: 0, yen: { base: 0, streak: 0, challenge: 0, perfect: 0, retry: 0 }, retried: new Set() };
   go('quiz');
@@ -1118,6 +1125,7 @@ const ACTIONS = {
     sayJa(`ようこそ、${name}！ 英語でお城を建てよう！`);
   },
   startQuiz: d => { sfx.tap(); startQuiz(d.mode); },
+  puzzleTry: () => { if (!puzzleOpen()) { sfx.tap(); toast('🧩 ひらめき パズルは いま つくっているよ。もうすこし まってね！', 2800); return; } sfx.tap(); startQuiz('puzzle'); },
   answer: (d, el) => answer(d.id, el),
   sayOpt: (d, el, e) => { e.stopPropagation(); sayEn(BY_ID[d.id].en); },
   sayWord: d => sayEn(BY_ID[d.id].en),
@@ -1193,7 +1201,7 @@ const ACTIONS = {
 
 installDino({
   S, SCREENS, ACTIONS, AFTER, BG, LEAVE, go, render, db, save, activeProfile, esc, fmt, toast, sfx, say, sayJa, sayEn, stopSpeech,
-  header, dueIds, startQuiz, overLimit, onBreak, rate, money, wallet, exchange, today,
+  header, dueIds, startQuiz, overLimit, onBreak, rate, money, wallet, exchange, today, puzzleOpen,
 });
 // サンタさんへの おてがみ ／ パパと おはなし
 const LETTERS = installLetters({ S, SCREENS, ACTIONS, AFTER, BG, LEAVE, go, render, activeProfile, esc, toast, sfx, header, squarePhoto });

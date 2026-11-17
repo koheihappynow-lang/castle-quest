@@ -273,6 +273,7 @@ export function buildMathSession(level, n = 10) {
 }
 // まちがえたら、おなじ しゅるいの べつの もんだい
 export function mathRetry(q) {
+  if (q.retryFn) return q.retryFn();   // パズルなど
   for (let i = 0; i < 30; i++) { const r = makeMathQuestion(q.mlevel || 1); if (r.mtype === q.mtype) { r.retry = true; return r; } }
   const r = makeMathQuestion(q.mlevel || 1); r.retry = true; return r;
 }

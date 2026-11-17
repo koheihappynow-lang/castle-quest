@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><title>パズル確認（開発用）</title>
+<link rel="stylesheet" href="css/style.css">
+<style>body{background:#f4efe2;padding:12px;word-break:keep-all} .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px} .cell{background:#fffaf0;border-radius:16px;padding:10px;box-shadow:0 2px 6px rgba(0,0,0,.1);font-size:13px} .cell h4{margin:0 0 6px;font-size:14px;color:#6b2c00} .q-math{display:flex;flex-direction:column;align-items:center;gap:8px;transform:scale(.8);transform-origin:top center} .opts{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;font-size:22px} .opts span{background:#fff;border:2px solid #ddd;border-radius:10px;padding:2px 8px} .opts span.ans{border-color:#3fa34d}</style>
+</head><body><div class="grid" id="g"></div>
+<script type="module">
+import { makePuzzle, PUZZLE_TYPE_NAMES } from './js/puzzle.js';
+const list = [[1,'pattern'],[1,'odd'],[1,'ifthen'],[1,'robot'],[2,'robot'],[2,'order'],[3,'rotate'],[3,'balance'],[3,'odd'],[4,'robot'],[4,'pattern'],[5,'rotate']];
+document.getElementById('g').innerHTML = list.map(([lv, t]) => { const q = makePuzzle(lv, t);
+  return `<div class="cell"><h4>L${lv} ${PUZZLE_TYPE_NAMES[q.mtype]}：${q.prompt.text}</h4><div class="q-math">${q.prompt.html}</div><div class="opts">${q.options.map(o => `<span class="${o === q.answer ? 'ans' : ''}">${o.slice(4)}</span>`).join('')}</div></div>`; }).join('');
+document.title = 'ready';
+</script></body></html>
