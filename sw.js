@@ -6,7 +6,7 @@
 try { importScripts('./asset-hashes.js'); } catch (e) {}
 const HASH = self.ASSET_HASH || {};
 const SCOPE = new URL('./', self.location).pathname;
-const VERSION = 'cq-v58';
+const VERSION = 'cq-v59';
 const ASSETS = 'cq-assets-v2';
 const BG_FILES = ['endogame-adventure', 'hero', 'title', 'hub', 'study', 'select', 'build-day', 'build-sunset', 'build-night', 'exchange', 'ghosts', 'workshop', 'habitat-jungle', 'habitat-volcano', 'habitat-coast']
   .map(n => `./bg/${n}.jpg`);
@@ -15,7 +15,7 @@ const CASTLE_FILES = ['himeji', 'neuschwanstein', 'windsor', 'montsaintmichel', 
 const CODE = [
   './', './index.html', './rally.html', './manifest.webmanifest', './css/style.css',
   './js/main.js', './js/store.js', './js/words.js', './js/quiz.js', './js/review.js',
-  './js/speech.js', './js/sfx.js', './js/castles.js', './js/photos.js', './js/sentences.js', './js/math.js', './js/puzzle.js', './js/letters.js', './js/drawpad.js', './js/lettersGame.js', './papa.html', './js/papa.js', './js/diorama/engine.js', ...CASTLE_FILES,
+  './js/speech.js', './js/sfx.js', './js/castles.js', './js/photos.js', './js/sentences.js', './js/math.js', './js/puzzle.js', './js/letters.js', './js/drawpad.js', './js/lettersGame.js', './papa.html', './papa.webmanifest', './js/papa.js', './js/diorama/engine.js', ...CASTLE_FILES,
   './asset-hashes.js', './js/version.js', './js/dinoGame.js', './js/dinos.js', './js/dino/view.js', './js/dino/trex.js', './js/dino/dinoBase.js', './js/dino/look.js', './js/dino/rig.js',
 ];
 const RALLY = ['chibi', 'taxi', 'truck', 'police', 'ambulance', 'bus', 'fire', 'sports', 'monster', 'camper', 'racer', 'rocket', 'limo', 'rainbow', 'star'].map(id => `./cards/rally-${id}.jpg`);
@@ -90,5 +90,22 @@ self.addEventListener('fetch', e => {
     if (hit) return hit;
     try { const res = await fetch(url.origin === location.origin ? new Request(url.origin + url.pathname, { cache: 'reload' }) : e.request); if (res.ok) cache.put(key, res.clone()); return res; }
     catch (err) { return Response.error(); }
+  }));
+});
+
+// ---------- 通知（こどもから おてがみが きた） ----------
+self.addEventListener('push', e => {
+  let d = {}; try { d = e.data ? e.data.json() : {}; } catch (err) { d = { body: e.data && e.data.text() }; }
+  e.waitUntil(self.registration.showNotification(d.title || '📮 おてがみが きたよ', {
+    body: d.body || '', tag: d.tag || 'endogame', renotify: true,
+    icon: './icons/icon-192.png', badge: './icons/icon-192.png', data: { url: d.url || 'papa.html' },
+  }));
+});
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = new URL((e.notification.data && e.notification.data.url) || 'papa.html', self.registration.scope).href;
+  e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+    for (const c of list) if (c.url.includes('papa.html') && 'focus' in c) return c.focus();
+    return clients.openWindow(url);
   }));
 });

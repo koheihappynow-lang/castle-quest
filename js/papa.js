@@ -1,6 +1,6 @@
 // EndoGame：パパの へんじページ（パパ または サンタさん として へんじする）
 import { openDrawPad, showBig } from './drawpad.js';
-import { nameKey, makePairCode, deleteMsgs, retrySend, claimPairCode } from './letters.js';
+import { nameKey, makePairCode, deleteMsgs, retrySend, claimPairCode, VAPID_PUBLIC, pushSubscribe, pushUnsubscribe, pushTest } from './letters.js';
 import { allMsgs, send, audioURL, audioBlob, imageBlob, sync, online, getCfg, setCfg, testConnection, Recorder, pickMime, speakAs, santaLine, playSanta, stopSanta, unlockAudio } from './letters.js';
 
 const $ = id => document.getElementById(id);
@@ -38,14 +38,21 @@ async function render() {
   if (!cur.kid || !kids.some(([id]) => id === cur.kid)) cur = { kid: kids[0][0], th: 'papa' };
   const s = seen();
   const unread = (kid, th) => msgs.filter(m => m.kidId !== '*' && nameKey(m.kidName) === kid && m.thread === th && m.from === 'kid' && !s[m.id]).length;
-  const tabs = kids.flatMap(([id, name]) => ['papa', 'mama', 'santa'].map(th => {
-    const n = unread(id, th);
-    return `<button class="tab ${cur.kid === id && cur.th === th ? 'on' : ''}" data-kid="${esc(id)}" data-th="${th}">${esc(name)}${info.get(id).devices.size ? `<small style="opacity:.7">（${[...info.get(id).devices].map(esc).join('・')}）</small>` : ''} → ${TH[th]}${n ? `<b>${n}</b>` : ''}</button>`;
-  })).join('');
+  // 1だんめ：こども、2だんめ：だれとして へんじ（大きな ボタン）
+  const kidUnread = k => ['papa', 'mama', 'santa'].reduce((t, th) => t + unread(k, th), 0);
+  const kidRow = kids.map(([id, name]) => {
+    const n = kidUnread(id), dev = [...info.get(id).devices];
+    return `<button class="tab seg ${cur.kid === id ? 'on' : ''}" data-kid="${esc(id)}" data-th="${cur.th}"><span>${esc(name)}${n ? `<b>${n}</b>` : ''}</span>${dev.length ? `<small>${dev.map(esc).join('・')}</small>` : ''}</button>`;
+  }).join('');
+  const thRow = ['papa', 'mama', 'santa'].map(th => {
+    const n = unread(cur.kid, th);
+    return `<button class="tab seg th-${th} ${cur.th === th ? 'on' : ''}" data-kid="${esc(cur.kid)}" data-th="${th}"><span>${TH[th]}${n ? `<b>${n}</b>` : ''}</span></button>`;
+  }).join('');
+  const tabs = `<div class="segs" style="--n:${kids.length}">${kidRow}</div><div class="segs" style="--n:3">${thRow}</div>`;
   const list = msgs.filter(m => m.kidId !== '*' && nameKey(m.kidName) === cur.kid && m.thread === cur.th);
   const name = kids.find(([id]) => id === cur.kid)[1];
   main.innerHTML = `
-    <div class="tabs">${tabs}</div>
+    ${tabs}
     ${list.length ? `<div style="text-align:right;margin:-4px 0 6px"><button class="btn" id="delAll" style="font-size:13px;padding:6px 10px">🗑️ この タブを ぜんぶ けす（${list.length}つう）</button></div>` : ''}
     ${online() || location.search.includes('demo') ? '' : '<p class="hint">いまは この端末の なかだけ（⚙️ で サーバーに つなぐと スマホから へんじできます）</p>'}
     ${cur.th === 'santa' ? await linesHTML() : ''}
@@ -177,18 +184,66 @@ function bindLines() {
 
 function setupHTML() {
   const c = getCfg();
-  return `<div class="card"><h2>📱 つなぐ ばんごう（6けた）で つなぐ</h2>
-    <p class="hint">つながっている スマホ（パパ）の この ページで「📲 つなぐ ばんごう」を おすと 6けたの ばんごうが でます。それを いれるだけ。</p>
-    <div class="row"><input id="pairIn" inputmode="numeric" maxlength="7" placeholder="123 456" style="max-width:170px;font-size:22px;letter-spacing:.1em;text-align:center"><button class="btn primary" id="pairGo">つなぐ</button></div>
-    <p class="hint" id="pairMsg"></p></div>
-  ${online() ? photosHTML() : ''}
-  <div class="card"><h2>🔑 かぎで つなぐ</h2>
+  const back = '<div class="card"><button class="btn primary" id="back">⬅ もどる</button></div>';
+  const keyCard = (open) => `<details class="card" ${open ? 'open' : ''}><summary><b>🔑 かぎで つなぐ</b></summary>
     <p class="hint">iPad の「おうちのひと メニュー → 💌 おてがみ」に いれたのと おなじ かぎを いれても つながります。</p>
-    <label>サーバーの アドレス</label><input id="srv" value="${esc(c.server || '')}" placeholder="https://endogame-letters.xxxx.workers.dev" autocomplete="off">
+    <label>サーバーの アドレス</label><input id="srv" value="${esc(c.server || '')}" autocomplete="off">
     <label>かぞくの かぎ</label><input id="key" type="password" value="${esc(c.key || '')}" autocomplete="off">
-    <div class="row" style="margin-top:10px"><button class="btn primary" id="save">ほぞんして つなぐ</button>${online() || msgs.length ? '<button class="btn" id="back">もどる</button>' : ''}</div>
-    <p class="hint" id="msg"></p>
-    <p class="hint">この ページを スマホの ホーム画面に ついかすると、アプリのように ひらけます。</p></div>`;
+    <div class="row" style="margin-top:10px"><button class="btn primary" id="save">ほぞんして つなぐ</button></div>
+    <p class="hint" id="msg"></p></details>`;
+  if (online()) return back + notifyHTML() + photosHTML() + keyCard(false) + back;
+  return `<div class="card"><h2>📱 つなぐ ばんごう（6けた）で つなぐ</h2>
+    <p class="hint">つながっている スマホ（パパ）の この ページで「📲 つなぐ」を おすと 6けたの ばんごうが でます。それを いれるだけ。</p>
+    <div class="row"><input id="pairIn" inputmode="numeric" maxlength="7" placeholder="123 456" style="max-width:170px;font-size:22px;letter-spacing:.1em;text-align:center"><button class="btn primary" id="pairGo">つなぐ</button></div>
+    <p class="hint" id="pairMsg"></p>
+    <p class="hint">この ページを スマホの ホーム画面に ついかすると、アプリのように ひらけます（通知も うけとれます）。</p></div>
+  ${keyCard(false)}${msgs.length ? back : ''}`;
+}
+// 🔔 通知
+const ROLE_KEY = 'endogame.parentRole';
+const pushReady = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const standaloneApp = () => navigator.standalone || matchMedia('(display-mode: standalone)').matches;
+function notifyHTML() {
+  const role = localStorage.getItem(ROLE_KEY) || 'papa';
+  const on = localStorage.getItem('endogame.pushOn') === '1' && pushReady() && Notification.permission === 'granted';
+  const iosNeedsHome = /iPhone|iPad/.test(navigator.userAgent) && !standaloneApp();
+  return `<div class="card"><h2>🔔 こどもから きたら つうち</h2>
+    <p class="hint">わたしは：</p>
+    <div class="segs" style="--n:3">${[['papa', '👨 パパ'], ['mama', '👩 ママ'], ['both', '👪 ぜんぶ']].map(([k, l]) => `<button class="seg ${role === k ? 'on' : ''}" data-role="${k}">${l}</button>`).join('')}</div>
+    <p class="hint">パパ：パパあて＋サンタあて／ママ：ママあて＋サンタあて／ぜんぶ：ぜんぶ</p>
+    ${iosNeedsHome ? '<p class="hint" style="color:#d6303f">iPhone では、この ページを「ホーム画面に追加」して、ホーム画面の「へんじ」から ひらいた ときだけ 通知を うけとれます。</p>' : ''}
+    ${!pushReady() ? '<p class="hint" style="color:#d6303f">この ブラウザは 通知に たいおうして いません。</p>' : ''}
+    <div class="row" style="margin-top:6px">${on ? '<button class="btn" id="pushTest">🔔 ためしに おくる</button><button class="btn" id="pushOff">つうちを やめる</button>' : '<button class="btn primary" id="pushOn">🔔 つうちを うけとる</button>'}</div>
+    <p class="hint" id="pushMsg">${on ? '✅ つうちが きます' : ''}</p></div>`;
+}
+function bindNotify() {
+  document.querySelectorAll('[data-role]').forEach(b => b.onclick = async () => {
+    localStorage.setItem(ROLE_KEY, b.dataset.role);
+    if (localStorage.getItem('endogame.pushOn') === '1') { try { const reg = await navigator.serviceWorker.ready; const sub = await reg.pushManager.getSubscription(); if (sub) await pushSubscribe(sub.toJSON(), b.dataset.role); } catch (e) {} }
+    render();
+  });
+  if ($('pushOn')) $('pushOn').onclick = async () => {
+    const msg = $('pushMsg');
+    try {
+      if (!pushReady()) throw new Error('この ブラウザは 通知に たいおうして いません');
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') throw new Error('通知が「ゆるさない」に なっています（せっていアプリの つうち で ゆるしてください）');
+      const reg = await navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(() => navigator.serviceWorker.ready);
+      const key = Uint8Array.from(atob(VAPID_PUBLIC.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - VAPID_PUBLIC.length % 4) % 4)), c => c.charCodeAt(0));
+      const sub = await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+      await pushSubscribe(sub.toJSON(), localStorage.getItem(ROLE_KEY) || 'papa');
+      localStorage.setItem('endogame.pushOn', '1');
+      render();
+    } catch (e) { msg.textContent = '❌ ' + e.message; }
+  };
+  if ($('pushTest')) $('pushTest').onclick = async () => {
+    try { const sub = await (await navigator.serviceWorker.ready).pushManager.getSubscription(); const r = await pushTest(sub.endpoint); $('pushMsg').textContent = r.ok ? '📨 おくりました。すこし まってね' : '❌ おくれませんでした（' + r.status + '）'; }
+    catch (e) { $('pushMsg').textContent = '❌ ' + e.message; }
+  };
+  if ($('pushOff')) $('pushOff').onclick = async () => {
+    try { const sub = await (await navigator.serviceWorker.ready).pushManager.getSubscription(); if (sub) { await pushUnsubscribe(sub.endpoint); await sub.unsubscribe(); } } catch (e) {}
+    localStorage.removeItem('endogame.pushOn'); render();
+  };
 }
 // パパ・ママの しゃしんを サーバーに いれて、ぜんぶの iPad に くばる
 function photosHTML() {
@@ -207,6 +262,7 @@ function cropTo(file, W, H, topBias) {
   });
 }
 function bindSetup() {
+  bindNotify();
   if ($('pairGo')) $('pairGo').onclick = async () => {
     const code = ($('pairIn').value || '').replace(/\D/g, '');
     if (code.length !== 6) { $('pairMsg').textContent = '6けたの ばんごうを いれてください'; return; }
@@ -225,14 +281,14 @@ function bindSetup() {
       $('photoMsg').textContent = `✅ ${who === 'papa' ? 'パパ' : 'ママ'}の しゃしんを くばりました（iPad は つぎに ひらいた ときに かわります）`;
     } catch (e) { $('photoMsg').textContent = '❌ おくれませんでした（' + e.message + '）'; }
   }));
-  $('save').onclick = async () => {
+  if ($('save')) $('save').onclick = async () => {
     const server = $('srv').value.trim(), key = $('key').value.trim();
     if (!server || !key) { $('msg').textContent = 'りょうほう いれてください'; return; }
     $('msg').textContent = 'ためしています…';
     try { await testConnection(server, key); setCfg({ server, key, since: 0 }); showSetup = false; $('msg').textContent = '✅ つながりました'; await sync().catch(() => {}); render(); }
     catch (e) { $('msg').textContent = '❌ ' + e.message; }
   };
-  if ($('back')) $('back').onclick = () => { showSetup = false; render(); };
+  document.querySelectorAll('#back').forEach(b => b.onclick = () => { showSetup = false; render(); });
 }
 
 // かんたん せってい：QRコードの リンク（#setup=…）で アドレスと かぎを 入れる

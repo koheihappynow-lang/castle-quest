@@ -6,6 +6,7 @@ compatibility_date = "2026-11-01"
 
 [vars]
 ALLOW_ORIGINS = "https://koheihappynow-lang.github.io"
+VAPID_PUBLIC = "BOMCKMJd5G3GjvexApI596cLIoWf8bM4Scj7UdXO6so388TtkuPDoAQTlxnGNkbo7S-4wqKKUpBdVfWt42-RL4I"
 
 # id は「npx wrangler kv namespace create endogame-letters」で できた もの
 [[kv_namespaces]]

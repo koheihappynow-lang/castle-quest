@@ -1,0 +1,21 @@
+{
+  "name": "EndoGame へんじ",
+  "short_name": "へんじ",
+  "start_url": "./papa.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3f6fb",
+  "theme_color": "#2f7fe8",
+  "icons": [
+    {
+      "src": "icons/icon-192.png?v=3",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png?v=3",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

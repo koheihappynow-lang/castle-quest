@@ -5,11 +5,12 @@
 //   POST /api/msgs {msg, audio?}  … おてがみを ついか／こうしん（audio は data:URL）
 //   GET  /api/audio/:id           … こえ（data:URL）
 //   GET  /api/image/:id           … 絵（data:URL）
+import { sendPush } from './webpush.js';
 const KEEP_DAYS = 180, MAX_AUDIO = 3_000_000, MAX_IMAGE = 2_000_000;
 const THREADS = ['santa', 'papa', 'mama'], FROMS = ['kid', 'papa', 'santa', 'mama'];
 
 export default {
-  async fetch(req, env) {
+  async fetch(req, env, ctx) {
     const url = new URL(req.url);
     const origin = req.headers.get('Origin') || '';
     const allowed = (env.ALLOW_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
@@ -58,6 +59,28 @@ export default {
       }
       return J({ ok: true, migrated: n });
     }
+    // 通知の とうろく：{ sub, role:'papa'|'mama'|'both' }
+    if (req.method === 'POST' && url.pathname === '/api/push/subscribe') {
+      let body; try { body = await req.json(); } catch (e) { return J({ error: 'bad json' }, 400); }
+      const sub = body?.sub, role = ['papa', 'mama', 'both'].includes(body?.role) ? body.role : 'both';
+      if (!sub?.endpoint || !/^https:\/\//.test(sub.endpoint) || !sub.keys?.p256dh || !sub.keys?.auth) return J({ error: 'bad sub' }, 400);
+      await env.DB.prepare('INSERT INTO subs (endpoint, sub, role, created) VALUES (?,?,?,?) ON CONFLICT(endpoint) DO UPDATE SET sub = excluded.sub, role = excluded.role')
+        .bind(sub.endpoint, JSON.stringify(sub), role, Date.now()).run();
+      return J({ ok: true });
+    }
+    if (req.method === 'POST' && url.pathname === '/api/push/unsubscribe') {
+      let body; try { body = await req.json(); } catch (e) { return J({ error: 'bad json' }, 400); }
+      if (body?.endpoint) await env.DB.prepare('DELETE FROM subs WHERE endpoint = ?').bind(body.endpoint).run();
+      return J({ ok: true });
+    }
+    // ためしに 通知を おくる（この 端末だけ）
+    if (req.method === 'POST' && url.pathname === '/api/push/test') {
+      let body; try { body = await req.json(); } catch (e) { return J({ error: 'bad json' }, 400); }
+      const row = body?.endpoint && await env.DB.prepare('SELECT sub FROM subs WHERE endpoint = ?').bind(body.endpoint).first();
+      if (!row) return J({ error: 'not subscribed' }, 404);
+      const st = await sendPush(JSON.parse(row.sub), { title: '🔔 EndoGame', body: 'つうちの テストだよ。こどもから おてがみが きたら こう しらせるね！', tag: 'test' }, env);
+      return J({ ok: st < 300, status: st });
+    }
     // おてがみを けす：{ ids: [...] }。ほかの 端末も けせるように「けした しるし」を のこす
     if (req.method === 'POST' && url.pathname === '/api/delete') {
       let body; try { body = await req.json(); } catch (e) { return J({ error: 'bad json' }, 400); }
@@ -105,6 +128,8 @@ export default {
           hasAudio = MAX(hasAudio, excluded.hasAudio), hasImage = MAX(hasImage, excluded.hasImage), u = excluded.u`)
         .bind(m.id, String(m.kidId || '').slice(0, 40), String(m.kidName || '').slice(0, 20), m.thread, m.from, String(m.text || '').slice(0, 500),
           m.hasAudio ? 1 : 0, m.hasImage ? 1 : 0, String(m.mime || '').slice(0, 40), String(m.device || '').slice(0, 30), kind, Number(m.ts) || now, m.heard ? 1 : 0, now).run();
+      // こどもの あたらしい おてがみ → パパ・ママに 通知（サンタあては ふたりとも）
+      if (!old && m.from === 'kid' && m.kidId !== '*' && env.VAPID_PRIVATE_JWK) ctx?.waitUntil(notifyParents(env, m));
       // ふるい もの（180日）は ときどき けす
       if (Math.random() < 0.02) await env.DB.prepare('DELETE FROM msgs WHERE ts < ?').bind(now - KEEP_DAYS * 86400000).run();
       return J({ ok: true, u: now });
@@ -112,6 +137,16 @@ export default {
     return J({ error: 'not found' }, 404);
   },
 };
+const TH_NAME = { papa: '👨 パパ', mama: '👩 ママ', santa: '🎅 サンタ' };
+async function notifyParents(env, m) {
+  const roles = m.thread === 'papa' ? ['papa', 'both'] : m.thread === 'mama' ? ['mama', 'both'] : ['papa', 'mama', 'both'];
+  const { results } = await env.DB.prepare(`SELECT endpoint, sub FROM subs WHERE role IN (${roles.map(() => '?').join(',')})`).bind(...roles).all();
+  const what = m.text ? String(m.text).slice(0, 60) : m.hasImage ? '🎨 えが とどいたよ' : m.hasAudio ? '🎤 こえの おてがみが とどいたよ' : 'おてがみが とどいたよ';
+  const payload = { title: `📮 ${m.kidName || 'こども'} → ${TH_NAME[m.thread] || ''}`, body: what, tag: `${m.kidName}-${m.thread}`, url: 'papa.html' };
+  for (const r of results) {
+    try { const st = await sendPush(JSON.parse(r.sub), payload, env); if (st === 404 || st === 410) await env.DB.prepare('DELETE FROM subs WHERE endpoint = ?').bind(r.endpoint).run(); } catch (e) {}
+  }
+}
 // かぎを くらべる（じかんで ばれないように）
 function same(a, b) {
   if (a.length !== b.length) return false;

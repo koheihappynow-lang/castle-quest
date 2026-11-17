@@ -299,6 +299,11 @@ async function doSync() {
   setCfg({ since: r.now || Date.now() });
   return fresh;
 }
+// 通知（Web Push）：こうかい かぎ（ひみつでは ない）
+export const VAPID_PUBLIC = 'BOMCKMJd5G3GjvexApI596cLIoWf8bM4Scj7UdXO6so388TtkuPDoAQTlxnGNkbo7S-4wqKKUpBdVfWt42-RL4I';
+export async function pushSubscribe(sub, role) { return api('POST', '/api/push/subscribe', { sub, role }); }
+export async function pushUnsubscribe(endpoint) { return api('POST', '/api/push/unsubscribe', { endpoint }); }
+export async function pushTest(endpoint) { return api('POST', '/api/push/test', { endpoint }); }
 // つなぐ ばんごう
 export async function makePairCode() { return api('POST', '/api/pair', {}); }
 export async function claimPairCode(code, server = DEFAULT_SERVER) {

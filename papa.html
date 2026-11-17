@@ -11,6 +11,7 @@
 <meta name="referrer" content="no-referrer">
 <title>EndoGame へんじ</title>
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=3">
+<link rel="manifest" href="papa.webmanifest">
 <style>
   :root { --bg: #f3f6fb; --card: #fff; --ink: #1f2a3d; --soft: #6b7890; --line: #e2e7f0; --blue: #2f7fe8; --red: #d6303f; --kid: #e3f6d6; --santa: #fff1e6; --papa: #e6f1ff; }
   * { box-sizing: border-box; }
@@ -36,6 +37,15 @@
   .tab { white-space: nowrap; border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 14px; cursor: pointer; position: relative; }
   .tab.on { background: var(--ink); color: #fff; border-color: var(--ink); }
   .tab b { background: var(--red); color: #fff; border-radius: 999px; font-size: 11px; padding: 0 6px; margin-left: 4px; }
+  .segs { display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: 6px; margin-bottom: 8px; }
+  .seg { border: 2px solid var(--line); background: #fff; color: var(--ink); border-radius: 14px; min-height: 50px; padding: 6px 4px; font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
+  .seg small { font-size: 11px; font-weight: 400; color: var(--soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .seg b { background: var(--red); color: #fff; border-radius: 999px; font-size: 11px; padding: 1px 6px; margin-left: 4px; vertical-align: 2px; }
+  .seg.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .seg.on small { color: #cfd6e4; }
+  .seg.th-papa.on { background: var(--blue); border-color: var(--blue); }
+  .seg.th-mama.on { background: #e8508f; border-color: #e8508f; }
+  .seg.th-santa.on { background: var(--red); border-color: var(--red); }
   .msgs { display: flex; flex-direction: column; gap: 10px; }
   .m { max-width: 85%; border-radius: 14px; padding: 8px 12px; }
   .m.kid { background: var(--kid); align-self: flex-start; }
@@ -62,7 +72,7 @@
 </style>
 </head>
 <body>
-<header><h1>✉️ へんじ</h1><button id="pairBtn">📲 つなぐ</button><button id="syncBtn">🔄<span class="lbl"> こうしん</span></button><button id="setBtn">⚙️</button></header>
+<header><h1>✉️ へんじ</h1><button id="pairBtn">📲 つなぐ</button><button id="syncBtn">🔄<span class="lbl"> こうしん</span></button><button id="setBtn" aria-label="せってい">⚙️<span class="lbl"> 🔔</span></button></header>
 <main id="main"></main>
 <div class="compose" id="compose" hidden><div class="in" id="composeIn"></div></div>
 <script type="module" src="js/papa.js"></script>
