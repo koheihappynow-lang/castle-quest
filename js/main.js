@@ -53,6 +53,9 @@ const db = () => getDB();
 const wallet = p => (S.game === 'dino' ? p.dino.wallet : p.wallet);
 const homeScreen = () => (S.game === 'dino' ? 'dhome' : 'home');
 const rate = cur => (cur === 'yen' ? 1 : db().settings.rates[cur]);
+// りょうがえじょ：2026-11-18 から かくす（こどもには まだ はやい）。ねだんは ぜんぶ えんで みせて、かう ときに うらで かえる
+const SHOW_EXCHANGE = false;
+const yenOf = (cur, n) => cur === 'yen' ? n : n * rate(cur);
 const money = (cur, n) => cur === 'yen' ? `${fmt(n)}えん` : `${fmt(n)}${CURRENCIES[cur].name}`;
 
 setVoicePrefs(db().settings.voice);
@@ -107,7 +110,7 @@ function header(p, { back = homeScreen() } = {}) {
     <div class="who">${avatarHTML(p, 'sm')}<span class="name">${esc(p.name)}</span></div>
     <div class="stats">
       ${due ? `<span class="chip ghost-chip" data-act="go" data-to="ghosts">👻 ${due}</span>` : ''}
-      <span class="chip coin-chip" id="yenChip" data-act="go" data-to="exchange">💴 <b>${fmt(wallet(p).yen)}</b><small>えん</small></span>
+      <span class="chip coin-chip" id="yenChip" ${SHOW_EXCHANGE ? 'data-act="go" data-to="exchange"' : ''}>💴 <b>${fmt(wallet(p).yen)}</b><small>えん</small></span>
     </div>
   </header>`;
 }
@@ -250,9 +253,9 @@ const SCREENS = {
         <button class="big-btn castle" data-act="go" data-to="castles">
           <span class="bi"><img class="bi-img" src="icons/ui/icon-castle.png" alt=""></span><span class="bt">おしろを つくる</span><span class="bs">かんせい ${doneN}/${total}</span>
         </button>
-        <button class="big-btn exchange" data-act="go" data-to="exchange">
+        ${SHOW_EXCHANGE ? `<button class="big-btn exchange" data-act="go" data-to="exchange">
           <span class="bi"><img class="bi-img" src="icons/ui/icon-exchange.png" alt=""></span><span class="bt">りょうがえじょ</span><span class="bs">💴 ${fmt(p.wallet.yen)}えん</span>
-        </button>
+        </button>` : ''}
         <button class="big-btn ghosts" data-act="go" data-to="ghosts">
           <span class="bi"><img class="bi-img" src="icons/ui/icon-ghostbook.png" alt=""></span><span class="bt">おばけずかん</span><span class="bs">ともだち ${friendIds(p).length}</span>
         </button>
@@ -360,11 +363,11 @@ const SCREENS = {
     ${header(p)}
     <div class="page">
       <h2>🏰 どの おしろを つくる？</h2>
-      <p class="sub">どの おしろからでも たてられるよ。その くにの おかねで たてよう！</p>
+      <p class="sub">どの おしろからでも たてられるよ。おかねを ためて たてよう！</p>
       <div class="col-grid">
         ${list.map(c => {
           const n = built(p, c.id), done = p.completed.includes(c.id);
-          const price = c.rare ? `👻 パーツ ${tsurugaParts(p) - n}こ` : `${CURRENCIES[c.currency].sign} ${money(c.currency, PART_PRICE[c.currency])}`;
+          const price = c.rare ? `👻 パーツ ${tsurugaParts(p) - n}こ` : `💴 ${fmt(yenOf(c.currency, PART_PRICE[c.currency]))}えん`;
           return `<button class="col-card ${done ? 'got' : ''} ${c.rare ? 'rare' : ''}" data-act="openCastle" data-id="${c.id}">
             ${done ? `<img class="col-card-img" src="cards/${c.id}.jpg" alt="" onerror="this.remove()">` : ''}
             <div class="col-flag">${c.flag}</div>
@@ -399,16 +402,13 @@ const SCREENS = {
         <small class="hint">おばけを ${GHOSTS_PER_TSURUGA_PART}ひき ともだちに すると パーツが 1こ もらえるよ。10れんぞく せいかいでも もらえることが あるよ</small>`;
     } else {
       const cur = c.currency, price = PART_PRICE[cur], have = p.wallet[cur];
-      const shortage = Math.max(0, price - have);
-      const yenNeed = shortage * rate(cur);
-      action = `<p class="cp-msg">つぎは「<b>${c.parts[n]}</b>」 ねだん：<b>${money(cur, price)}</b></p>
-        <div class="wallet-line">${CURRENCIES[cur].sign} もっている ${CURRENCIES[cur].name}：<b>${money(cur, have)}</b>${cur !== 'yen' ? `　💴 ${fmt(p.wallet.yen)}えん` : ''}</div>
-        ${shortage === 0
-          ? `<button class="btn primary build" data-act="build">🔨 たてる（${money(cur, price)}）</button>`
-          : (cur !== 'yen' && p.wallet.yen >= yenNeed)
-            ? `<button class="btn primary build" data-act="exchangeBuild">💱 りょうがえして たてる <span class="price">${fmt(yenNeed)}えん → ${money(cur, shortage)}</span></button>`
-            : `<button class="btn build" data-act="build" data-short="1">🔨 たてる（${money(cur, price)}）</button>`}
-        ${cur !== 'yen' ? `<small class="hint">1${CURRENCIES[cur].name} ＝ ${fmt(rate(cur))}えん（${CURRENCIES[cur].en}）</small>` : ''}`;
+      // まえに りょうがえして のこっている おかねも つかう。たりない ぶんは えんから
+      const yenNeed = yenOf(cur, Math.max(0, price - have));
+      action = `<p class="cp-msg">つぎは「<b>${c.parts[n]}</b>」 ねだん：<b>${fmt(yenOf(cur, price))}えん</b></p>
+        <div class="wallet-line">💴 もっている おかね：<b>${fmt(p.wallet.yen)}えん</b></div>
+        ${p.wallet.yen >= yenNeed
+          ? `<button class="btn primary build" data-act="exchangeBuild">🔨 たてる（${fmt(yenNeed)}えん）</button>`
+          : `<button class="btn build" data-act="build" data-short="1">🔨 たてる（${fmt(yenNeed)}えん）</button>`}`;
     }
     return `
     ${header(p, { back: 'castles' })}
@@ -847,10 +847,8 @@ function build(viaExchange = false) {
     if (tsurugaParts(p) - n0 <= 0) { sfx.wrong(); toast('パーツが ないよ。おばけを ともだちに しよう！'); return; }
   } else {
     const cur = c.currency, price = PART_PRICE[cur];
-    if (viaExchange && p.wallet[cur] < price) {
-      const short = price - p.wallet[cur];
-      if (!exchange(cur, short)) return;
-      toast(`💱 ${fmt(short * rate(cur))}えん → ${money(cur, short)}に りょうがえ！`);
+    if (cur !== 'yen' && p.wallet[cur] < price && p.wallet.yen >= (price - p.wallet[cur]) * rate(cur)) {
+      if (!exchange(cur, price - p.wallet[cur])) return;   // うらで えんを かえる（こどもには みせない）
     }
     if (p.wallet[cur] < price) {
       sfx.wrong();
@@ -1192,6 +1190,7 @@ const ACTIONS = {
   build: d => build(false),
   exchangeBuild: () => build(true),
   exchange: d => {
+    if (!SHOW_EXCHANGE) return;
     const n = Number(d.n);
     if (exchange(d.cur, n)) { toast(`💱 ${fmt(n * rate(d.cur))}えん → ${money(d.cur, n)}`); sayJa(`${n}${CURRENCIES[d.cur].name}に両替したよ`); render(); }
   },

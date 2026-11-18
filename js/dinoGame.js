@@ -80,9 +80,7 @@ export function installDino(api) {
         <button class="big-btn d-shop" data-act="go" data-to="dshop">
           <span class="bi"><img class="bi-img" src="icons/ui/icon-shop.png" alt=""></span><span class="bt">おみせ</span><span class="bs">えさ・すみか・かざり</span>
         </button>
-        <button class="big-btn exchange" data-act="go" data-to="exchange">
-          <span class="bi"><img class="bi-img" src="icons/ui/icon-exchange.png" alt=""></span><span class="bt">りょうがえじょ</span><span class="bs">💴 ${fmt(d.wallet.yen)}えん</span>
-        </button>
+
         <button class="big-btn ghosts" data-act="go" data-to="dzukan">
           <span class="bi"><img class="bi-img" src="icons/ui/icon-dinobook.png" alt=""></span><span class="bt">きょうりゅう ずかん</span><span class="bs">あえた なかま ${d.order.length}</span>
         </button>
@@ -188,19 +186,17 @@ export function installDino(api) {
       if (n >= HOME_PARTS_PER_DINO) body = '<p class="cp-msg">✨ すみかが かんせいしたよ！</p>';
       else {
         const stName = HOME_STAGES[Math.floor(n / 3)], step = (n % 3) + 1;
-        const short = Math.max(0, price - W[cur]), yenNeed = short * rate(cur);
+        const yenNeed = cur === 'yen' ? Math.max(0, price - W[cur]) : Math.max(0, price - W[cur]) * rate(cur), yenPrice = cur === 'yen' ? price : price * rate(cur);
         body = `<div class="shop-item home-item">
           <span class="si-icon">🏡</span>
-          <div class="si-main"><b>「${stName}」</b>（${step}/3）<div class="si-sub">すみか ${n} / ${HOME_PARTS_PER_DINO}　ねだん：<b>${money(cur, price)}</b></div>
+          <div class="si-main"><b>「${stName}」</b>（${step}/3）<div class="si-sub">すみか ${n} / ${HOME_PARTS_PER_DINO}　ねだん：<b>${fmt(yenPrice)}えん</b></div>
             <div class="mini-bar"><i style="width:${(n / HOME_PARTS_PER_DINO) * 100}%"></i></div>
-            <div class="si-sub">${C.sign} もっている ${C.name}：${money(cur, W[cur])}${cur !== 'yen' ? `　💴 ${fmt(W.yen)}えん` : ''}</div></div>
+            <div class="si-sub">💴 もっている おかね：${fmt(W.yen)}えん</div></div>
           <div class="si-buy">
-            ${short === 0 ? `<button class="btn primary" data-act="buyHome">🔨 つくる</button>`
-              : (cur !== 'yen' && W.yen >= yenNeed) ? `<button class="btn primary" data-act="buyHome" data-ex="1">💱 りょうがえして つくる<small>${fmt(yenNeed)}えん → ${money(cur, short)}</small></button>`
-              : `<button class="btn" data-act="buyHome">🔨 つくる</button>`}
+            ${W.yen >= yenNeed ? `<button class="btn primary" data-act="buyHome">🔨 つくる<small>${fmt(yenNeed)}えん</small></button>` : `<button class="btn" data-act="buyHome">🔨 つくる<small>${fmt(yenNeed)}えん</small></button>`}
           </div>
         </div>
-        ${cur !== 'yen' ? `<small class="hint">${info.name}の くに（${info.country}）の おかねで つくるよ。1${C.name} ＝ ${fmt(rate(cur))}えん（${C.en}）</small>` : ''}`;
+`;
       }
     } else {
       body = ACCESSORIES.map(a => {
@@ -439,10 +435,8 @@ export function installDino(api) {
     buyHome: d => {
       const p = activeProfile(), dd = p.dino, m = mine(p), cur = curOf(dd.active), price = HOME_PART_PRICE[cur];
       if (gateOn(p) || (m.home || 0) >= HOME_PARTS_PER_DINO) { render(); return; }
-      if (d.ex && dd.wallet[cur] < price) {
-        const short = price - dd.wallet[cur];
-        if (!exchange(cur, short)) return;
-        toast(`💱 ${fmt(short * rate(cur))}えん → ${money(cur, short)}に りょうがえ！`);
+      if (cur !== 'yen' && dd.wallet[cur] < price && dd.wallet.yen >= (price - dd.wallet[cur]) * rate(cur)) {
+        if (!exchange(cur, price - dd.wallet[cur])) return;   // うらで えんを かえる
       }
       if (dd.wallet[cur] < price) {
         sfx.wrong();
