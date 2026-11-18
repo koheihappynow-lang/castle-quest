@@ -106,8 +106,9 @@ export function installDino(api) {
         ${list.map(x => {
           const have = !!d.owned[x.id], ready = READY.has(x.id);
           const art = ART[x.id];
-          return `<button class="col-card egg-card ${have ? 'got' : ''} ${ready ? '' : 'wip'} ${x.rare ? 'rare' : ''}" data-act="pickEgg" data-id="${x.id}" ${have || !ready || d.eggs <= 0 ? 'disabled' : ''}>
-            ${art ? `<img class="egg-art" src="${art}" alt="">` : `<span class="egg-icon">🥚</span>`}
+          // あたらしい かわいい 絵（うっすら＝まだ えらべない）
+          return `<button class="col-card egg-card has-img ${have ? 'got' : ''} ${ready || have ? '' : 'notyet'} ${x.rare ? 'rare' : ''}" data-act="pickEgg" data-id="${x.id}" ${have || !ready || d.eggs <= 0 ? 'disabled' : ''}>
+            <img class="col-card-img" src="cards/dino-thumb-${x.id}.jpg" alt="" onerror="${art ? `this.onerror=null;this.src='${art}';this.classList.add('fit')` : `this.replaceWith(Object.assign(document.createElement('span'),{className:'egg-icon',textContent:'🥚'}))`}">${ready && !have ? '<span class="egg-badge">🥚</span>' : ''}
             <div class="col-flag">${x.flag}</div>
             <div class="col-name">${x.name}</div>
             <div class="col-sub">${have ? '✨ なかま' : ready ? `${x.country}` : '🔧 じゅんびちゅう'}</div>
