@@ -784,3 +784,40 @@ body[data-bg="night"]::before { background-image: url(../bg/night.jpg); }
 .egg-card.has-img { position: relative; }
 .egg-card .egg-badge { position: absolute; top: 4px; right: 6px; font-size: 1.8rem; filter: drop-shadow(0 2px 3px rgba(0,0,0,.3)); }
 .egg-card.notyet:disabled { opacity: 1; }
+
+/* 🌑 かげ あて */
+.big-btn.shadow-btn { grid-column: 1 / -1; background: linear-gradient(135deg, #3a3f6b, #6a5acd 55%, #f5c86a); color: #fff; }
+.big-btn.shadow-btn .bi { font-size: 3rem; }
+.sh-page { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.sh-dots { display: flex; gap: 8px; margin-top: 6px; }
+.sh-dots i { width: 16px; height: 16px; border-radius: 50%; background: rgba(255, 255, 255, .7); box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .15); }
+.sh-dots i.on { background: #ffcc33; }
+.sh-dots i.now { background: #fff; box-shadow: 0 0 0 3px #6a5acd; }
+.sh-stage { position: relative; width: min(86vw, 520px); height: min(42vh, 300px); background: rgba(255, 255, 255, .88); border-radius: 28px; display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: 0 8px 24px rgba(0, 0, 0, .15); }
+.sh-big { font-size: min(30vh, 200px); line-height: 1; filter: brightness(0) opacity(.85); transition: filter .7s ease; display: inline-block; }
+.sh-big.lit { filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .25)); }
+.sh-big.lit.hop { animation: shHop 2.2s ease-in-out .5s; }
+.sh-big.lit.stomp { animation: shStomp 2.2s ease-in-out .5s; }
+.sh-big.lit.drive { animation: shDrive 2s ease-in .6s forwards; }
+.sh-big.lit.fly { animation: shFly 2s ease-in .6s forwards; }
+.sh-big.lit.swim { animation: shSwim 2.2s ease-in-out .5s forwards; }
+@keyframes shHop { 0%, 100% { transform: translateY(0); } 15%, 45%, 75% { transform: translateY(-28%) scale(1.05, .95); } 30%, 60%, 90% { transform: translateY(0) scale(1.08, .9); } }
+@keyframes shStomp { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-8deg) translateX(-6%); } 40% { transform: rotate(8deg) translateX(6%); } 60% { transform: rotate(-8deg) translateX(-6%); } 80% { transform: rotate(6deg) scale(1.1); } }
+@keyframes shDrive { 0% { transform: translateX(0); } 15% { transform: translateX(6%) rotate(3deg); } 100% { transform: translateX(-140%); } }
+@keyframes shFly { 0% { transform: translate(0, 0); } 20% { transform: translate(-5%, 5%); } 100% { transform: translate(140%, -140%) scale(.6); } }
+@keyframes shSwim { 0% { transform: translate(0, 0); } 25% { transform: translate(-20%, -8%); } 50% { transform: translate(-40%, 6%); } 75% { transform: translate(-60%, -6%); } 100% { transform: translate(-130%, 0); } }
+.sh-say { position: absolute; right: 12px; bottom: 12px; width: 56px; height: 56px; border-radius: 50%; border: 0; background: #fff; box-shadow: 0 3px 8px rgba(0, 0, 0, .2); font-size: 1.6rem; cursor: pointer; }
+.sh-opts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; width: min(86vw, 520px); }
+.sh-opts.n4 { grid-template-columns: repeat(4, 1fr); }
+.sh-opt { aspect-ratio: 1; border: 0; border-radius: 24px; background: #fff; font-size: clamp(3rem, 11vw, 4.6rem); box-shadow: 0 6px 0 #c9b8ff, 0 8px 16px rgba(0, 0, 0, .12); cursor: pointer; transition: transform .1s; }
+.sh-opt:active { transform: translateY(4px); box-shadow: 0 2px 0 #c9b8ff; }
+.sh-opt:disabled { cursor: default; }
+.sh-opt.nope { animation: shNope .45s; opacity: .45; }
+.sh-opt.yes { background: #fff6c8; box-shadow: 0 0 0 5px #ffcc33, 0 8px 16px rgba(0, 0, 0, .12); transform: scale(1.06); }
+@keyframes shNope { 20% { transform: translateX(-8px) rotate(-6deg); } 40% { transform: translateX(8px) rotate(6deg); } 60% { transform: translateX(-6px); } 80% { transform: translateX(6px); } }
+.sh-end { padding-top: 20px; }
+.sh-endtitle { font-size: 5rem; animation: rpGift .8s ease-out; }
+.sh-found { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; font-size: 3.6rem; margin: 10px 0 24px; background: rgba(255, 255, 255, .85); border-radius: 24px; padding: 14px; }
+.sh-found span { display: inline-block; animation: shPop .5s ease-out backwards; }
+@keyframes shPop { from { transform: scale(0); } 70% { transform: scale(1.25); } }
+@media (prefers-reduced-motion: reduce) { .sh-big.lit { animation: none !important; } }

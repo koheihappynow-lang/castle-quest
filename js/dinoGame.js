@@ -62,6 +62,9 @@ export function installDino(api) {
         ${easyLevelOf(p) ? `<button class="big-btn easy" data-act="startQuiz" data-mode="easy">
           <span class="bi">🌈</span><span class="bt">かんがえて あそぼう</span><span class="bs">みて・きいて・タッチ</span>
         </button>` : ''}
+        ${easyLevelOf(p) ? `<button class="big-btn shadow-btn" data-act="shadowStart">
+          <span class="bi">🌑</span><span class="bt">かげ あて</span><span class="bs">だれの かげかな？</span>
+        </button>` : ''}
         <button class="big-btn quiz" data-act="startQuiz" data-mode="normal">
           <span class="bi"><img class="bi-img" src="icons/ui/icon-english.png" alt=""></span><span class="bt">えいごに ちょうせん</span><span class="bs">ことばで おかねを ためよう</span>
         </button>

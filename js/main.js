@@ -20,13 +20,14 @@ import { buildMathSession, mathRetry, MATH_LEVELS, MATH_TYPE_NAMES, mathLevelFor
 import { buildPuzzleSession, mountRobot } from './puzzle.js';
 import { buildEasySession, praise as easyPraise } from './easy.js';
 import { installWatch } from './watch.js';
+import { installShadow } from './shadow.js';
 // ひらめき パズル：2026-11-17 から こども みんなに ひらいた
 const puzzleOpen = () => true;
 
 const app = document.getElementById('app');
 const AVATARS = ['🦁', '🐰', '🐻', '🐱', '🐶', '🐼', '🦊', '🐸', '🦄', '🐧', '🐯', '🐨'];
 const LEVEL_NAMES = { 1: '⭐ かんたん', 2: '⭐⭐ ふつう', 3: '⭐⭐⭐ むずかしい' };
-const PLAY_SCREENS = new Set(['home', 'quiz', 'result', 'castles', 'castle', 'exchange', 'collection', 'ghosts', 'dhome', 'deggs', 'hatch', 'dcare', 'dshop', 'dzukan']);
+const PLAY_SCREENS = new Set(['shadow', 'home', 'quiz', 'result', 'castles', 'castle', 'exchange', 'collection', 'ghosts', 'dhome', 'deggs', 'hatch', 'dcare', 'dshop', 'dzukan']);
 const HISTORY_MAX = 4000;
 const FOREIGN = ['dollar', 'euro', 'pound', 'yuan'];
 
@@ -236,6 +237,9 @@ const SCREENS = {
       <div class="home-grid">
         ${easyLevelOf(p) ? `<button class="big-btn easy" data-act="startQuiz" data-mode="easy">
           <span class="bi">🌈</span><span class="bt">かんがえて あそぼう</span><span class="bs">みて・きいて・タッチ</span>
+        </button>` : ''}
+        ${easyLevelOf(p) ? `<button class="big-btn shadow-btn" data-act="shadowStart">
+          <span class="bi">🌑</span><span class="bt">かげ あて</span><span class="bs">だれの かげかな？</span>
         </button>` : ''}
         <button class="big-btn quiz" data-act="startQuiz" data-mode="normal">
           <span class="bi"><img class="bi-img" src="icons/ui/icon-english.png" alt=""></span><span class="bt">えいごに ちょうせん</span><span class="bs">${LEVEL_NAMES[p.level]}・${SESSION_LEN}もん・1もん ${fmt(YEN_PER_LEVEL[p.level])}えん</span>
@@ -1261,6 +1265,8 @@ installDino({
 // サンタさんへの おてがみ ／ パパと おはなし
 const LETTERS = installLetters({ S, SCREENS, ACTIONS, AFTER, BG, LEAVE, go, render, activeProfile, esc, toast, sfx, header, squarePhoto });
 // みまもり（おうちのひとの スマホへ ようすを おくる・おやすみ）
+// 🌑 かげ あて（やさしい モードの こ）
+installShadow({ S, SCREENS, ACTIONS, AFTER, BG, LEAVE, go, render, activeProfile, sayJa, sfx, header, homeScreen, easyLevelOf, save });
 const WATCH = installWatch({ S, SCREENS, AFTER, BG, go, activeProfile, esc, sayJa, today, playedSec, limitSec, dueIds, BY_ID, TYPE_NAMES, MATH_TYPE_NAMES, PLAY_SCREENS, homeScreen, easyLevelOf });
 Object.assign(ACTIONS, LETTERS.actions);
 

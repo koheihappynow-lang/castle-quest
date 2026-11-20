@@ -10,7 +10,7 @@ const DOING = {
   home: '🏰 キャッスルクエストのホーム', dhome: '🦖 ダイナソークエストのホーム', castles: '🏰 お城を選んでいる', castle: '🏰 お城を建てている',
   exchange: '💱 両替所', ghosts: '📕 おばけ図鑑', result: '🎉 結果を見ている', deggs: '🥚 たまごを選んでいる', hatch: '🥚 たまごがかえるところ',
   dcare: '🦖 恐竜のお世話', dshop: '🛒 恐竜のお店', dzukan: '📕 恐竜図鑑', letters: '💌 お手紙', games: 'ゲームを選んでいる',
-  rest: '☕ 休憩中', limit: '🌙 今日は終了', paused: '🌙 おやすみ中',
+  shadow: '🌑 かげあて', rest: '☕ 休憩中', limit: '🌙 今日は終了', paused: '🌙 おやすみ中',
 };
 const AREA_JA = { normal: '英語', review: '復習', math: '算数', puzzle: 'パズル', easy: 'やさしいモード' };
 
