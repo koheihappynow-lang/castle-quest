@@ -5,12 +5,14 @@ import { online, postStatus, deviceName, nameKey } from './letters.js';
 import { EASY_NAMES } from './easy.js';
 
 const AREA = { normal: 'えいご', review: 'ふくしゅう', math: 'さんすう', puzzle: 'パズル', easy: 'やさしい' };
+// 親の スマホに 出す ことば（漢字で よい）
 const DOING = {
-  home: '🏰 キャッスルの ホーム', dhome: '🦖 ダイナソーの ホーム', castles: '🏰 おしろを えらんでいる', castle: '🏰 おしろを たてている',
-  exchange: '💱 りょうがえじょ', ghosts: '📕 おばけずかん', result: '🎉 けっかを みている', deggs: '🥚 たまごを えらぶ', hatch: '🥚 たまごが かえる',
-  dcare: '🦖 きょうりゅうの おせわ', dshop: '🛒 きょうりゅうの おみせ', dzukan: '📕 きょうりゅう ずかん', letters: '💌 おてがみ', games: 'ゲームを えらんでいる',
-  rest: '☕ きゅうけい ちゅう', limit: '🌙 きょうは おしまい', paused: '🌙 おやすみ ちゅう',
+  home: '🏰 キャッスルクエストのホーム', dhome: '🦖 ダイナソークエストのホーム', castles: '🏰 お城を選んでいる', castle: '🏰 お城を建てている',
+  exchange: '💱 両替所', ghosts: '📕 おばけ図鑑', result: '🎉 結果を見ている', deggs: '🥚 たまごを選んでいる', hatch: '🥚 たまごがかえるところ',
+  dcare: '🦖 恐竜のお世話', dshop: '🛒 恐竜のお店', dzukan: '📕 恐竜図鑑', letters: '💌 お手紙', games: 'ゲームを選んでいる',
+  rest: '☕ 休憩中', limit: '🌙 今日は終了', paused: '🌙 おやすみ中',
 };
+const AREA_JA = { normal: '英語', review: '復習', math: '算数', puzzle: 'パズル', easy: 'やさしいモード' };
 
 export function installWatch(api) {
   const { S, SCREENS, AFTER, BG, go, activeProfile, esc, sayJa, today, playedSec, limitSec, dueIds, BY_ID, TYPE_NAMES, MATH_TYPE_NAMES, PLAY_SCREENS, homeScreen, easyLevelOf } = api;
@@ -38,7 +40,7 @@ export function installWatch(api) {
     const weakWords = Object.entries(p.review || {}).filter(([id, r]) => BY_ID[id] && r.wrong).sort((a, b) => b[1].wrong - a[1].wrong).slice(0, 5)
       .map(([id, r]) => ({ en: BY_ID[id].en, ja: BY_ID[id].ja, pic: BY_ID[id].pic || '', wrong: r.wrong }));
     let streak = 0; for (let i = 0; i < 60; i++) { const d = today(new Date(now - i * DAY)); if (((p.play || {})[d] || 0) >= 60) streak++; else if (i > 0) break; }
-    const quizDoing = S.screen === 'quiz' && S.quiz ? `✏️ ${AREA[S.quiz.mode] || 'もんだい'}の もんだい（${S.quiz.i + 1}もんめ）` : '';
+    const quizDoing = S.screen === 'quiz' && S.quiz ? `✏️ ${AREA_JA[S.quiz.mode] || ''}の問題（${S.quiz.i + 1}問目）` : '';
     return {
       v: 1, at: now, playing: document.visibilityState === 'visible' && PLAY_SCREENS.has(S.screen),
       doing: quizDoing || DOING[S.screen] || '', game: S.game,
