@@ -103,11 +103,16 @@ function toast(msg, ms = 2200) {
 function avatarHTML(p, cls = '') {
   return p.photo ? `<img class="avatar-img ${cls}" src="${p.photo}" alt="">` : `<span class="avatar ${cls}">${p.avatar}</span>`;
 }
+// 🏠：その ゲームの ホームへ（いつも おなじ 場所に。ホームに いる ときだけ ださない）
+const showHome = () => !['home', 'dhome', 'games', 'profiles'].includes(S.screen);
 function header(p, { back = homeScreen() } = {}) {
   const due = dueIds(p).length;
   return `
   <header class="bar">
+    <div class="nav-btns">
     ${S.screen === 'quiz' ? '<button class="back-btn" data-act="quitQuiz" aria-label="もどる"><span>⬅</span> もどる</button>' : `<button class="back-btn" data-act="go" data-to="${back}" aria-label="もどる"><span>⬅</span> もどる</button>`}
+    ${showHome(back) ? (S.screen === 'quiz' ? '<button class="icon-btn home-btn" data-act="quitQuiz" aria-label="ホーム">🏠</button>' : `<button class="icon-btn home-btn" data-act="go" data-to="${homeScreen()}" aria-label="ホーム">🏠</button>`) : ''}
+    </div>
     <div class="who">${avatarHTML(p, 'sm')}<span class="name">${esc(p.name)}</span></div>
     <div class="stats">
       ${due ? `<span class="chip ghost-chip" data-act="go" data-to="ghosts">👻 ${due}</span>` : ''}

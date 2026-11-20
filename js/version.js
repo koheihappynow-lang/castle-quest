@@ -1,2 +1,2 @@
 // 自動で つくる ファイル（tools/release.cjs）
-export const APP_VERSION = 'cq-v76';
+export const APP_VERSION = 'cq-v77';

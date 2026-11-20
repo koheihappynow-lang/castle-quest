@@ -848,3 +848,6 @@ body[data-bg="night"]::before { background-image: url(../bg/night.jpg); }
 .back-btn span { font-size: 1.35rem; line-height: 1; }
 .back-btn:active { transform: translateY(2px); box-shadow: var(--shadow), 0 1px 0 #c9d3e6; }
 @media (max-width: 480px) { .back-btn { height: 44px; padding: 0 12px 0 10px; font-size: .95rem; } }
+
+/* ⬅ もどる ＋ 🏠 ホーム */
+.nav-btns { display: flex; align-items: center; gap: 8px; flex: none; }
