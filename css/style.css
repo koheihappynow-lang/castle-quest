@@ -834,3 +834,7 @@ body[data-bg="night"]::before { background-image: url(../bg/night.jpg); }
 .sh-yen { margin: 0 auto 18px; background: rgba(255, 255, 255, .92); border-radius: 20px; padding: 6px 18px; display: inline-flex; }
 .sh-big.lit.spin { animation: shSpin 2s ease-in-out .5s; }
 @keyframes shSpin { 0% { transform: rotate(0) scale(1); } 40% { transform: rotate(200deg) scale(1.2) translateY(-10%); } 100% { transform: rotate(360deg) scale(1); } }
+/* かげ あて：絵（PNG）の 大きさ */
+.sh-big .sh-img { width: min(30vh, 200px); height: min(30vh, 200px); }
+.sh-opt .sh-img { width: 72%; height: 72%; }
+.sh-found .sh-img { width: 3.4rem; height: 3.4rem; }
