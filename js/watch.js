@@ -4,7 +4,7 @@
 import { online, postStatus, deviceName, nameKey } from './letters.js';
 import { EASY_NAMES } from './easy.js';
 
-const AREA = { normal: 'えいご', review: 'ふくしゅう', math: 'さんすう', puzzle: 'パズル', easy: 'やさしい' };
+const AREA = { normal: 'えいご', review: 'ふくしゅう', math: 'さんすう', puzzle: 'パズル', easy: 'やさしい', shadow: 'かげあて' };
 // 親の スマホに 出す ことば（漢字で よい）
 const DOING = {
   home: '🏰 キャッスルクエストのホーム', dhome: '🦖 ダイナソークエストのホーム', castles: '🏰 お城を選んでいる', castle: '🏰 お城を建てている',
@@ -16,7 +16,8 @@ const AREA_JA = { normal: '英語', review: '復習', math: '算数', puzzle: '�
 
 export function installWatch(api) {
   const { S, SCREENS, AFTER, BG, go, activeProfile, esc, sayJa, today, playedSec, limitSec, dueIds, BY_ID, TYPE_NAMES, MATH_TYPE_NAMES, PLAY_SCREENS, homeScreen, easyLevelOf } = api;
-  const typeName = x => x.ty === 'easy' ? '🌈 ' + (EASY_NAMES[String(x.w).slice(8)] || 'やさしい')
+  const typeName = x => x.ty === 'shadow' ? '🌑 かげあて（' + ({ animal: 'どうぶつ', bird: 'とり', bug: 'むし', sea: 'うみ', ride: 'のりもの', dino: 'きょうりゅう', food: 'たべもの', thing: 'もの' }[String(x.w).slice(7)] || '') + '）'
+    : x.ty === 'easy' ? '🌈 ' + (EASY_NAMES[String(x.w).slice(8)] || 'やさしい')
     : String(x.w).startsWith('math:') ? (x.m === 'puzzle' ? '🧩 ' : '🔢 ') + (MATH_TYPE_NAMES[String(x.w).slice(5)] || 'もんだい')
     : '🔤 ' + (TYPE_NAMES[x.ty] || 'えいご');
 

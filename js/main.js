@@ -238,9 +238,6 @@ const SCREENS = {
         ${easyLevelOf(p) ? `<button class="big-btn easy" data-act="startQuiz" data-mode="easy">
           <span class="bi">🌈</span><span class="bt">かんがえて あそぼう</span><span class="bs">みて・きいて・タッチ</span>
         </button>` : ''}
-        ${easyLevelOf(p) ? `<button class="big-btn shadow-btn" data-act="shadowStart">
-          <span class="bi">🌑</span><span class="bt">かげ あて</span><span class="bs">だれの かげかな？</span>
-        </button>` : ''}
         <button class="big-btn quiz" data-act="startQuiz" data-mode="normal">
           <span class="bi"><img class="bi-img" src="icons/ui/icon-english.png" alt=""></span><span class="bt">えいごに ちょうせん</span><span class="bs">${LEVEL_NAMES[p.level]}・${SESSION_LEN}もん・1もん ${fmt(YEN_PER_LEVEL[p.level])}えん</span>
         </button>
@@ -249,6 +246,9 @@ const SCREENS = {
         </button>
         <button class="big-btn puzzle ${puzzleOpen() ? '' : 'wip'}" data-act="puzzleTry">
           <span class="bi"><img class="bi-img" src="icons/ui/icon-puzzle.png" alt=""></span><span class="bt">ひらめき パズル</span><span class="bs">${puzzleOpen() ? 'かんがえる ちから・10もん' : '🚧 さくせいちゅう'}</span>
+        </button>
+        <button class="big-btn shadow-btn ${easyLevelOf(p) ? 'wide' : ''}" data-act="shadowStart">
+          <span class="bi">🌑</span><span class="bt">かげ あて</span><span class="bs">だれの かげかな？</span>
         </button>
         <button class="big-btn review ${due ? 'alert' : ''}" data-act="startQuiz" data-mode="review">
           <span class="bi"><img class="bi-img" src="icons/ui/icon-review.png" alt=""></span><span class="bt">きょうの ふくしゅう</span>
@@ -1266,7 +1266,7 @@ installDino({
 const LETTERS = installLetters({ S, SCREENS, ACTIONS, AFTER, BG, LEAVE, go, render, activeProfile, esc, toast, sfx, header, squarePhoto });
 // みまもり（おうちのひとの スマホへ ようすを おくる・おやすみ）
 // 🌑 かげ あて（やさしい モードの こ）
-installShadow({ S, SCREENS, ACTIONS, AFTER, BG, LEAVE, go, render, activeProfile, sayJa, sfx, header, homeScreen, easyLevelOf, save });
+installShadow({ S, SCREENS, ACTIONS, AFTER, BG, LEAVE, go, render, activeProfile, sayJa, sfx, header, homeScreen, easyLevelOf, save, wallet, fmt, today });
 const WATCH = installWatch({ S, SCREENS, AFTER, BG, go, activeProfile, esc, sayJa, today, playedSec, limitSec, dueIds, BY_ID, TYPE_NAMES, MATH_TYPE_NAMES, PLAY_SCREENS, homeScreen, easyLevelOf });
 Object.assign(ACTIONS, LETTERS.actions);
 

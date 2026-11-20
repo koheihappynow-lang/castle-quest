@@ -421,7 +421,7 @@ async function renderWatch(main) {
     const now = ctl ? `<span class="w-now off">🌙 おやすみ中（〜${hm(ctl.until)}）</span>` : playing ? '<span class="w-now on">🟢 今遊んでいます</span>' : `<span class="w-now">最終：${ago(top.ts)}</span>`;
     const maxSec = Math.max(1800, ...(r.days || []).map(d => d.sec));
     const week = (r.days || []).map(d => { const dt = new Date(d.d + 'T00:00'); return `<div class="w-day ${d.d === td ? 'today' : ''}" title="${d.n}問"><i style="height:${Math.round(d.sec / maxSec * 80)}%"></i><span>${Math.round(d.sec / 60)}</span><span>${DOW[dt.getDay()]}</span></div>`; }).join('');
-    const AREA_JA = { えいご: '英語', さんすう: '算数', パズル: 'パズル', やさしい: 'やさしいモード', ふくしゅう: '復習' };
+    const AREA_JA = { えいご: '英語', さんすう: '算数', パズル: 'パズル', やさしい: 'やさしいモード', ふくしゅう: '復習', かげあて: 'かげあて' };
     const areas = Object.entries(r.areas || {}).sort((a, b) => b[1].n - a[1].n).map(([k, v]) => { const p = pctOf(v.ok, v.n); return `<div class="w-area"><span>${esc(AREA_JA[k] || k)}</span><div class="w-bar ${p < 60 ? 'low' : p < 80 ? 'mid' : ''}"><i style="width:${p}%"></i></div><small>${p}%・${v.n}問</small></div>`; }).join('');
     const li = (arr, f) => arr && arr.length ? `<ul class="w-list">${arr.map(f).join('')}</ul>` : '<p class="hint">まだデータが少ないです</p>';
     const tipList = tips(r, todayMin);

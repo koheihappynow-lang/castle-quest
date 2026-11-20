@@ -62,9 +62,6 @@ export function installDino(api) {
         ${easyLevelOf(p) ? `<button class="big-btn easy" data-act="startQuiz" data-mode="easy">
           <span class="bi">🌈</span><span class="bt">かんがえて あそぼう</span><span class="bs">みて・きいて・タッチ</span>
         </button>` : ''}
-        ${easyLevelOf(p) ? `<button class="big-btn shadow-btn" data-act="shadowStart">
-          <span class="bi">🌑</span><span class="bt">かげ あて</span><span class="bs">だれの かげかな？</span>
-        </button>` : ''}
         <button class="big-btn quiz" data-act="startQuiz" data-mode="normal">
           <span class="bi"><img class="bi-img" src="icons/ui/icon-english.png" alt=""></span><span class="bt">えいごに ちょうせん</span><span class="bs">ことばで おかねを ためよう</span>
         </button>
@@ -73,6 +70,9 @@ export function installDino(api) {
         </button>
         <button class="big-btn puzzle ${puzzleOpen() ? '' : 'wip'}" data-act="puzzleTry">
           <span class="bi"><img class="bi-img" src="icons/ui/icon-puzzle.png" alt=""></span><span class="bt">ひらめき パズル</span><span class="bs">${puzzleOpen() ? 'かんがえて おかねを ためよう' : '🚧 さくせいちゅう'}</span>
+        </button>
+        <button class="big-btn shadow-btn ${easyLevelOf(p) ? 'wide' : ''}" data-act="shadowStart">
+          <span class="bi">🌑</span><span class="bt">かげ あて</span><span class="bs">だれの かげかな？</span>
         </button>
         <button class="big-btn review ${due ? 'alert' : ''}" data-act="startQuiz" data-mode="review">
           <span class="bi"><img class="bi-img" src="icons/ui/icon-review.png" alt=""></span><span class="bt">きょうの ふくしゅう</span><span class="bs">${due ? `おばけが ${due}ひき まってるよ！ おかね 2ばい` : 'いまは おばけ いないよ'}</span>

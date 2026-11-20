@@ -786,7 +786,8 @@ body[data-bg="night"]::before { background-image: url(../bg/night.jpg); }
 .egg-card.notyet:disabled { opacity: 1; }
 
 /* 🌑 かげ あて */
-.big-btn.shadow-btn { grid-column: 1 / -1; background: linear-gradient(135deg, #3a3f6b, #6a5acd 55%, #f5c86a); color: #fff; }
+.big-btn.shadow-btn.wide { grid-column: 1 / -1; }
+.big-btn.shadow-btn { background: linear-gradient(135deg, #3a3f6b, #6a5acd 55%, #f5c86a); color: #fff; }
 .big-btn.shadow-btn .bi { font-size: 3rem; }
 .sh-page { display: flex; flex-direction: column; align-items: center; gap: 14px; }
 .sh-dots { display: flex; gap: 8px; margin-top: 6px; }
@@ -821,3 +822,15 @@ body[data-bg="night"]::before { background-image: url(../bg/night.jpg); }
 .sh-found span { display: inline-block; animation: shPop .5s ease-out backwards; }
 @keyframes shPop { from { transform: scale(0); } 70% { transform: scale(1.25); } }
 @media (prefers-reduced-motion: reduce) { .sh-big.lit { animation: none !important; } }
+
+/* かげ あて：むずかしさ・なまえ・絵 */
+.sh-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.sh-lv { background: rgba(255, 255, 255, .9); border-radius: 999px; padding: 4px 12px; font-weight: 800; font-size: .9rem; color: #4a3a8a; }
+.sh-big { transition: filter .7s ease, transform .6s ease; }
+.sh-big.flip { transform: scaleX(-1); }
+.sh-big.part { transform: scale(1.8) translate(var(--px, 0%), var(--py, 0%)); }
+.sh-name { position: absolute; left: 0; right: 0; top: 10px; text-align: center; font-weight: 900; font-size: 1.6rem; color: #4a2b10; text-shadow: 0 2px 0 #fff; pointer-events: none; }
+.sh-img { width: 1em; height: 1em; object-fit: contain; display: inline-block; vertical-align: middle; }
+.sh-yen { margin: 0 auto 18px; background: rgba(255, 255, 255, .92); border-radius: 20px; padding: 6px 18px; display: inline-flex; }
+.sh-big.lit.spin { animation: shSpin 2s ease-in-out .5s; }
+@keyframes shSpin { 0% { transform: rotate(0) scale(1); } 40% { transform: rotate(200deg) scale(1.2) translateY(-10%); } 100% { transform: rotate(360deg) scale(1); } }
