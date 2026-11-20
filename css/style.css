@@ -842,3 +842,9 @@ body[data-bg="night"]::before { background-image: url(../bg/night.jpg); }
 /* 恐竜の 説明・きりかえ：あたらしい 絵 */
 .dino-thumb-art { aspect-ratio: 4 / 3; object-fit: cover; border-radius: 18px; background: #fff; }
 .d-sw-img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; vertical-align: middle; margin-right: 6px; }
+
+/* ⬅ もどる（どの 画面も おなじ 形・おなじ 場所） */
+.back-btn { display: inline-flex; align-items: center; gap: 6px; height: 48px; padding: 0 16px 0 12px; border: 0; border-radius: 999px; background: #fff; color: #2b3a55; font: inherit; font-size: 1.05rem; font-weight: 900; box-shadow: var(--shadow), 0 3px 0 #c9d3e6; cursor: pointer; white-space: nowrap; flex: none; }
+.back-btn span { font-size: 1.35rem; line-height: 1; }
+.back-btn:active { transform: translateY(2px); box-shadow: var(--shadow), 0 1px 0 #c9d3e6; }
+@media (max-width: 480px) { .back-btn { height: 44px; padding: 0 12px 0 10px; font-size: .95rem; } }

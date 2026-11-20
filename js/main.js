@@ -107,7 +107,7 @@ function header(p, { back = homeScreen() } = {}) {
   const due = dueIds(p).length;
   return `
   <header class="bar">
-    <button class="icon-btn" data-act="go" data-to="${back}" aria-label="もどる">🏠</button>
+    ${S.screen === 'quiz' ? '<button class="back-btn" data-act="quitQuiz" aria-label="もどる"><span>⬅</span> もどる</button>' : `<button class="back-btn" data-act="go" data-to="${back}" aria-label="もどる"><span>⬅</span> もどる</button>`}
     <div class="who">${avatarHTML(p, 'sm')}<span class="name">${esc(p.name)}</span></div>
     <div class="stats">
       ${due ? `<span class="chip ghost-chip" data-act="go" data-to="ghosts">👻 ${due}</span>` : ''}
@@ -172,7 +172,7 @@ const SCREENS = {
     return `
     <div class="games">
       <header class="games-head">
-        <button class="icon-btn" data-act="go" data-to="profiles" aria-label="もどる">⬅️</button>
+        <button class="back-btn" data-act="go" data-to="profiles" aria-label="もどる"><span>⬅</span> もどる</button>
         <div class="who">${avatarHTML(p, 'sm')}<span class="name">${esc(p.name)}</span></div>
       </header>
       <h2 class="games-title">どの ゲームで あそぶ？</h2>
@@ -1066,7 +1066,7 @@ function parentScreen() {
       </div>`;
   }
   return `
-  <header class="bar parent-bar"><button class="icon-btn" data-act="go" data-to="profiles">✕</button><div class="who"><b>おうちのひと メニュー</b></div><div></div></header>
+  <header class="bar parent-bar"><button class="back-btn" data-act="go" data-to="profiles" aria-label="もどる"><span>⬅</span> もどる</button><div class="who"><b>おうちのひと メニュー</b></div><div></div></header>
   <div class="page">
     <div class="card row between wrap" style="padding:10px 14px"><span>🧩 ゲームの 版：<b>${APP_VERSION}</b></span><button class="btn sm" data-act="forceUpdate">🔄 さいしんに する</button></div>
     <div class="tabs">${tabs.map(([k, l]) => `<button class="tab ${tab === k ? 'on' : ''}" data-act="ptab" data-v="${k}">${l}</button>`).join('')}</div>
