@@ -139,7 +139,7 @@ export function installDino(api) {
     ${header(p)}
     <div class="castle-page dino-page">
       <div id="dstage" class="stage"><div class="stage-loading">🦖 じゅんびちゅう…</div></div>
-      ${d.order.length > 1 ? `<div class="d-switch">${d.order.map(id => `<button class="pill ${id === d.active ? 'on' : ''}" data-act="switchDino" data-id="${id}">${ICON[id]} ${DINO_BY_ID[id].name}</button>`).join('')}</div>` : ''}
+      ${d.order.length > 1 ? `<div class="d-switch">${d.order.map(id => `<button class="pill ${id === d.active ? 'on' : ''}" data-act="switchDino" data-id="${id}"><img class="d-sw-img" src="cards/dino-thumb-${id}.jpg" alt="">${DINO_BY_ID[id].name}</button>`).join('')}</div>` : ''}
       <div class="d-hab">${HAB_LIST.map(([k, i, n]) => `<button class="pill ${habitatOf(mine(p), d.active) === k ? 'on' : ''}" data-act="habitat" data-v="${k}" aria-label="${n}">${i}</button>`).join('')}</div>
       <div class="d-bubble" id="dbubble" hidden></div>
       <div class="castle-panel d-panel" id="dpanel">${panelHTML(p)}</div>
@@ -150,7 +150,7 @@ export function installDino(api) {
     const foods = [info.food, 'feast'];
     const ownedAcc = ACCESSORIES.filter(a => d.accessories.includes(a.id));
     return `
-      <div class="cp-title">${info.flag} <b>${info.name}</b> <small>${info.en}</small> <span class="d-stage">${st.name}</span></div>
+      <div class="cp-title"><b>${info.name}</b> <small>${info.en}</small> <span class="d-stage">${st.name}</span></div>
       ${growBar(m.growth)}
       <div class="bb-count">🌱 そだち ${Math.round(m.growth)} / ${MAX_GROWTH}　${hungry(m) ? '🍖 おなか ぺこぺこ' : m.fedToday >= 3 ? '😋 まんぷく！' : '😊 げんき'}</div>
       <div class="d-row">
@@ -254,8 +254,8 @@ export function installDino(api) {
     m.innerHTML = `
       <div class="modal-card">
         ${first ? '<div class="stars">🎉 おとなに なった！ ずかんカードを ゲット！ 🎉</div>' : ''}
-        ${art ? `<img class="card-art dino-card-art ${first ? 'reveal' : ''}" src="${art}" alt="">` : `<div class="egg-icon big">${ICON[id]}</div>`}
-        <h2>${x.flag} ${x.name}</h2>
+        <img class="card-art dino-card-art dino-thumb-art ${first ? 'reveal' : ''}" src="cards/dino-thumb-${id}.jpg" alt="" onerror="${art ? `this.onerror=null;this.src='${art}'` : 'this.remove()'}">
+        <h2>${x.name}</h2>
         <p class="d-facts">📏 ${size}　⏳ ${era}　🍽️ ${FOODS[x.food].name}</p>
         <p class="desc">${esc(x.desc)}</p>
         <p class="line">🔤 <b>${esc(x.line)}</b> <button class="icon-btn sm" data-act="sayLine">🔊</button></p>

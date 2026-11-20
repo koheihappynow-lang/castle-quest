@@ -838,3 +838,7 @@ body[data-bg="night"]::before { background-image: url(../bg/night.jpg); }
 .sh-big .sh-img { width: min(30vh, 200px); height: min(30vh, 200px); }
 .sh-opt .sh-img { width: 72%; height: 72%; }
 .sh-found .sh-img { width: 3.4rem; height: 3.4rem; }
+
+/* 恐竜の 説明・きりかえ：あたらしい 絵 */
+.dino-thumb-art { aspect-ratio: 4 / 3; object-fit: cover; border-radius: 18px; background: #fff; }
+.d-sw-img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; vertical-align: middle; margin-right: 6px; }
