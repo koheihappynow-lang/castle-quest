@@ -14,6 +14,8 @@ const LV = {
   4: { opts: 4, same: true, rounds: 8, yen: 600, part: true, name: 'ちょうむずかしい' },
 };
 const RETRY_YEN = 100;
+// 絵が 40しゅるい いじょう あれば、絵の ある ものだけで あそぶ（絵文字と まぜない）
+const POOL = () => (SHADOW_IMAGES.size >= 40 ? SHADOW_ITEMS.filter(x => SHADOW_IMAGES.has(x.id)) : SHADOW_ITEMS);
 const pic = (x, cls = '') => SHADOW_IMAGES.has(x.id) ? `<img class="sh-img ${cls}" src="cards/shadow/${x.id}.png" alt="">` : `<span class="${cls}">${x.e}</span>`;
 
 export function installShadow(api) {
@@ -23,17 +25,17 @@ export function installShadow(api) {
   // むずかしさ：やさしい モードの こは そのまま、ほかは ねんれいで（5さい＝2、6さい＝3、7さい いじょう＝4）
   const levelOf = p => { const e = easyLevelOf(p); if (e) return e; const a = p.age || 6; return a <= 4 ? 1 : a === 5 ? 2 : a === 6 ? 3 : 4; };
   function makeRound(L, used) {
-    const pool = SHADOW_ITEMS.filter(x => !used.has(x.id));
+    const ALL = POOL(), pool = ALL.filter(x => !used.has(x.id));
     const ans = pool[R(0, pool.length - 1)];
     const n = L.opts;
     let wrongs;
     if (L.same) {
       // おなじ なかま（にている）から。たりない ときは ほかから
-      wrongs = [...shuffle(SHADOW_ITEMS.filter(x => x.id !== ans.id && x.cat === ans.cat)), ...shuffle(SHADOW_ITEMS.filter(x => x.cat !== ans.cat))].slice(0, n - 1);
+      wrongs = [...shuffle(ALL.filter(x => x.id !== ans.id && x.cat === ans.cat)), ...shuffle(ALL.filter(x => x.cat !== ans.cat))].slice(0, n - 1);
     } else {
       // ちがう なかまから 1つずつ（かたちが ぜんぜん ちがう）
-      const cats = shuffle([...new Set(SHADOW_ITEMS.map(x => x.cat))].filter(c => c !== ans.cat));
-      wrongs = cats.slice(0, n - 1).map(c => shuffle(SHADOW_ITEMS.filter(x => x.cat === c))[0]);
+      const cats = shuffle([...new Set(ALL.map(x => x.cat))].filter(c => c !== ans.cat));
+      wrongs = cats.slice(0, n - 1).map(c => shuffle(ALL.filter(x => x.cat === c))[0]);
     }
     // 一部だけ みせる ときの ずらし
     const part = L.part ? { x: R(-16, 16) || 12, y: R(-14, 14) } : null;
