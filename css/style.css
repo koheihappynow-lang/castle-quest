@@ -851,3 +851,12 @@ body[data-bg="night"]::before { background-image: url(../bg/night.jpg); }
 
 /* ⬅ もどる ＋ 🏠 ホーム */
 .nav-btns { display: flex; align-items: center; gap: 8px; flex: none; }
+/* 🌈 やさしい モード：絵（かげ あて と おなじ 絵）・かたち */
+.ez-img { width: 1em; height: 1em; object-fit: contain; vertical-align: middle; display: inline-block; -webkit-user-drag: none; }
+.ez-show .ez-one { width: 1.9em; height: 1.9em; }
+.ez-many { max-width: 12em; }
+.ez-many .ez-small { width: 1.05em; height: 1.05em; margin: 0 .04em; }
+.ez-row { display: inline-flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: .08em; }
+.ez-row .ez-small { width: .95em; height: .95em; }
+.ez-opt .ez-img { width: 1.55em; height: 1.55em; }
+.ez-shape { width: 1.4em; height: 1.4em; display: block; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .18)); }
