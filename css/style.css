@@ -526,6 +526,8 @@ body[data-bg="dino"]::before { background-image: linear-gradient(rgba(255, 255, 
 
 .game-card.rally { background: linear-gradient(180deg, #e6f2ff, #b9d8ff); animation-delay: .24s; }
 .game-card.rally .gc-name { color: #1d3f7a; }
+.game-card.toride { background: linear-gradient(180deg, #ffeceb, #f3bdb4); animation-delay: .36s; }
+.game-card.toride .gc-name { color: #7a1f14; }
 .rally-art { display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 75%, #ffd36a, #ff8a3a 45%, #3a6fd8 75%, #1d3f7a); }
 .rally-art span { font-size: clamp(4rem, 12vw, 7rem); filter: drop-shadow(0 6px 8px rgba(0,0,0,.35)); animation: logoFloat 3s ease-in-out infinite; }
 
@@ -663,8 +665,9 @@ body[data-bg="hub"] .big-btn.math { min-height: 150px; }
 /* ことばの とちゅうで 改行しない（文は ことばの あいだに スペースが あるので、そこで おりかえす） */
 body { word-break: keep-all; overflow-wrap: anywhere; line-break: strict; }
 .talk-card .tb-s, .talk-card .tb-off, .gc-sub { text-wrap: balance; }
-/* iPad を たてに しても 3つの ゲームを よこに ならべる */
-@media (min-width: 640px) { .game-cards { grid-template-columns: repeat(3, 1fr); gap: 16px; } .game-card .gc-name { font-size: clamp(1.15rem, 2.6vw, 1.9rem); } .game-card .gc-sub { font-size: clamp(.75rem, 1.6vw, 1rem); } }
+/* ゲームは 4つ：iPad を たてに すると 2れつ×2だん、よこに すると 4つ ならぶ */
+@media (min-width: 640px) { .game-cards { grid-template-columns: repeat(2, 1fr); gap: 16px; } .game-card .gc-name { font-size: clamp(1.15rem, 2.6vw, 1.9rem); } .game-card .gc-sub { font-size: clamp(.75rem, 1.6vw, 1rem); } }
+@media (min-width: 900px) { .game-cards { grid-template-columns: repeat(4, 1fr); max-width: 1120px; } .game-card .gc-name { font-size: clamp(1.05rem, 2vw, 1.6rem); } .game-card .gc-sub { font-size: clamp(.72rem, 1.3vw, .95rem); } .game-card .gc-badge { font-size: .85rem; padding: 5px 10px; } }
 
 /* 🧩 ひらめき パズル */
 .big-btn.puzzle { background: linear-gradient(135deg, #b38cff, #7b5cff); }

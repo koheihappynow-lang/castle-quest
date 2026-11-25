@@ -200,6 +200,12 @@ const SCREENS = {
           <span class="gc-sub">コインを あつめて くるまを ふやそう</span>
           <span class="gc-badge">🏁 コース 10・くるま 15</span>
         </button>
+        <button class="game-card toride" data-act="playGame" data-g="toride">
+          <span class="gc-art" style="background-image:url(cards/toride-tsuruga.jpg)"></span>
+          <span class="gc-name">あかつきの とりで</span>
+          <span class="gc-sub">あいづの さむらいで おしろを まもろう</span>
+          <span class="gc-badge">⚔️ くに 14・れきし まめちしき</span>
+        </button>
       </div>
     </div>`;
   },
@@ -1168,6 +1174,7 @@ const ACTIONS = {
     sfx.tap();
     const p = activeProfile();
     if (d.g === 'rally') { window.__leaving = true; location.assign('rally.html'); return; }
+    if (d.g === 'toride') { window.__leaving = true; location.assign('toride.html'); return; }
     S.game = d.g;
     if (d.g === 'castle') { go('home'); sayJa(`${p.name}、一緒にがんばろう！`); }
     else { go(p.dino.order.length ? 'dhome' : 'deggs'); sayJa(p.dino.order.length ? `${p.name}、恐竜が待ってるよ！` : 'たまごを選んでね！'); }

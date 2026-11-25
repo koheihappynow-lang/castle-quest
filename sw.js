@@ -6,21 +6,22 @@
 try { importScripts('./asset-hashes.js'); } catch (e) {}
 const HASH = self.ASSET_HASH || {};
 const SCOPE = new URL('./', self.location).pathname;
-const VERSION = 'cq-v80';
+const VERSION = 'cq-v81';
 const ASSETS = 'cq-assets-v2';
 const BG_FILES = ['top', 'dino-study', 'dino-result', 'dino-exchange', 'dino-home', 'dino-nest', 'dino-shop', 'dino-zukan', 'santa', 'papa', 'rest', 'night', 'endogame-adventure', 'hero', 'title', 'hub', 'study', 'select', 'build-day', 'build-sunset', 'build-night', 'exchange', 'ghosts', 'workshop', 'habitat-jungle', 'habitat-volcano', 'habitat-coast']
   .map(n => `./bg/${n}.jpg`);
 const CASTLE_FILES = ['himeji', 'neuschwanstein', 'windsor', 'montsaintmichel', 'edinburgh', 'alhambra', 'chambord', 'hearst', 'forbiddencity', 'pena', 'tsuruga']
   .map(id => `./js/diorama/castles/${id}.js`);
 const CODE = [
-  './', './index.html', './rally.html', './manifest.webmanifest', './css/style.css',
+  './', './index.html', './rally.html', './toride.html', './manifest.webmanifest', './css/style.css',
   './js/main.js', './js/store.js', './js/words.js', './js/quiz.js', './js/review.js',
   './js/speech.js', './js/sfx.js', './js/castles.js', './js/photos.js', './js/sentences.js', './js/math.js', './js/puzzle.js', './js/easy.js', './js/watch.js', './js/shadow.js', './js/shadowItems.js', './js/letters.js', './js/drawpad.js', './js/lettersGame.js', './papa.html', './papa.webmanifest', './js/papa.js', './js/diorama/engine.js', ...CASTLE_FILES,
   './asset-hashes.js', './js/version.js', './js/dinoGame.js', './js/dinos.js', './js/dino/view.js', './js/dino/trex.js', './js/dino/dinoBase.js', './js/dino/look.js', './js/dino/rig.js',
 ];
 const RALLY = ['chibi', 'taxi', 'truck', 'police', 'ambulance', 'bus', 'fire', 'sports', 'monster', 'camper', 'racer', 'rocket', 'limo', 'rainbow', 'star'].map(id => `./cards/rally-${id}.jpg`);
+const TORIDE = ['tsuruga.jpg', 'map2.jpg', 'map3.jpg', 'map4.jpg', 'map5.jpg', 'map6.jpg', 'hero.png', 'foe.png', 'boss.png', 'yagura.png', 'ozutsu.png'].map(f => `./cards/toride-${f}`);
 const IMAGES = [
-  './cards/himeji.jpg', './cards/dino-trex.jpg', './cards/dino-trex-baby.jpg', './cards/dino-care.jpg', './cards/santa.jpg', './cards/santa-card.jpg', './cards/rally-card.jpg', ...RALLY,
+  './cards/himeji.jpg', './cards/dino-trex.jpg', './cards/dino-trex-baby.jpg', './cards/dino-care.jpg', './cards/santa.jpg', './cards/santa-card.jpg', './cards/rally-card.jpg', ...RALLY, ...TORIDE,
   ...['english', 'math', 'puzzle', 'review', 'castle', 'exchange', 'ghostbook', 'dinobook', 'shop', 'care', 'egg'].map(n => `./icons/ui/icon-${n}.png`), './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', ...BG_FILES,
 ];
 const CDN = [
