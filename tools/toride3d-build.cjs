@@ -23,6 +23,9 @@ rep('fit();showCard();loadArt();requestAnimationFrame(loop);', '');
 // 指で 動かす 向きを、カメラの 向きに 合わせる
 rep('if(k[0]||k[1]){ix=k[0];iy=k[1]}', 'if(k[0]||k[1]){ix=k[0];iy=k[1]}{const r=camRot(ix,iy);ix=r[0];iy=r[1]}');
 rep('scaled(s.foe,64)', 'scaled(s.foe,112)');
+// 3D版だけ：敵が 3つの 道すじから えらぶ
+rep('const c=cellOf(e.x,e.y);dx=fdx[c];dy=fdy[c];', 'const c=cellOf(e.x,e.y),fq=e.rt&&FLD[e.rt-1];if(fq&&(fq.x[c]||fq.y[c])){dx=fq.x[c];dy=fq.y[c]}else{dx=fdx[c];dy=fdy[c]}');
+rep('const e={x,y,r:T[0],', 'const e={rt:(Math.random()*3)|0,x,y,r:T[0],');
 // 3D版だけの 地図えらび：国が 進むほど 迷路っぽい 地図
 rep('{let i;do{i=(Math.random()*MAPS.length)|0}while(MAPS.length>1&&i===lastMap);lastMap=i;useMap(MAPS[i])}', '{let i;if(window.__force!=null)i=window.__force;else do{i=(Math.random()*MAPS.length)|0}while(MAPS.length>1&&(i===lastMap||!mapOK(MAPS[i],s)));lastMap=i;useMap(MAPS[i])}');
 rep('<canvas id="cv" width="720" height="1280"></canvas>', `<canvas id="gl"></canvas><canvas id="cv"></canvas>

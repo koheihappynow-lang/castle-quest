@@ -16,7 +16,7 @@ const THEMES={
   'map2.jpg':{name:'さくらの 鶴ヶ城',grass:'#5b9138',tint:['70,120,44','110,160,66','84,138,52','150,180,90'],road:'#c2ae82',edge:'#7d7052',sky:0xa9d3f0,sun:0xfff4e0,sunI:2.5,hemi:1.1,exp:.98,trees:{sakura:.6,pine:.3,round:.1},roll:.9},
   'map3.jpg':{name:'みどりの 山道',grass:'#3f7a30',tint:['40,96,36','70,130,52','52,110,40','96,150,70'],road:'#b8a47c',edge:'#6c6048',sky:0x9cc9ea,sun:0xffffff,sunI:2.7,hemi:1,exp:.95,trees:{pine:.55,round:.4,sakura:.05},roll:1.5,rocks:26},
   'map4.jpg':{name:'ゆうぐれの 城下町',grass:'#6a8a3c',tint:['90,120,50','120,150,66','100,130,56','160,170,90'],road:'#c9b08a',edge:'#806a4c',sky:0xf2c89c,sun:0xffc890,sunI:2.9,hemi:.85,exp:1,trees:{sakura:.45,pine:.35,round:.2},roll:.6,houses:54},
-  'map5.jpg':{name:'あさもやの 川中島',grass:'#4f8250',tint:['60,110,70','90,140,90','70,122,78','120,160,110'],road:'#b9b094',edge:'#6f6a58',sky:0xc8dce6,sun:0xf0f4ff,sunI:2.1,hemi:1.25,exp:.98,fog:[120,400],trees:{pine:.6,round:.3,sakura:.1},roll:2.1,water:.05,rocks:30},
+  'map5.jpg':{name:'あさもやの 川中島',grass:'#4f8250',tint:['60,110,70','90,140,90','70,122,78','120,160,110'],road:'#b9b094',edge:'#6f6a58',sky:0xc8dce6,sun:0xf0f4ff,sunI:2.1,hemi:1.25,exp:.98,fog:[120,400],trees:{pine:.6,round:.3,sakura:.1},roll:1.1,rocks:30},
   'map6.jpg':{name:'もみじの 関ヶ原',grass:'#8a8a3a',tint:['120,116,50','150,140,62','132,124,54','176,160,80'],road:'#c4ac80',edge:'#7a6646',sky:0xe6d2a8,sun:0xffe2b0,sunI:2.6,hemi:.95,exp:1,trees:{momiji:.55,pine:.3,round:.15},roll:1.2,rocks:14}};
 let THM=THEMES['map2.jpg'];
 /* ---- 3D だけの 地図：本物の 城のように、まっすぐには 攻めこめない 道 ---- */
@@ -34,43 +34,88 @@ THEMES.masu=Object.assign({},THEMES['map3.jpg'],{name:'ますがたの 城'});TH
   MAPS.push(Object.assign({},base,{id:21,thm:'uzu',lv:2,spd:1.4,rect:[140,220,270,370],c:[180,320],hero:[180,382],bar:[180,356],fl:[180,320,56,60],
     dirs:[{x:180,y:632,ox:0,oy:1},{x:8,y:350,ox:-1,oy:0},{x:352,y:170,ox:1,oy:0},{x:45,y:8,ox:0,oy:-1},{x:352,y:520,ox:1,oy:0}],
     walk:mkWalk([140,220,270,370],[118,242,248,392],[
-      [[180,654],[180,520],[45,520],[45,170],[315,170],[315,320],[238,320]],[[-14,350],[45,350]],[[374,170],[315,170]],[[45,-14],[45,170]],[[374,520],[180,520]]],21,null),
+      [[180,654],[180,520],[45,520],[45,170],[315,170],[315,320],[238,320]],[[180,170],[180,252]],[[45,320],[122,320]],[[-14,350],[45,350]],[[374,170],[315,170]],[[45,-14],[45,170]],[[374,520],[180,520]]],21,null),
     pads:[pad(110,520,110,464,Y,15),pad(45,480,62,582,O,30),pad(180,170,180,114,Y,20),pad(250,170,252,114,O,40),pad(280,320,286,396,Y,25),pad(240,520,240,464,O,45),pad(180,580,124,592,Y,30),pad(150,380,0,0,'yumi',25),pad(210,380,0,0,'jin',30)],
     apost:[[180,386],[270,320],[315,250],[250,170],[120,170],[45,260],[45,440],[120,520]],gpost:[[150,386],[210,386],[124,320],[236,320],[180,254],[230,330]]}));
-  /* つづら折り：山道を 右へ 左へ 2回。北からは 近道が 一本（lv1） */
-  MAPS.push(Object.assign({},base,{id:22,thm:'tsuzura',lv:1,rect:[130,230,90,190],c:[180,140],hero:[180,238],bar:[180,176],fl:[180,140,60,60],ban:300,
-    dirs:[{x:180,y:632,ox:0,oy:1},{x:352,y:300,ox:1,oy:0},{x:8,y:440,ox:-1,oy:0},{x:352,y:580,ox:1,oy:0},{x:180,y:8,ox:0,oy:-1}],
-    walk:mkWalk([130,230,90,190],[106,254,66,214],[
-      [[180,210],[180,300],[300,300],[300,440],[70,440],[70,580],[180,580],[180,654]],[[374,300],[300,300]],[[-14,440],[70,440]],[[374,580],[180,580]],[[180,-14],[180,70]]],21,null),
-    pads:[pad(240,300,240,366,Y,15),pad(180,440,178,384,O,30),pad(120,440,122,502,Y,20),pad(70,510,20,510,O,40),pad(240,580,240,524,Y,25),pad(180,256,120,262,O,45),pad(180,40,236,30,Y,30),pad(150,202,0,0,'yumi',25),pad(210,202,0,0,'jin',30)],
-    apost:[[180,244],[240,300],[300,370],[180,440],[70,510],[120,580],[180,60],[250,440]],gpost:[[150,208],[210,208],[112,140],[248,140],[180,72],[180,270]]}));
+  /* つづら折り：表は 山道を 2回 折れる。裏は 左右から 合流、東は かぎの手（lv1） */
+  MAPS.push(Object.assign({},base,{id:22,thm:'tsuzura',lv:1,rect:[130,230,130,230],c:[180,180],hero:[180,278],bar:[180,216],fl:[180,180,60,60],ban:330,
+    dirs:[{x:180,y:632,ox:0,oy:1},{x:352,y:300,ox:1,oy:0},{x:8,y:440,ox:-1,oy:0},{x:352,y:580,ox:1,oy:0},{x:60,y:8,ox:0,oy:-1},{x:300,y:8,ox:0,oy:-1},{x:352,y:140,ox:1,oy:0}],
+    walk:mkWalk([130,230,130,230],[106,254,106,254],[
+      [[180,250],[180,300],[300,300],[300,440],[70,440],[70,580],[180,580],[180,654]],[[374,300],[300,300]],[[-14,440],[70,440]],[[374,580],[180,580]],
+      [[180,110],[180,50]],[[60,-14],[60,50],[300,50],[300,-14]],[[374,140],[320,140],[320,200],[250,200]]],21,null),
+    pads:[pad(240,300,240,366,Y,15),pad(180,440,178,384,O,30),pad(120,440,122,502,Y,20),pad(70,510,20,510,O,40),pad(240,580,240,524,Y,25),pad(120,50,60,142,O,45),pad(290,200,292,250,Y,30),pad(150,242,0,0,'yumi',25),pad(210,242,0,0,'jin',30)],
+    apost:[[180,284],[240,300],[300,370],[180,440],[70,510],[180,60],[300,200],[120,580]],gpost:[[150,248],[210,248],[112,180],[248,180],[180,112],[180,292]]}));
   for(const a of[[20,23],[21,24],[22,25]])MAPS.push(mirrorMap(MAPS.find(m=>m.id===a[0]),a[1]))}
 /* 国が 進むほど、むずかしい 道の 地図が 出る */
 function mapOK(m,s){const l=m.lv||0;if(s<=3)return l===0;if(l===2&&s<6)return false;if(s>=8&&l===0)return Math.random()<.25;return true}
 /* 土地の 高さ：城が いちばん 高い 丘の 上。道は 城へ のぼっていく */
-const HC3=11.5,RD3=205,LV=[[36,1],[82,.68],[128,.38]];
+let HC3=11.5,RD3=205,LV=[[36,1]],KD=null,SEC=[];
+const KINDS={
+  hirayama:{label:'平山城',HC:11.5,RD:205,LV:[[36,1]],lobes:[66,122,.5,.82],keep:{n:5,roof:'roofRed',wall:'plaster'},houses:30,halls:10},
+  yama:{label:'山城',HC:19,RD:185,LV:[[30,1]],lobes:[56,106,.6,.9],keep:{n:3,roof:'roof',wall:'darkWood'},houses:8,halls:4,rocks:44,trees:240},
+  hira:{label:'平城',HC:3.4,RD:230,LV:[[46,1]],moat:[46,86],water:-.8,keep:{n:5,roof:'roof',wall:'plaster'},houses:80,halls:12},
+  kawa:{label:'川の城',HC:8,RD:205,LV:[[36,1]],lobes:[64,108,.5,.78],river:{dy:150,w:30},water:-.8,keep:{n:4,roof:'roofRed',wall:'plaster'},houses:36,halls:8}};
+const KOF={'map2.jpg':['hira','roofRed'],'map3.jpg':['yama'],'map4.jpg':['hirayama'],'map5.jpg':['kawa'],'map6.jpg':['hirayama','roof'],masu:['hira'],uzu:['yama'],tsuzura:['yama','roofRed']};
+KINDS.yama.ring=82;
+for(const m of MAPS){if(m.thm==='uzu')continue;const kd=KINDS[(KOF[m.thm||m.img]||['hirayama'])[0]],RR=kd.ring||106,w0=m.walk,r=m.rect,ex=m.pads.filter(p=>p.sx).map(p=>[p.sx,p.sy]);
+  m.walk=(x,y)=>{if(w0(x,y))return true;if(x<10||y<10||x>W-10||y>HT-10)return false;const qx=x<r[0]?r[0]:x>r[1]?r[1]:x,qy=y<r[2]?r[2]:y>r[3]?r[3]:y;if(Math.abs(Math.hypot(x-qx,y-qy)-RR)>16)return false;
+    for(const p of ex)if(Math.hypot(p[0]-x,p[1]-y)<44)return false;return true}}
+/* 敵の 道えらび：最短の 道の ほかに、遠回りの 道すじを 2つ 用意する。敵は 3つの うち どれかを たどる */
+let FLD=[];
+function mkFields(){FLD=[];const N=GW*GH;for(let k=0;k<2;k++){const D=new Float32Array(N).fill(1e9),cost=new Uint8Array(N),B=[];
+    for(let c=0;c<N;c++){const x=(c%GW)*CS,y=((c/GW)|0)*CS;cost[c]=Math.sin(x*.033+k*2.3+1)*Math.cos(y*.027+k*1.7+.5)>(k?-.1:.1)?5:1}
+    const push=(c,d)=>{const b=d|0;(B[b]||(B[b]=[])).push(c)};for(let c=0;c<N;c++)if(!blocked[c]&&dist[c]===0){D[c]=0;push(c,0)}
+    for(let b=0;b<B.length;b++){const L=B[b];if(!L)continue;for(let i=0;i<L.length;i++){const c=L[i];if(D[c]<b)continue;const cx=c%GW,cy=(c-cx)/GW;
+        for(const d of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=cx+d[0],ny=cy+d[1];if(nx<0||ny<0||nx>=GW||ny>=GH)continue;const n=ny*GW+nx;if(blocked[n])continue;const nd=D[c]+cost[n];if(nd<D[n]){D[n]=nd;push(n,nd)}}}}
+    const fx=new Float32Array(N),fy=new Float32Array(N);
+    for(let cy=0;cy<GH;cy++)for(let cx=0;cx<GW;cx++){const c=cy*GW+cx;if(blocked[c])continue;let best=D[c],bx=0,by=0;
+      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const nx=cx+dx,ny=cy+dy;if(nx<0||ny<0||nx>=GW||ny>=GH)continue;const n=ny*GW+nx;if(blocked[n])continue;if(dx&&dy&&(blocked[cy*GW+nx]||blocked[ny*GW+cx]))continue;const v=D[n]+(dx&&dy?.4:0);if(v<best){best=v;bx=dx;by=dy}}
+      const l=Math.hypot(bx,by)||1;fx[c]=bx/l;fy[c]=by/l}
+    FLD.push({x:fx,y:fy})}}
 const rdist=new Int16Array(GW*GH);
 function mkRd(){rdist.fill(-1);const q=[];for(let i=0;i<blocked.length;i++)if(!blocked[i]){rdist[i]=0;q.push(i)}
   for(let h=0;h<q.length;h++){const c=q[h],cx=c%GW,cy=(c-cx)/GW;for(const d of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=cx+d[0],ny=cy+d[1];if(nx<0||ny<0||nx>=GW||ny>=GH)continue;const n=ny*GW+nx;if(rdist[n]>=0)continue;rdist[n]=rdist[c]+1;q.push(n)}}}
 function rdAt(x,y){const fx=x/CS-.5,fy=y/CS-.5;if(fx<0||fy<0||fx>GW-1||fy>GH-1)return 0;const x0=fx|0,y0=fy|0,x1=Math.min(GW-1,x0+1),y1=Math.min(GH-1,y0+1),ax=fx-x0,ay=fy-y0;
   return(rdist[y0*GW+x0]*(1-ax)+rdist[y0*GW+x1]*ax)*(1-ay)+(rdist[y1*GW+x0]*(1-ax)+rdist[y1*GW+x1]*ax)*ay}
 function cdist(x,y){const qx=x<CX0?CX0:x>CX1?CX1:x,qy=y<CY0?CY0:y>CY1?CY1:y;return Math.hypot(x-qx,y-qy)}
+function secAt(a){for(const z of SEC)if(a<z.a1)return z;return SEC[SEC.length-1]}
+function setKind(m){THM=THEMES[m.thm||m.img]||THEMES['map2.jpg'];const ko=KOF[m.thm||m.img]||['hirayama'],kb=KINDS[ko[0]];KD=Object.assign({},kb,{keep:Object.assign({},kb.keep,ko[1]?{roof:ko[1]}:{})});HC3=KD.HC;RD3=KD.RD;LV=KD.LV;SEC=[];
+  if(KD.lobes){E3.setSeed(m.id*7+3);const L=KD.lobes,bd=[-Math.PI/2,0,Math.PI/2].map(v=>v+(E3.rnd()-.5)*.9).concat([Math.PI+.01]);for(const a1 of bd)SEC.push({a1,R:L[0]+E3.rnd()*(L[1]-L[0]),h:L[2]+E3.rnd()*(L[3]-L[2])})}
+  E3.setSeed(m.id*13+7)}
+function flat3(x,y,r){const h0=Y3(x,y);for(const o of[[r,0],[-r,0],[0,r],[0,-r]])if(Math.abs(Y3(x+o[0],y+o[1])-h0)>.5)return false;return true}
+/* 櫓・大筒の 置き場所：道から 少し はなれた 平らな 土地を、たがいに はなして えらぶ。マスは いちばん 近い 道の 上 */
+function autoSites(m){const tow=m.pads.filter(p=>p.sx),oth=m.pads.filter(p=>!p.sx),n=tow.length,cand=[];
+  for(let cy=6;cy<GH-6;cy+=1)for(let cx=6;cx<GW-6;cx+=1){const c=cy*GW+cx,r=rdist[c];if(r<5||r>9)continue;const x=cx*CS+2.5,y=cy*CS+2.5,d=cdist(x,y);if(d<56||d>240||x<28||x>W-28||y<28||y>HT-28)continue;
+    if(KD.moat&&d>KD.moat[0]-10&&d<KD.moat[1]+10)continue;if(Y3(x,y)<0||!flat3(x,y,15))continue;
+    let bx=0,by=0,bd=1e9;for(let dy=-9;dy<=9;dy++)for(let dx=-9;dx<=9;dx++){if(blocked[(cy+dy)*GW+cx+dx])continue;const q=dx*dx+dy*dy;if(q<bd){bd=q;bx=dx;by=dy}}
+    if(bd>1e8)continue;const l=Math.sqrt(bd),px=x+bx*CS+bx/l*13,py=y+by*CS+by/l*13;if(px<16||py<16||px>W-16||py>HT-16||blk(px,py)||dist[cellOf(px,py)]>=1e9)continue;
+    if(oth.some(p=>Math.hypot(p.x-px,p.y-py)<46)||Math.hypot(m.hero[0]-px,m.hero[1]-py)<30)continue;
+    cand.push({x,y,px,py,hd:Math.hypot(m.hero[0]-x,m.hero[1]-y)})}
+  if(!cand.length)return 'c0';cand.sort((a,b)=>a.hd-b.hd);const pick=[cand[0]];
+  while(pick.length<n){let best=null,bv=-1e9;for(const q of cand){let mn=1e9;for(const p of pick)mn=Math.min(mn,Math.hypot(p.x-q.x,p.y-q.y),Math.hypot(p.px-q.px,p.py-q.py)*1.5);const v=Math.min(mn,160)-q.hd*.1;if(mn>=54&&v>bv){bv=v;best=q}}if(!best)break;pick.push(best)}
+  /* 足りない 分は、元の 置き場所から はなれている ものを 足す */
+  const np=pick.length;for(const t of tow){if(pick.length>=n)break;if(pick.every(p=>Math.hypot(p.x-t.sx,p.y-t.sy)>=54))pick.push({x:t.sx,y:t.sy,px:t.x,py:t.y,hd:Math.hypot(m.hero[0]-t.sx,m.hero[1]-t.sy)})}
+  pick.sort((a,b)=>a.hd-b.hd);m.pads=pick.map((q,i)=>Object.assign({},tow[i],{x:q.px,y:q.py,sx:q.x,sy:q.y})).concat(oth);return np+'/'+pick.length+'/'+n+' c'+cand.length}
 function Y3(x,y){const d=cdist(x,y),t=d>RD3?0:1-d/RD3,s=t*t*(3-2*t);
   const ex=Math.max(Math.abs(x-180)-200,Math.abs(y-320)-340),o=ex<=0?0:ex>220?1:ex/220;
   let h=HC3*s;const r=rdAt(x,y);
-  if(r>0){const ht=HC3*(d<LV[0][0]?LV[0][1]:d<LV[1][0]?LV[1][1]:d<LV[2][0]?LV[2][1]:s*.55),u=r>=3.2?1:r/3.2;h+=(ht-h)*u*u*(3-2*u)}
+  if(r>0){let ht=HC3*s*.55;if(KD&&KD.lobes){if(d<LV[0][0])ht=HC3;else{const q=secAt(Math.atan2(y-(CY0+CY1)/2,x-(CX0+CX1)/2));if(d<q.R)ht=Math.max(ht,HC3*q.h);else if(d<q.R+40)ht=Math.max(ht,HC3*q.h*.55)}}else for(const L of LV)if(d<L[0]){ht=HC3*L[1];break}if(KD){if(KD.moat&&d>=KD.moat[0]&&d<KD.moat[1])ht=-2.6;if(KD.river&&Math.abs(y-(CY1+KD.river.dy+26*Math.sin(x*.018)))<KD.river.w)ht=-2.6}const u=r>=3.2?1:r/3.2;h+=(ht-h)*u*u*(3-2*u)}
   h+=(1-s)*THM.roll*(.62*Math.sin(x*.021+1.3)*Math.cos(y*.017+.4)+.38*Math.sin(x*.047+y*.039))+o*o*9*(1+Math.sin(x*.012+2)*Math.cos(y*.01));
-  if(THM.water!=null&&h<THM.water+.4&&r<=0)h=THM.water+.4;return h}
+  if(KD&&KD.water!=null&&r<=0&&h<KD.water+.7)h=KD.water+.7;return h}
 
 const keyOf3=new Map(Object.entries(EM).map(e=>[e[1],e[0]]));
 /* ---- 地図ごとに 作りなおす もの：地面・道・城・木・マス ---- */
 let world=null,built=null,keepTop=12,introName=0;const cst={x:0,z:0,y:0};
+const TEXLIST=[],TEXI={};
+function loadTex(){const use={ishigaki:['stoneWarm','stone'],kawara:['roof'],'kawara-aka':['roofRed'],shikkui:['plaster']};
+  for(const n of TEXLIST){const im=new Image();im.onload=()=>{TEXI[n]=im;if(use[n])for(const k of use[n]){const mt=EM[k],old=mt.map,t=new THREE.Texture(im);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;if(old)t.repeat.copy(old.repeat);t.anisotropy=8;t.needsUpdate=true;mt.map=t;mt.color.set(0xffffff);mt.needsUpdate=true}else built=null};im.src='cards/toride-tex-'+n+'.jpg'}}
 function groundTex(){const Q=2.5,k=document.createElement('canvas');k.width=760*Q;k.height=1040*Q;const x=k.getContext('2d'),P=v=>(v+200)*Q,T=THM;
-  x.fillStyle=T.grass;x.fillRect(0,0,k.width,k.height);
-  for(let i=0;i<9800;i++){x.fillStyle='rgba('+T.tint[i&3]+','+((i&3)===3?.16:.28)+')';x.beginPath();x.arc(Math.random()*k.width,Math.random()*k.height,(4+Math.random()*18)*Q*.5,0,TAU);x.fill()}
+  x.fillStyle=T.grass;x.fillRect(0,0,k.width,k.height);if(TEXI.kusa){x.fillStyle=x.createPattern(TEXI.kusa,'repeat');x.fillRect(0,0,k.width,k.height);x.globalAlpha=.4;x.fillStyle=T.grass;x.fillRect(0,0,k.width,k.height);x.globalAlpha=1}
+  for(let i=0;i<(TEXI.kusa?2400:9800);i++){x.fillStyle='rgba('+T.tint[i&3]+','+((i&3)===3?.16:.28)+')';x.beginPath();x.arc(Math.random()*k.width,Math.random()*k.height,(4+Math.random()*18)*Q*.5,0,TAU);x.fill()}
   for(const pass of[[T.edge,1.55,31],[T.road,1.1,26]]){x.strokeStyle=x.fillStyle=pass[0];x.lineCap='round';x.lineWidth=pass[2]*2*Q;
     x.beginPath();for(const d of DIRS){x.moveTo(P(d.x-d.ox*8),P(d.y-d.oy*8));x.lineTo(P(d.x+d.ox*300),P(d.y+d.oy*300))}x.stroke();
-    x.beginPath();for(let i=0;i<blocked.length;i++)if(!blocked[i]){const px=P((i%GW)*CS+CS/2),py=P(((i/GW)|0)*CS+CS/2),r=CS*Q*pass[1];x.moveTo(px+r,py);x.arc(px,py,r,0,TAU)}x.fill()}
+    x.beginPath();for(let i=0;i<blocked.length;i++)if(!blocked[i]){const px=P((i%GW)*CS+CS/2),py=P(((i/GW)|0)*CS+CS/2),r=CS*Q*pass[1];x.moveTo(px+r,py);x.arc(px,py,r,0,TAU)}x.fill();
+    if(pass[0]===T.road&&TEXI.michi){x.save();x.clip();x.fillStyle=x.createPattern(TEXI.michi,'repeat');x.fillRect(0,0,k.width,k.height);x.restore()}}
   /* 石だたみ：道の 上に 小さな 石を しきつめる */
   for(let i=0;i<blocked.length;i++)if(!blocked[i])for(let j=0;j<3;j++){const px=P((i%GW)*CS+Math.random()*CS),py=P(((i/GW)|0)*CS+Math.random()*CS);x.fillStyle=j===0?'rgba(255,248,225,.2)':j===1?'rgba(70,56,34,.16)':'rgba(120,104,76,.2)';x.beginPath();x.ellipse(px,py,(1.1+Math.random()*1.5)*Q,(.8+Math.random())*Q,Math.random()*3,0,TAU);x.fill()}
   for(let i=0;i<48000;i++){x.fillStyle=i&1?'rgba(255,250,225,.08)':'rgba(30,40,10,.09)';x.fillRect(Math.random()*k.width,Math.random()*k.height,Q,Q*1.6)}
@@ -78,61 +123,58 @@ function groundTex(){const Q=2.5,k=document.createElement('canvas');k.width=760*
 function grassTex(){const k=document.createElement('canvas');k.width=k.height=512;const x=k.getContext('2d'),T=THM;x.fillStyle=T.grass;x.fillRect(0,0,512,512);for(let i=0;i<230;i++){x.fillStyle='rgba('+T.tint[i&3]+','+((i&3)===3?.16:.28)+')';const px=Math.random()*512,py=Math.random()*512,r=6+Math.random()*27;for(const ox of[-512,0,512])for(const oy of[-512,0,512]){x.beginPath();x.arc(px+ox,py+oy,r,0,TAU);x.fill()}}for(let i=0;i<1150;i++){x.fillStyle=i&1?'rgba(255,250,225,.08)':'rgba(30,40,10,.09)';x.fillRect(Math.random()*512,Math.random()*512,3,4.8)}const t=new THREE.CanvasTexture(k);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(3600/170.7,3800/170.7);t.anisotropy=4;return t}
 function landGeo(w,d,sw,sd,drop,hole){const g=new THREE.PlaneGeometry(w,d,sw,sd);g.rotateX(-Math.PI/2);const p=g.attributes.position;for(let i=0;i<p.count;i++){const lx=p.getX(i)/S3+180,ly=p.getZ(i)/S3+320;p.setY(i,Y3(lx,ly)-drop-(hole&&lx>-160&&lx<W+160&&ly>-160&&ly<HT+160?40:0))};g.computeVertexNormals();return g}
 function farFromRoad(x,y,r){for(let a=0;a<8;a++){const px=x+Math.cos(a*.785)*r,py=y+Math.sin(a*.785)*r;if(px<0||py<0||px>=W||py>=HT||!blk(px,py))return false}return blk(x,y)}
-function tree(b,x,y,s){const T=THM.trees,gy=Y3(x,y);if(THM.water!=null&&gy<THM.water+.15)return;let r=E3.rnd();
+function tree(b,x,y,s){const T=THM.trees,gy=Y3(x,y);if(KD&&KD.water!=null&&gy<KD.water+.6)return;let r=E3.rnd();
   for(const k in T){if((r-=T[k])<0){if(k==='sakura')E3.sakuraTree(b,X3(x),gy,Z3(y),s);else if(k==='pine')E3.pineTree(b,X3(x),gy,Z3(y),s);else if(k==='momiji')E3.roundTree(b,X3(x),gy,Z3(y),s,E3.rnd()<.5?'orange':E3.rnd()<.5?'redOchre':'ochre');else E3.roundTree(b,X3(x),gy,Z3(y),s*1.1);return}}E3.pineTree(b,X3(x),gy,Z3(y),s)}
 function nobori(g,x,y,z,ry){g.add(E3.mesh(new THREE.CylinderGeometry(.04,.04,3,6),EM.iron,x,y+1.5,z));const q=new THREE.Group();q.position.set(x,0,z);q.rotation.y=ry;const f=E3.mesh(E3.boxGeo(.03,2.1,.62),EM.nobori,0,y+1.85,.34);f.castShadow=false;q.add(f);g.add(q)}
 function build3d(m){if(world){scene.remove(world);world.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material&&o.material.userData&&o.material.userData.own){if(o.material.map)o.material.map.dispose();o.material.dispose()}})}
-  world=new THREE.Group();scene.add(world);built=m;E3.setSeed(m.id*13+7);THM=THEMES[m.thm||m.img]||THEMES['map2.jpg'];const T=THM;introName=3.2;mkRd();
+  world=new THREE.Group();scene.add(world);built=m;E3.setSeed(m.id*13+7);THM=THEMES[m.thm||m.img]||THEMES['map2.jpg'];setKind(m);const T=THM;introName=3.2;mkRd();mkFields();
   scene.background.set(T.sky);scene.fog.color.set(T.sky);scene.fog.near=T.fog?T.fog[0]:210;scene.fog.far=T.fog?T.fog[1]:560;sunL.color.set(T.sun);sunL.intensity=T.sunI;hemiL.intensity=T.hemi;ren.toneMappingExposure=T.exp;
   {const gm=new THREE.MeshStandardMaterial({map:groundTex(),roughness:.96});gm.userData.own=1;const g=new THREE.Mesh(landGeo(760*S3,1040*S3,200,274,0),gm);g.receiveShadow=true;world.add(g);
     const om=new THREE.MeshStandardMaterial({map:grassTex(),roughness:.96});om.userData.own=1;const o=new THREE.Mesh(landGeo(3600*S3,3800*S3,120,126,.3,1),om);o.receiveShadow=true;world.add(o);
-    if(T.water!=null){const wt=E3.waterPlane(world,600,620,0,0,T.water);wt.receiveShadow=true}}
+    if(KD.water!=null){const wt=E3.waterPlane(world,600,620,0,0,KD.water);wt.receiveShadow=true}}
   /* 城：丘の 上の 高い 石垣、白い へいと 四すみの 櫓、まん中に 五層の 天守 */
-  {const w=(CX1-CX0)*S3,d=(CY1-CY0)*S3,cx=X3((CX0+CX1)/2),cz=Z3((CY0+CY1)/2),y0=HC3-.4,TH=3.4,ty=y0+TH,hw=w*.47,hd=d*.47;cst.x=cx;cst.z=cz;cst.y=HC3;
+  {const w=(CX1-CX0)*S3,d=(CY1-CY0)*S3,cx=X3((CX0+CX1)/2),cz=Z3((CY0+CY1)/2),y0=HC3-.4,TH=3.4,ty=y0+TH,hw=w*.47,hd=d*.47;cst.x=cx;cst.z=cz;cst.y=HC3;const KP=KD.keep,RM=EM[KP.roof],WM=EM[KP.wall];
     world.add(E3.mesh(E3.stoneBaseGeo(w*1.02,d*1.02,w*.96,d*.96,TH),EM.stoneWarm,cx,y0,cz));world.add(E3.mesh(E3.boxGeo(w*.96,.08,d*.96),EM.gravel,cx,ty,cz));
     const b=new E3.Batch(),gate=1.3;
     for(const s of[[-hw,-hd,hw,-hd],[hw,-hd,hw,hd],[-hw,-hd,-hw,hd],[-hw,hd,-gate,hd],[gate,hd,hw,hd]]){const L=Math.hypot(s[2]-s[0],s[3]-s[1]),ry=Math.atan2(-(s[3]-s[1]),s[2]-s[0]),mx=cx+(s[0]+s[2])/2,mz=cz+(s[1]+s[3])/2;
-      b.box('plaster',L,.85,.26,mx,ty+.42,mz,ry);b.box('roofRed',L+.1,.14,.5,mx,ty+.92,mz,ry);b.box('darkWood',L,.12,.3,mx,ty+.06,mz,ry)}
-    for(const sx of[-1,1])b.box('darkWood',.3,2,.3,cx+sx*gate,ty+1,cz+hd);b.box('darkWood',gate*2+.9,.26,.5,cx,ty+2,cz+hd);b.box('roofRed',gate*2+1.5,.16,1.1,cx,ty+2.25,cz+hd);
+      b.box('plaster',L,.85,.26,mx,ty+.42,mz,ry);b.box(KP.roof,L+.1,.14,.5,mx,ty+.92,mz,ry);b.box('darkWood',L,.12,.3,mx,ty+.06,mz,ry)}
+    for(const sx of[-1,1])b.box('darkWood',.3,2,.3,cx+sx*gate,ty+1,cz+hd);b.box('darkWood',gate*2+.9,.26,.5,cx,ty+2,cz+hd);b.box(KP.roof,gate*2+1.5,.16,1.1,cx,ty+2.25,cz+hd);
     
     for(const s of[[-1,1],[1,1]])E3.pineTree(b,cx+s[0]*hw*.55,ty,cz+s[1]*hd*.62,.6);b.build(world);
     for(const s of[[-1,-1],[1,-1],[-1,1],[1,1]]){const tx=cx+s[0]*(hw-.7),tz=cz+s[1]*(hd-.7);world.add(E3.mesh(E3.stoneBaseGeo(2,2,1.7,1.7,.6),EM.stoneWarm,tx,ty,tz));
-      const t=E3.buildKeep({x:tx,z:tz,y:ty+.6,tiers:[{w:1.6,d:1.6,h:.95},{w:1.15,d:1.15,h:.75}],ov:.36,rise:.36,up:.2,winScale:.6,topRise:.62,roofMat:EM.roofRed});world.add(t.walls,t.roofs)}
+      const t=E3.buildKeep({x:tx,z:tz,y:ty+.6,tiers:[{w:1.6,d:1.6,h:.95},{w:1.15,d:1.15,h:.75}],ov:.36,rise:.36,up:.2,winScale:.6,topRise:.62,roofMat:RM});world.add(t.walls,t.roofs)}
     for(const sx of[-1,1])for(const q of[.38,.74])nobori(world,cx+sx*hw*q,ty,cz+hd-.5,sx>0?.4:-.4);
     const k=new THREE.Group(),f=Math.min(w*.8/12,d*.8/11);k.position.set(cx-w*.04,ty,cz-d*.05);k.scale.setScalar(f);world.add(k);
     k.add(E3.mesh(E3.stoneBaseGeo(12,11,9.6,8.8,4.2),EM.stoneWarm,0,0,0));
-    const tiers=[{w:8.4,d:7.6,h:2.2},{w:7.4,d:6.6,h:1.8},{w:6.4,d:5.6,h:1.7},{w:5.3,d:4.6,h:1.6},{w:4.1,d:3.6,h:1.6}];
-    const main=E3.buildKeep({x:0,z:0,y:4.2,tiers,ov:.85,rise:.75,up:.4,topRise:1.6,roofMat:EM.roofRed});k.add(main.walls,main.roofs);k.add(E3.mesh(E3.boxGeo(8.45,.6,7.65),EM.darkWood,0,4.5,0));
-    const TI=main.info;for(const a of[[2.6,1.05,0,'pz'],[2.6,1.05,0,'nz'],[2.4,1,1,'px'],[2.4,1,1,'nx'],[2.2,.9,2,'pz'],[2.2,.9,2,'nz']])E3.placeGable(k,{w:a[0],h:a[1],roofMat:EM.roofRed},0,0,TI[a[2]],TI[a[2]+1],.85,a[3]);
-    E3.placeGable(k,{w:2,h:.75,curved:true,roofMat:EM.roofRed},0,0,TI[3],TI[4],.85,'pz');
+    const T5=[{w:8.4,d:7.6,h:2.2},{w:7.4,d:6.6,h:1.8},{w:6.4,d:5.6,h:1.7},{w:5.3,d:4.6,h:1.6},{w:4.1,d:3.6,h:1.6}],tiers=KP.n===3?[T5[0],T5[2],T5[4]]:KP.n===4?[T5[0],T5[2],T5[3],T5[4]]:T5;
+    const main=E3.buildKeep({x:0,z:0,y:4.2,tiers,ov:.85,rise:.75,up:.4,topRise:1.6,roofMat:RM,wallMat:WM});k.add(main.walls,main.roofs);k.add(E3.mesh(E3.boxGeo(8.45,.6,7.65),EM.darkWood,0,4.5,0));
+    const TI=main.info;for(const a of[[2.6,1.05,0,'pz'],[2.6,1.05,0,'nz'],[2.4,1,1,'px'],[2.4,1,1,'nx'],[2.2,.9,2,'pz'],[2.2,.9,2,'nz']])if(a[2]+1<tiers.length)E3.placeGable(k,{w:a[0],h:a[1],roofMat:RM},0,0,TI[a[2]],TI[a[2]+1],.85,a[3]);
+    if(tiers.length>4)E3.placeGable(k,{w:2,h:.75,curved:true,roofMat:RM},0,0,TI[3],TI[4],.85,'pz');
     k.add(E3.shachihoko(-TI.ridge.half,TI.ridge.y,0,-1,1.15),E3.shachihoko(TI.ridge.half,TI.ridge.y,0,1,1.15));keepTop=ty+(TI.ridge.y+1)*f;
     {const sx=cx+hw*.6,sz=cz+hd*.42;world.add(E3.mesh(E3.stoneBaseGeo(3.6,3.6,3,3,1.4),EM.stoneWarm,sx,ty,sz));
-      const sk=E3.buildKeep({x:sx,z:sz,y:ty+1.4,tiers:[{w:2.8,d:2.8,h:1.3},{w:2.2,d:2.2,h:1.05},{w:1.6,d:1.6,h:.95}],ov:.42,rise:.42,up:.22,winScale:.65,topRise:.8,roofMat:EM.roofRed});world.add(sk.walls,sk.roofs);
-      E3.hipHall(world,{x:sx,z:(sz+cz-d*.05)/2+1.2,y:ty,w:1.7,d:Math.abs(sz-cz)*.7,h:1.5,wall:EM.plaster,roofMat:EM.roofRed,ov:.3,up:.12})}}
+      const sk=E3.buildKeep({x:sx,z:sz,y:ty+1.4,tiers:[{w:2.8,d:2.8,h:1.3},{w:2.2,d:2.2,h:1.05},{w:1.6,d:1.6,h:.95}],ov:.42,rise:.42,up:.22,winScale:.65,topRise:.8,roofMat:RM});world.add(sk.walls,sk.roofs);
+      E3.hipHall(world,{x:sx,z:(sz+cz-d*.05)/2+1.2,y:ty,w:1.7,d:Math.abs(sz-cz)*.7,h:1.5,wall:EM.plaster,roofMat:RM,ov:.3,up:.12})}}
   {const b=new E3.Batch(),cxl=(CX0+CX1)/2,cyl=(CY0+CY1)/2,hw=(CX1-CX0)/2,hh=(CY1-CY0)/2;
-    LV.forEach((L,li)=>{const D=L[0],pts=[],N=Math.max(8,Math.round(D*1.5708/7));
-      const corner=(sx,sy,a0)=>{for(let i=0;i<=N;i++){const a=a0+i/N*Math.PI/2;pts.push([cxl+sx*hw+Math.cos(a)*D,cyl+sy*hh+Math.sin(a)*D])}};
-      const edge=(x0,y0,x1,y1)=>{const n=Math.max(1,Math.round(Math.hypot(x1-x0,y1-y0)/7));for(let i=1;i<n;i++)pts.push([x0+(x1-x0)*i/n,y0+(y1-y0)*i/n])};
-      corner(1,1,0);edge(CX1,CY1+D,CX0,CY1+D);corner(-1,1,Math.PI/2);edge(CX0-D,CY1,CX0-D,CY0);corner(-1,-1,Math.PI);edge(CX0,CY0-D,CX1,CY0-D);corner(1,-1,Math.PI*1.5);edge(CX1+D,CY0,CX1+D,CY1);
-      for(let i=0;i<pts.length;i++){const p=pts[i],q=pts[(i+1)%pts.length],mx=(p[0]+q[0])/2,my=(p[1]+q[1])/2;if(mx<6||my<6||mx>W-6||my>HT-6||rdAt(mx,my)<3.6)continue;
-        const qx=mx<CX0?CX0:mx>CX1?CX1:mx,qy=my<CY0?CY0:my>CY1?CY1:my,nl=Math.hypot(mx-qx,my-qy)||1,nx=(mx-qx)/nl,ny=(my-qy)/nl,yLo=Y3(mx+nx*5,my+ny*5),yHi=Y3(mx-nx*5,my-ny*5);if(yHi-yLo<.6)continue;
-        const Ln=Math.hypot(q[0]-p[0],q[1]-p[1])*S3+.3,ry=Math.atan2(-(q[1]-p[1]),q[0]-p[0]),wx=X3(mx),wz=Z3(my);
-        b.box('stoneWarm',Ln,yHi-yLo+1,1,wx,(yLo-.6+yHi+.4)/2,wz,ry);
-        b.box('plaster',Ln,li<2?.8:.6,.32,wx,yHi+(li<2?.8:.7),wz,ry);b.box('roof',Ln+.06,.16,.62,wx,yHi+(li<2?1.26:1.06),wz,ry)}
-      /* 門 */
-      const n=pts.length,mid=i=>{const p=pts[i],q=pts[(i+1)%n];return[(p[0]+q[0])/2,(p[1]+q[1])/2]},inb=m=>m[0]>10&&m[1]>10&&m[0]<W-10&&m[1]<HT-10,isRoad=i=>{const m=mid(i);return inb(m)&&rdAt(m[0],m[1])<.5};
-      let st=0;while(st<n&&isRoad(st))st++;let rc=0;for(let k=0;k<n;k++){const i=(st+k)%n;if(isRoad(i)&&!isRoad((i+n-1)%n))rc++}if(li===0&&rc>4)return;
+    const ringPts=Df=>{const raw=[],N=150;for(let i=0;i<N;i++){const a=-Math.PI+(i+.5)/N*TAU,dx=Math.cos(a),dy=Math.sin(a),D=Df(a);let ro=D+Math.min(hw,hh);for(let k=0;k<6;k++)ro+=D-cdist(cxl+dx*ro,cyl+dy*ro);raw.push([cxl+dx*ro,cyl+dy*ro])}
+      const pts=[];for(let i=0;i<N;i++){const p=raw[i],q=raw[(i+1)%N],L=Math.hypot(q[0]-p[0],q[1]-p[1]),k=Math.max(1,Math.round(L/8));for(let j=0;j<k;j++)pts.push([p[0]+(q[0]-p[0])*j/k,p[1]+(q[1]-p[1])*j/k])}return pts};
+    const cons=KD.lobes?[ringPts(()=>LV[0][0]),ringPts(a=>secAt(a).R),ringPts(a=>secAt(a).R+40)]:LV.map(L=>ringPts(()=>L[0]));
+    cons.forEach((pts,li)=>{const n=pts.length,mid=i=>{const p=pts[i],q=pts[(i+1)%n];return[(p[0]+q[0])/2,(p[1]+q[1])/2]},inb=m=>m[0]>10&&m[1]>10&&m[0]<W-10&&m[1]<HT-10,isRoad=i=>{const m=mid(i);return inb(m)&&rdAt(m[0],m[1])<.5};
+      for(let i=0;i<n;i++){const p=pts[i],q=pts[(i+1)%n],m=mid(i),mx=m[0],my=m[1];if(mx<6||my<6||mx>W-6||my>HT-6||rdAt(mx,my)<3.6)continue;
+        const tl=Math.hypot(q[0]-p[0],q[1]-p[1])||1,tx=(q[0]-p[0])/tl,ty2=(q[1]-p[1])/tl,yA=Y3(mx-ty2*5,my+tx*5),yB=Y3(mx+ty2*5,my-tx*5);if(Math.abs(yA-yB)<.6)continue;const yHi=Math.max(yA,yB),yLo=Math.min(yA,yB);
+        const Ln=tl*S3+.3,ry=Math.atan2(-ty2,tx),wx=X3(mx),wz=Z3(my),hi=li<2;
+        b.box('stoneWarm',Ln,yHi-yLo+1,1,wx,(yLo-.6+yHi+.4)/2,wz,ry);b.box('plaster',Ln,hi?.8:.6,.32,wx,yHi+(hi?.8:.7),wz,ry);b.box('roof',Ln+.06,.16,.62,wx,yHi+(hi?1.26:1.06),wz,ry)}
+      /* 門：道が 石垣を 通る 所 */
+      let st=0;while(st<n&&isRoad(st))st++;let rc=0;for(let k=0;k<n;k++){const i=(st+k)%n;if(isRoad(i)&&!isRoad((i+n-1)%n))rc++}
       for(let k=0;k<n;k++){const i=(st+k)%n;if(!isRoad(i)||isRoad((i+n-1)%n))continue;let len=1;while(len<n&&isRoad((i+len)%n))len++;
         const gi=(i+(len>>1))%n,p=pts[gi],q=pts[(gi+1)%n],m=mid(gi),tl=Math.hypot(q[0]-p[0],q[1]-p[1])||1,tx=(q[0]-p[0])/tl,ty2=(q[1]-p[1])/tl;
-        if(PADS.some(pd=>Math.hypot(pd.x-m[0],pd.y-m[1])<19)||Math.hypot(CUR.hero[0]-m[0],CUR.hero[1]-m[1])<26)continue;
-        const yr=Y3(m[0],m[1]),hs=Math.min(7.5,len*7*S3/2+1.2),P=E3.matrixAt(X3(m[0]),yr,Z3(m[1]),Math.atan2(-ty2,tx));
-        if(li<2){for(const sx of[-1,1]){b.box('stoneWarm',2.6,7.4,3.4,sx*(hs+1.3),2.9,0,0,P);b.box('darkWood',.5,6.2,.5,sx*(hs-.25),3.1,1.2,0,P);b.box('darkWood',.5,6.2,.5,sx*(hs-.25),3.1,-1.2,0,P)}
+        if(PADS.some(pd=>Math.hypot(pd.x-m[0],pd.y-m[1])<22||(pd.sx&&Math.hypot(pd.sx-m[0],pd.sy-m[1])<52))||Math.hypot(CUR.hero[0]-m[0],CUR.hero[1]-m[1])<26)continue;
+        const yr=Y3(m[0],m[1]),hs=Math.min(7.5,len*8*S3/2+1.2),P=E3.matrixAt(X3(m[0]),yr,Z3(m[1]),Math.atan2(-ty2,tx));
+        if(li<2&&rc<=4){for(const sx of[-1,1]){b.box('stoneWarm',2.6,7.4,3.4,sx*(hs+1.3),2.9,0,0,P);b.box('darkWood',.5,6.2,.5,sx*(hs-.25),3.1,1.2,0,P);b.box('darkWood',.5,6.2,.5,sx*(hs-.25),3.1,-1.2,0,P)}
           b.box('darkWood',2*hs+5.4,.6,3,0,6.45,0,0,P);b.box('plaster',2*hs+5,1.9,2.9,0,7.7,0,0,P);b.box('darkWood',2*hs+5.1,.22,3,0,8.7,0,0,P);
           for(const sz of[-1,1])b.box('roof',2*hs+6.4,.24,2.5,0,9.25,sz*1.05,0,P,sz*.5);b.box('roof',2*hs+6.6,.3,.5,0,9.85,0,0,P);
           for(let wv=-1;wv<=1;wv++)for(const sz of[-1,1])b.box('darkWood',1.1,.7,.08,wv*hs*.55,7.75,sz*1.47,0,P);
-          /* 隅櫓 */
           for(const sx of li===0?[-1,1]:[1]){const ox=sx*(hs+4.6)/S3,qx=m[0]<CX0?CX0:m[0]>CX1?CX1:m[0],qy=m[1]<CY0?CY0:m[1]>CY1?CY1:m[1],nl=Math.hypot(m[0]-qx,m[1]-qy)||1,lx=m[0]+tx*ox-(m[0]-qx)/nl*16,ly=m[1]+ty2*ox-(m[1]-qy)/nl*16;
-            if(lx<10||ly<10||lx>W-10||ly>HT-10||rdAt(lx,ly)<3.4||PADS.some(pd=>pd.sx&&Math.hypot(pd.sx-lx,pd.sy-ly)<30))continue;const gy=Y3(lx,ly);b.geo('stoneWarm',E3.stoneBaseGeo(3.6,3.6,3,3,1.1),X3(lx),gy,Z3(ly));
+            if(lx<10||ly<10||lx>W-10||ly>HT-10||rdAt(lx,ly)<3.4||!flat3(lx,ly,12)||PADS.some(pd=>pd.sx&&Math.hypot(pd.sx-lx,pd.sy-ly)<44))continue;const gy=Y3(lx,ly);b.geo('stoneWarm',E3.stoneBaseGeo(3.6,3.6,3,3,1.1),X3(lx),gy,Z3(ly));
             const t=E3.buildKeep({x:0,z:0,y:0,tiers:[{w:2.7,d:2.7,h:1.25},{w:2,d:2,h:1}],ov:.42,rise:.42,up:.22,winScale:.65,topRise:.8,roofMat:EM.roof}),tg=new THREE.Group();tg.add(t.walls,t.roofs);tg.position.set(X3(lx),gy+1.1,Z3(ly));tg.updateMatrixWorld(true);
             tg.traverse(o=>{if(o.isMesh&&!o.isInstancedMesh&&keyOf3.has(o.material))b.add(o.geometry.clone(),keyOf3.get(o.material),o.matrixWorld)})}}
         else{for(const sx of[-1,1])b.box('darkWood',.6,6.4,.6,sx*hs,3.2,0,0,P);b.box('darkWood',2*hs+2.4,.6,.7,0,6.1,0,0,P);for(const sz of[-1,1])b.box('roof',2*hs+2.8,.18,.95,0,6.62,sz*.4,0,P,sz*.5)}}});
@@ -140,15 +182,15 @@ function build3d(m){if(world){scene.remove(world);world.traverse(o=>{if(o.geomet
   /* 木・岩・町の 家：道から はなれた 所に。外がわには 多めに */
   {const b=new E3.Batch(),spots=[];let n=0;const free=(x,y)=>!PADS.some(p=>(p.sx&&Math.hypot(p.sx-x,p.sy-y)<34)||Math.hypot(p.x-x,p.y-y)<26);
     {const keyOf=new Map(Object.entries(EM).map(e=>[e[1],e[0]])),M4=new THREE.Matrix4(),E4=new THREE.Euler(),Q4=new THREE.Quaternion();
-      const ok=(x,y,r)=>farFromRoad(x,y,r)&&!inCastle(x,y)&&free(x,y)&&LV.every(L=>Math.abs(cdist(x,y)-L[0])>r*.62)&&spots.every(q=>Math.hypot(q[0]-x,q[1]-y)>q[2]+r*.55);
-      let hl=0;for(let i=0;i<1500&&hl<10;i++){const x=20+E3.rnd()*320,y=20+E3.rnd()*600,d=cdist(x,y);if(d>LV[1][0]||!ok(x,y,19))continue;hl++;spots.push([x,y,19]);const big=d<LV[0][0];
+      const inner=LV.length>1?LV[1][0]:LV[0][0]+70,ok=(x,y,r)=>Y3(x,y)>-.3&&flat3(x,y,r*.7)&&farFromRoad(x,y,r)&&!inCastle(x,y)&&free(x,y)&&LV.every(L=>Math.abs(cdist(x,y)-L[0])>r*.62)&&spots.every(q=>Math.hypot(q[0]-x,q[1]-y)>q[2]+r*.55);
+      let hl=0;for(let i=0;i<1500&&hl<(KD.halls||10);i++){const x=20+E3.rnd()*320,y=20+E3.rnd()*600,d=cdist(x,y);if(d>inner||!ok(x,y,19))continue;hl++;spots.push([x,y,19]);const big=d<LV[0][0];
         E3.hipHall(world,{x:X3(x),z:Z3(y),y:Y3(x,y)-.05,w:big?4.4:3.6,d:big?2.8:2.3,h:1.5,ry:Math.atan2(BX-x,BY-y),wall:EM.plaster,roofMat:big?EM.roof:EM.terracotta,ov:.5,up:.2,eave:true})}
-      let hn=0;const want=T.houses||30;for(let i=0;i<3000&&hn<want;i++){const x=12+E3.rnd()*336,y=12+E3.rnd()*616;if(cdist(x,y)<LV[1][0]||!ok(x,y,13))continue;hn++;spots.push([x,y,13]);
+      let hn=0;const want=Math.round((KD.houses||30)*(T.houses?1.5:1));for(let i=0;i<3000&&hn<want;i++){const x=12+E3.rnd()*336,y=12+E3.rnd()*616;if(cdist(x,y)<inner||!ok(x,y,13))continue;hn++;spots.push([x,y,13]);
         const hb=new E3.Batch();E3.machiya(hb,0,0,0,hn);const hg=new THREE.Group();hb.build(hg);E4.set(0,Math.atan2(BX-x,BY-y)+(E3.rnd()-.5)*.5,0);M4.compose(new THREE.Vector3(X3(x),Y3(x,y)-.1,Z3(y)),Q4.setFromEuler(E4),new THREE.Vector3(1.2,1.2,1.2));
         for(const ch of hg.children){const kk=keyOf.get(ch.material);if(kk)b.add(ch.geometry,kk,M4)}}}
-    for(let i=0;i<3200&&n<150;i++){const x=8+E3.rnd()*344,y=8+E3.rnd()*624;if(!farFromRoad(x,y,13)||inCastle(x,y)||!free(x,y)||spots.some(q=>Math.hypot(q[0]-x,q[1]-y)<q[2])||LV.some(L=>Math.abs(cdist(x,y)-L[0])<7))continue;n++;tree(b,x,y,.9+E3.rnd()*.7)}
+    for(let i=0;i<4200&&n<(KD.trees||150);i++){const x=8+E3.rnd()*344,y=8+E3.rnd()*624;if(!farFromRoad(x,y,13)||inCastle(x,y)||!free(x,y)||spots.some(q=>Math.hypot(q[0]-x,q[1]-y)<q[2])||LV.some(L=>Math.abs(cdist(x,y)-L[0])<7))continue;n++;tree(b,x,y,.9+E3.rnd()*.7)}
     for(let i=0;i<300;i++){const x=-320+E3.rnd()*1000,y=-300+E3.rnd()*1240;if(x>-6&&x<W+6&&y>-6&&y<HT+6)continue;if(DIRS.some(d=>segD(x,y,d.x,d.y,d.x+d.ox*150,d.y+d.oy*150)<42))continue;tree(b,x,y,1.2+E3.rnd()*1.1)}
-    for(let i=0,rn=0;i<600&&rn<(T.rocks||8);i++){const x=6+E3.rnd()*348,y=6+E3.rnd()*628;if(!farFromRoad(x,y,11)||inCastle(x,y)||!free(x,y))continue;rn++;const r=.5+E3.rnd()*.9,g=new THREE.IcosahedronGeometry(r,0);g.scale(1.3,.75+E3.rnd()*.4,1);b.geo(E3.rnd()<.5?'rock':'rockDark',g,X3(x),Y3(x,y)+r*.2,Z3(y),E3.rnd()*6)}
+    for(let i=0,rn=0;i<600&&rn<(KD.rocks||T.rocks||8);i++){const x=6+E3.rnd()*348,y=6+E3.rnd()*628;if(!farFromRoad(x,y,11)||inCastle(x,y)||!free(x,y))continue;rn++;const r=.5+E3.rnd()*.9,g=new THREE.IcosahedronGeometry(r,0);g.scale(1.3,.75+E3.rnd()*.4,1);b.geo(E3.rnd()<.5?'rock':'rockDark',g,X3(x),Y3(x,y)+r*.2,Z3(y),E3.rnd()*6)}
     const lan=[];for(const sx of[-1,1])E3.stoneLantern(b,lan,cst.x+sx*2.4,Y3(BX+sx*24,CY1+34),Z3(CY1+34));for(const p of PADS)if(p.sx)E3.stoneLantern(b,lan,X3(p.sx)+4.6,Y3(p.sx+29,p.sy+29),Z3(p.sy)+4.6);
     b.build(world);world.add(E3.lanternsMesh(lan))}
   /* 数字のマス（石の台）と、櫓・大筒の 立つ 石づみの 台 */
@@ -198,7 +240,7 @@ const aura=new THREE.Mesh(new THREE.RingGeometry(.82,1,40),new THREE.MeshBasicMa
 const goalM=new THREE.Mesh(new THREE.RingGeometry(.7,.95,32),new THREE.MeshBasicMaterial({color:0xf0c75e,transparent:true,opacity:.9,toneMapped:false,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3}));goalM.rotation.x=-Math.PI/2;goalM.renderOrder=1;scene.add(goalM);
 
 /* ---- カメラ：指2本（または ボタン・Q/E・右ドラッグ）で 回す、つまんで 寄る ---- */
-const DMIN=34,DMAX=250,CAM={yaw:0,pitch:.9,dist:70,tx:0,tz:0,hold:0,zoomHold:0,intro:0,g:null};
+const DMIN=34,DMAX=250,CAM={yaw:0,auto:0,user:0,idle:9,pitch:.9,dist:70,tx:0,tz:0,hold:0,zoomHold:0,intro:0,g:null};
 function camRot(ix,iy){const cs=Math.cos(CAM.yaw),sn=Math.sin(CAM.yaw);return[ix*cs+iy*sn,-ix*sn+iy*cs]}
 const scrRight=(dx,dy)=>dx*Math.cos(CAM.yaw)-dy*Math.sin(CAM.yaw);
 function fit(){const s=$('#stage'),w=Math.max(50,s.clientWidth),h=Math.max(50,s.clientHeight),d=Math.min(2,window.devicePixelRatio||1);ren.setSize(w,h,false);cam3.aspect=w/h;cam3.updateProjectionMatrix();cv.width=Math.round(w*d);cv.height=Math.round(h*d);cv.style.width=w+'px';cv.style.height=h+'px';cv._w=w;cv._h=h;cv._d=d}
@@ -209,8 +251,8 @@ function toCanvas(e){const r=cv.getBoundingClientRect();ndc.set((e.clientX-r.lef
   const two=()=>{const a=[...pts.values()];return{ang:Math.atan2(a[1].y-a[0].y,a[1].x-a[0].x),d:Math.hypot(a[1].x-a[0].x,a[1].y-a[0].y)}};
   st.addEventListener('pointerdown',e=>{if(state!=='play')return;if(e.pointerType==='mouse'){if(e.button===2){rdrag={x:e.clientX,y:e.clientY};e.stopPropagation();e.preventDefault()}return}
     pts.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pts.size>=2){gest=true;g0=two();joy=null;inp.x=0;inp.y=0;e.stopPropagation()}else if(gest)e.stopPropagation()},true);
-  st.addEventListener('pointermove',e=>{if(rdrag&&e.pointerType==='mouse'){CAM.yaw-=(e.clientX-rdrag.x)*.008;CAM.pitch=Math.max(.45,Math.min(1.35,CAM.pitch+(e.clientY-rdrag.y)*.005));rdrag={x:e.clientX,y:e.clientY};e.stopPropagation();return}
-    if(!pts.has(e.pointerId))return;pts.set(e.pointerId,{x:e.clientX,y:e.clientY});if(gest){e.stopPropagation();if(pts.size>=2){const t=two();let da=t.ang-g0.ang;if(da>Math.PI)da-=TAU;if(da<-Math.PI)da+=TAU;CAM.yaw-=da;CAM.dist=Math.max(DMIN,Math.min(DMAX,CAM.dist*g0.d/Math.max(20,t.d)));g0=t}}},true);
+  st.addEventListener('pointermove',e=>{if(rdrag&&e.pointerType==='mouse'){CAM.user-=(e.clientX-rdrag.x)*.008;CAM.idle=0;CAM.pitch=Math.max(.45,Math.min(1.35,CAM.pitch+(e.clientY-rdrag.y)*.005));rdrag={x:e.clientX,y:e.clientY};e.stopPropagation();return}
+    if(!pts.has(e.pointerId))return;pts.set(e.pointerId,{x:e.clientX,y:e.clientY});if(gest){e.stopPropagation();if(pts.size>=2){const t=two();let da=t.ang-g0.ang;if(da>Math.PI)da-=TAU;if(da<-Math.PI)da+=TAU;CAM.user-=da;CAM.idle=0;CAM.dist=Math.max(DMIN,Math.min(DMAX,CAM.dist*g0.d/Math.max(20,t.d)));g0=t}}},true);
   const up=e=>{if(e.pointerType==='mouse'){if(rdrag){rdrag=null;e.stopPropagation()}return}pts.delete(e.pointerId);if(gest){e.stopPropagation();if(pts.size===0)gest=false}};
   st.addEventListener('pointerup',up,true);st.addEventListener('pointercancel',up,true);st.addEventListener('contextmenu',e=>e.preventDefault());
   st.addEventListener('wheel',e=>{if(state!=='play')return;CAM.dist=Math.max(DMIN,Math.min(DMAX,CAM.dist*(e.deltaY>0?1.1:.91)));e.preventDefault()},{passive:false});
@@ -226,9 +268,11 @@ function draw(){const now=performance.now(),dt=Math.min(.05,(now-last3)/1000||0)
   if(twG!==g||!play){for(const t of tw)if(t&&t.obj)scene.remove(t.obj);tw=[];twG=g}
   $('#camui').hidden=!play;
   /* カメラ */
-  if(play){const H=g.hero;if(CAM.g!==g){CAM.g=g;CAM.intro=0;CAM.yaw=0;CAM.pitch=.9;CAM.tx=X3(H.x);CAM.tz=Z3(H.y);CAM.dist=cam3.aspect<.8?138:cam3.aspect<1.2?112:94;introName=3.2}
-    CAM.intro=Math.min(1,CAM.intro+dt/2.6);CAM.yaw+=(CAM.hold+(keys.q?1:0)-(keys.e?1:0))*1.6*dt;CAM.dist=Math.max(DMIN,Math.min(DMAX,CAM.dist*(1+CAM.zoomHold*.9*dt)));
-    const far=Math.min(1,Math.max(0,(CAM.dist-60)/90)),wh=.7-.3*far,fx=X3(H.x)*wh+cst.x*(1-wh),fz=Z3(H.y)*wh+cst.z*(1-wh),a=Math.min(1,dt*3.2);CAM.tx+=(fx-CAM.tx)*a;CAM.tz+=(fz-CAM.tz)*a;if(introName>0)introName-=dt}
+  if(play){const H=g.hero;if(CAM.g!==g){CAM.g=g;CAM.intro=0;CAM.user=0;CAM.idle=9;CAM.auto=Math.atan2(X3(H.x)-cst.x,Z3(H.y)-cst.z);CAM.pitch=.9;CAM.tx=X3(H.x);CAM.tz=Z3(H.y);CAM.dist=cam3.aspect<.8?138:cam3.aspect<1.2?112:94;introName=3.2}
+    CAM.intro=Math.min(1,CAM.intro+dt/2.6);/* 自動の アングル：いつも 手前に 侍、奥に お城。自分で 回した 分は、動きだすと ゆっくり 元に もどる */
+    {const mv=CAM.hold+(keys.q?1:0)-(keys.e?1:0);if(mv){CAM.user+=mv*1.6*dt;CAM.idle=0}else CAM.idle+=dt;if(CAM.idle>4&&H.mv){CAM.user=Math.atan2(Math.sin(CAM.user),Math.cos(CAM.user));CAM.user*=1-Math.min(1,dt*1.2)}
+      const ax=X3(H.x)-cst.x,az=Z3(H.y)-cst.z;if(H.dead<=0&&ax*ax+az*az>16){let df=Math.atan2(ax,az)-CAM.auto;df=Math.atan2(Math.sin(df),Math.cos(df));CAM.auto+=df*Math.min(1,dt*1.5)}CAM.yaw=CAM.auto+CAM.user}CAM.dist=Math.max(DMIN,Math.min(DMAX,CAM.dist*(1+CAM.zoomHold*.9*dt)));
+    const far=Math.min(1,Math.max(0,(CAM.dist-60)/90)),wh=.88-.18*far,fx=X3(H.x)*wh+cst.x*(1-wh),fz=Z3(H.y)*wh+cst.z*(1-wh),a=Math.min(1,dt*3.2);CAM.tx+=(fx-CAM.tx)*a;CAM.tz+=(fz-CAM.tz)*a;if(introName>0)introName-=dt}
   else{CAM.g=null;CAM.yaw+=dt*.12;CAM.tx=cst.x;CAM.tz=cst.z+2}
   {const q=play?1-Math.pow(1-CAM.intro,3):1,yaw=CAM.yaw+(1-q)*1.5,d=play?CAM.dist*(1+(1-q)*.7):84,pt=play?CAM.pitch:.5,sh=play&&g.shake>0?(Math.random()-.5)*.5:0,gy=Y3(CAM.tx/S3+180,CAM.tz/S3+320);
     cam3.position.set(CAM.tx+Math.sin(yaw)*Math.cos(pt)*d+sh,gy+Math.sin(pt)*d+sh,CAM.tz+Math.cos(yaw)*Math.cos(pt)*d);cam3.lookAt(CAM.tx,play?gy+1.5:HC3+(keepTop-HC3)*.45,CAM.tz);cam3.updateMatrixWorld()}
@@ -261,7 +305,7 @@ function draw(){const now=performance.now(),dt=Math.min(.05,(now-last3)/1000||0)
     g.cn.forEach((k,i)=>inst(iCoin,X3(k.x),Y3(k.x,k.y)+.55+Math.sin(t*5+i)*.12,Z3(k.y),1,1,1,t*4+i));
     /* 光と けむり、たおれて とぶ 敵 */
     for(const f of g.fx){if(f.k==='t'||f.k==='w')continue;const p=f.d?1-f.t/f.d:0,gy=Y3(f.x,f.y);
-      if(f.k==='x'){const R=f.R*S3*(.5+.8*p),v=1-p;inst(iFx,X3(f.x),gy+R*.5,Z3(f.y),R,R*.8,R,0,_c.setRGB(v,.62*v,.2*v).getHex());inst(iFx,X3(f.x),gy+.15,Z3(f.y),R*1.15,.05,R*1.15,0,_c.setRGB(.3*v,.14*v,.04*v).getHex())}
+      if(f.k==='x'){const R=f.R*S3*(.34+.5*p),v=(1-p)*.55;inst(iFx,X3(f.x),gy+R*.5,Z3(f.y),R,R*.8,R,0,_c.setRGB(v,.62*v,.2*v).getHex());inst(iFx,X3(f.x),gy+.15,Z3(f.y),R*1.15,.05,R*1.15,0,_c.setRGB(.3*v,.14*v,.04*v).getHex())}
       else if(f.k==='r'){const R=f.R*S3*(.3+.7*p),q=f.col.split(','),v=(1-p)*.55;inst(iFx,X3(f.x),gy+.15,Z3(f.y),R,.05,R,0,_c.setRGB(q[0]/255*v,q[1]/255*v,q[2]/255*v).getHex())}
       else if(f.k==='p'){const R=.3+(.25-f.t)*2.4,v=Math.min(.7,f.t*2.4);inst(iFx,X3(f.x),gy+.9,Z3(f.y),R,R,R,0,_c.setRGB(v,v*.95,v*.85).getHex())}
       else if(f.k==='s'){const v=f.t/.12*.5;inst(iFx,X3(f.x),gy+.18,Z3(f.y),1.5,.05,1.5,0,_c.setRGB(v,v,v).getHex())}
@@ -293,9 +337,12 @@ function overlay(g){const k=c,w=cv._w,h=cv._h;k.setTransform(cv._d,0,0,cv._d,0,0
   if(g.toSpawn>0)for(const s of g.sides)mark(DIRS[s].x,DIRS[s].y,'rgba(226,60,45,A)',0);
   for(const v of g.ev){if(!v.w)continue;if(v.pts)for(const p of v.pts)mark(Math.max(0,Math.min(W,p[0])),Math.max(0,Math.min(HT,p[1])),'rgba(120,70,200,A)',1);else mark(DIRS[v.side].x,DIRS[v.side].y,'rgba(255,150,30,A)',1)}
   for(const f of g.fx)if(f.k==='w'){const by=Math.round(h*.16);k.globalAlpha=Math.min(1,f.t*2);k.fillStyle='rgba(14,23,41,.8)';k.fillRect(0,by,w,50);k.fillStyle='#bf3b2b';k.fillRect(0,by,w,2);k.fillRect(0,by+48,w,2);k.fillStyle='#f0c75e';k.font='27px '+BR;k.fillText(f.text,w/2,by+26);k.globalAlpha=1}
-  if(introName>0&&g.wave===0){k.globalAlpha=Math.min(1,introName*1.5);k.font='22px '+BR;const nm=THM.name,lw=k.measureText(nm).width+36;k.fillStyle='rgba(14,23,41,.78)';rrect(k,w/2-lw/2,h*.3-20,lw,40,8);k.fill();k.fillStyle='#f0c75e';k.fillText(nm,w/2,h*.3+1);k.globalAlpha=1}
+  if(introName>0&&g.wave===0){k.globalAlpha=Math.min(1,introName*1.5);k.font='22px '+BR;const nm=THM.name+'（'+KD.label+'）',lw=k.measureText(nm).width+36;k.fillStyle='rgba(14,23,41,.78)';rrect(k,w/2-lw/2,h*.3-20,lw,40,8);k.fill();k.fillStyle='#f0c75e';k.fillText(nm,w/2,h*.3+1);k.globalAlpha=1}
   if(joy){const r=cv.getBoundingClientRect(),x=joy.x0-r.left,y=joy.y0-r.top;k.strokeStyle='rgba(255,255,255,.55)';k.lineWidth=2;k.beginPath();k.arc(x,y,45,0,TAU);k.stroke();k.fillStyle='rgba(255,255,255,.45)';k.beginPath();k.arc(x+inp.x*45,y+inp.y*45,17,0,TAU);k.fill()}}
 
 /* 試すための 取っ手 */
-window.__t3={g:()=>G,cur:()=>CUR,ren,CAM,M:()=>M,start(s,mi){window.__force=mi;newGame(s);window.__force=null;state='play';showCard()},check(){const out=[];for(const m of MAPS){useMap(m);const bad=[];m.dirs.forEach((d,i)=>{const c=cellOf(d.x,d.y);if(blocked[c]||dist[c]>=1e9)bad.push('dir'+i)});PADS.forEach((p,i)=>{if(blk(p.x,p.y)||dist[cellOf(p.x,p.y)]>=1e9)bad.push('pad'+i);if(p.sx&&!blk(p.sx,p.sy))bad.push('site'+i)});if(blk(m.hero[0],m.hero[1]))bad.push('hero');let far=0;m.dirs.forEach(d=>{far=Math.max(far,dist[cellOf(d.x,d.y)])});out.push(m.id+':'+(bad.join(',')||'ok')+':'+far)}return out.join(' ')},step(n){for(let i=0;i<n&&!G.over;i++)update(1/30)},err:null};addEventListener('error',e=>{window.__t3.err=String(e.message)});
-fit();showCard();loadArt();requestAnimationFrame(loop);
+window.__t3={diff(){let n=0,d=[0,0];for(let c=0;c<blocked.length;c++){if(blocked[c])continue;n++;FLD.forEach((f,k)=>{if(Math.abs(f.x[c]-fdx[c])+Math.abs(f.y[c]-fdy[c])>.5)d[k]++})}return n+':'+d.join(',')},g:()=>G,cur:()=>CUR,ren,CAM,M:()=>M,start(s,mi){window.__force=mi;newGame(s);window.__force=null;state='play';showCard()},check(){const out=[];for(const m of MAPS){useMap(m);const bad=[];m.dirs.forEach((d,i)=>{const c=cellOf(d.x,d.y);if(blocked[c]||dist[c]>=1e9)bad.push('dir'+i)});PADS.forEach((p,i)=>{if(blk(p.x,p.y)||dist[cellOf(p.x,p.y)]>=1e9)bad.push('pad'+i);if(p.sx&&!blk(p.sx,p.sy))bad.push('site'+i)});if(blk(m.hero[0],m.hero[1]))bad.push('hero');let far=0;m.dirs.forEach(d=>{far=Math.max(far,dist[cellOf(d.x,d.y)])});out.push(m.id+':'+(bad.join(',')||'ok')+':'+far)}return out.join(' ')},step(n){for(let i=0;i<n&&!G.over;i++)update(1/30)},err:null};addEventListener('error',e=>{window.__t3.err=String(e.message)});
+for(const m of MAPS){useMap(m);setKind(m);mkRd();m.auto=autoSites(m)}CUR=null;
+/* ?map=番号 で、その 地図だけを 出す（見くらべ用） */
+{const fm=new URLSearchParams(location.search).get('map');if(fm!=null&&MAPS[+fm]){window.__force=+fm;useMap(MAPS[+fm])}}
+fit();showCard();loadArt();loadTex();requestAnimationFrame(loop);
