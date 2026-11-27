@@ -7,7 +7,7 @@ let h = fs.readFileSync(path.join(ROOT, 'toride.html'), 'utf8');
 const layer = fs.readFileSync(path.join(__dirname, 'toride3d-layer.js'), 'utf8');
 const rep = (a, b) => { if (!h.includes(a)) throw new Error('toride.html に 見つからない: ' + a.slice(0, 60)); h = h.replace(a, b); };
 
-rep('<title>暁の砦</title>', '<title>暁の砦 3D（試作）</title>');
+rep('<title>暁の砦</title>', '<title>暁の砦</title>');
 rep('<script>\nconst $=', `<script type="importmap">
 { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/" } }
 </script>
@@ -34,7 +34,7 @@ rep('#ov{', `#stage{padding-bottom:0}
 #camui button{width:48px;height:48px;border-radius:50%;background:rgba(14,23,41,.72);color:var(--washi);font-size:22px;border:1px solid rgba(235,226,205,.5);touch-action:none}
 #ov{`);
 rep('スマホは 画面{がめん}を なぞる、', '指{ゆび}2本{にほん}で 回{まわ}す・つまむ（または 右下{みぎした}の ボタン）で、見{み}る 向{む}きが かわる。スマホは 画面{がめん}を なぞる、');
-rep('<span class="brand">暁の砦<small>会津</small></span>', '<span class="brand">暁の砦<small>3D 試作</small></span>');
+rep('<span class="brand">暁の砦<small>会津</small></span>', '<span class="brand">暁の砦<small>会津</small></span><a class="back" href="toride.html" aria-label="2Dの 絵で あそぶ">2D</a>');
 const i = h.lastIndexOf('</script>');
 h = h.slice(0, i) + layer + '\n' + h.slice(i);
 fs.writeFileSync(path.join(ROOT, 'toride3d.html'), h);

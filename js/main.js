@@ -1174,7 +1174,7 @@ const ACTIONS = {
     sfx.tap();
     const p = activeProfile();
     if (d.g === 'rally') { window.__leaving = true; location.assign('rally.html'); return; }
-    if (d.g === 'toride') { window.__leaving = true; location.assign('toride.html'); return; }
+    if (d.g === 'toride') { window.__leaving = true; location.assign('toride3d.html'); return; }
     S.game = d.g;
     if (d.g === 'castle') { go('home'); sayJa(`${p.name}、一緒にがんばろう！`); }
     else { go(p.dino.order.length ? 'dhome' : 'deggs'); sayJa(p.dino.order.length ? `${p.name}、恐竜が待ってるよ！` : 'たまごを選んでね！'); }

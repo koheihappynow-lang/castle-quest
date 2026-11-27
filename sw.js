@@ -6,14 +6,14 @@
 try { importScripts('./asset-hashes.js'); } catch (e) {}
 const HASH = self.ASSET_HASH || {};
 const SCOPE = new URL('./', self.location).pathname;
-const VERSION = 'cq-v83';
+const VERSION = 'cq-v84';
 const ASSETS = 'cq-assets-v2';
 const BG_FILES = ['top', 'dino-study', 'dino-result', 'dino-exchange', 'dino-home', 'dino-nest', 'dino-shop', 'dino-zukan', 'santa', 'papa', 'rest', 'night', 'endogame-adventure', 'hero', 'title', 'hub', 'study', 'select', 'build-day', 'build-sunset', 'build-night', 'exchange', 'ghosts', 'workshop', 'habitat-jungle', 'habitat-volcano', 'habitat-coast']
   .map(n => `./bg/${n}.jpg`);
 const CASTLE_FILES = ['himeji', 'neuschwanstein', 'windsor', 'montsaintmichel', 'edinburgh', 'alhambra', 'chambord', 'hearst', 'forbiddencity', 'pena', 'tsuruga']
   .map(id => `./js/diorama/castles/${id}.js`);
 const CODE = [
-  './', './index.html', './rally.html', './toride.html', './manifest.webmanifest', './css/style.css',
+  './', './index.html', './rally.html', './toride.html', './toride3d.html', './manifest.webmanifest', './css/style.css',
   './js/main.js', './js/store.js', './js/words.js', './js/quiz.js', './js/review.js',
   './js/speech.js', './js/sfx.js', './js/castles.js', './js/photos.js', './js/sentences.js', './js/math.js', './js/puzzle.js', './js/easy.js', './js/watch.js', './js/shadow.js', './js/shadowItems.js', './js/letters.js', './js/drawpad.js', './js/lettersGame.js', './papa.html', './papa.webmanifest', './js/papa.js', './js/diorama/engine.js', ...CASTLE_FILES,
   './asset-hashes.js', './js/version.js', './js/dinoGame.js', './js/dinos.js', './js/dino/view.js', './js/dino/trex.js', './js/dino/dinoBase.js', './js/dino/look.js', './js/dino/rig.js',
