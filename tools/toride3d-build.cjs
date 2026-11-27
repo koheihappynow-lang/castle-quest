@@ -23,6 +23,8 @@ rep('fit();showCard();loadArt();requestAnimationFrame(loop);', '');
 // 指で 動かす 向きを、カメラの 向きに 合わせる
 rep('if(k[0]||k[1]){ix=k[0];iy=k[1]}', 'if(k[0]||k[1]){ix=k[0];iy=k[1]}{const r=camRot(ix,iy);ix=r[0];iy=r[1]}');
 rep('scaled(s.foe,64)', 'scaled(s.foe,112)');
+// 3D版だけの 地図えらび：国が 進むほど 迷路っぽい 地図
+rep('{let i;do{i=(Math.random()*MAPS.length)|0}while(MAPS.length>1&&i===lastMap);lastMap=i;useMap(MAPS[i])}', '{let i;if(window.__force!=null)i=window.__force;else do{i=(Math.random()*MAPS.length)|0}while(MAPS.length>1&&(i===lastMap||!mapOK(MAPS[i],s)));lastMap=i;useMap(MAPS[i])}');
 rep('<canvas id="cv" width="720" height="1280"></canvas>', `<canvas id="gl"></canvas><canvas id="cv"></canvas>
   <div id="camui" hidden><button type="button" data-c="l" aria-label="左に 回す">⟲</button><button type="button" data-c="r" aria-label="右に 回す">⟳</button><button type="button" data-c="in" aria-label="近づく">＋</button><button type="button" data-c="out" aria-label="はなれる">－</button></div>`);
 rep('#ov{', `#stage{padding-bottom:0}
