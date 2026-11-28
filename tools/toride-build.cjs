@@ -1,6 +1,6 @@
 // 「暁の砦」を EndoGame に 入れる：node tools/toride-build.cjs <元の フォルダ>
 // 元の フォルダ＝ index.html と img/ が ある 場所（Claude の アーティファクトと 同じ もの）
-// ・toride.html を つくる（もどる ボタン、時間の きまり、こどもごとの セーブを 足す）
+// ・assets/toride-2d.html（3D版の もと）を つくる（もどる ボタン、時間の きまり、こどもごとの セーブを 足す）
 // ・絵を cards/toride-*.jpg|png に コピーする（release.cjs が 指紋を つける）
 const fs = require('fs'), path = require('path');
 const ROOT = path.join(__dirname, '..');
@@ -48,5 +48,6 @@ ${h.slice(cut).trim()}
 </body>
 </html>
 `;
-fs.writeFileSync(path.join(ROOT, 'toride.html'), out);
-console.log('toride.html', out.length, 'bytes / 絵', [...used].join(' '));
+// 2D版は もう 出さない。3D版の もとに なる 中間ファイルとして assets/ に 置く（toride3d-build.cjs が 読む）
+fs.writeFileSync(path.join(ROOT, 'assets', 'toride-2d.html'), out);
+console.log('assets/toride-2d.html', out.length, 'bytes / 絵', [...used].join(' '));

@@ -1,9 +1,9 @@
 // 「暁の砦」3D版（試作）を つくる：node tools/toride3d-build.cjs
-// toride.html（tools/toride-build.cjs が つくる）に、3Dで 見せる 層（tools/toride3d-layer.js）を かさねて toride3d.html に する。
-// 戦いの 計算は toride.html と 同じ。絵を かく ところだけ three.js に 入れかえる。
+// assets/toride-2d.html（tools/toride-build.cjs が つくる）に、3Dで 見せる 層（tools/toride3d-layer.js）を かさねて toride3d.html に する。
+// 戦いの 計算は その ファイルの まま。絵を かく ところだけ three.js に 入れかえる。
 const fs = require('fs'), path = require('path');
 const ROOT = path.join(__dirname, '..');
-let h = fs.readFileSync(path.join(ROOT, 'toride.html'), 'utf8');
+let h = fs.readFileSync(path.join(ROOT, 'assets', 'toride-2d.html'), 'utf8');
 const layer = fs.readFileSync(path.join(__dirname, 'toride3d-layer.js'), 'utf8');
 const rep = (a, b) => { if (!h.includes(a)) throw new Error('toride.html に 見つからない: ' + a.slice(0, 60)); h = h.replace(a, b); };
 
@@ -37,7 +37,6 @@ rep('#ov{', `#stage{padding-bottom:0}
 #camui button{width:48px;height:48px;border-radius:50%;background:rgba(14,23,41,.72);color:var(--washi);font-size:22px;border:1px solid rgba(235,226,205,.5);touch-action:none}
 #ov{`);
 rep('スマホは 画面{がめん}を なぞる、', '指{ゆび}2本{にほん}で 回{まわ}す・つまむ（または 右下{みぎした}の ボタン）で、見{み}る 向{む}きが かわる。スマホは 画面{がめん}を なぞる、');
-rep('<span class="brand">暁の砦<small>会津</small></span>', '<span class="brand">暁の砦<small>会津</small></span><a class="back" href="toride.html" aria-label="2Dの 絵で あそぶ">2D</a>');
 const i = h.lastIndexOf('</script>');
 h = h.slice(0, i) + layer + '\n' + h.slice(i);
 fs.writeFileSync(path.join(ROOT, 'toride3d.html'), h);

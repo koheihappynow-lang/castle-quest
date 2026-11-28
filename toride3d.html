@@ -77,7 +77,7 @@ rt{font-size:.55em;color:inherit;opacity:.8}
 <body>
 <header id="hud">
   <a class="back" href="./#games" aria-label="EndoGame に もどる">⬅ もどる</a>
-  <span class="brand">暁の砦<small>会津</small></span><a class="back" href="toride.html" aria-label="2Dの 絵で あそぶ">2D</a>
+  <span class="brand">暁の砦<small>会津</small></span>
   <span class="st" id="s-wave"><b>波</b><span id="h-wave">0</span></span>
   <span class="st" id="s-coin"><b>小判</b><span id="h-coin">0</span></span>
   <span class="st" id="s-sol"><b>自軍</b><span id="h-sol">0</span></span>
@@ -118,17 +118,37 @@ const ST=[
   {n:'安芸{あき}',lord:'毛利元就{もうりもとなり}',col:'#2f8f7f',fact:'毛利元就{もうりもとなり}は 三人{さんにん}の 子に「三本{さんぼん}の 矢{や}」の 教{おし}えを のこしたと つたわる。一本{いっぽん}は おれても、三本なら おれない。'},
   {n:'土佐{とさ}',lord:'長宗我部元親{ちょうそかべもとちか}',col:'#8f3f7a',fact:'長宗我部元親{ちょうそかべもとちか}は 土佐{とさ}から 四国{しこく}の ほとんどを したがえた。'},
   {n:'薩摩{さつま}',lord:'島津義弘{しまづよしひろ}',col:'#3a3a9a',fact:'島津義弘{しまづよしひろ}は「鬼島津{おにしまづ}」と おそれられた。関ヶ原{せきがはら}では 敵{てき}の まん中を つきぬけて 帰{かえ}った。'},
+  {n:'肥後{ひご}',lord:'加藤清正{かとうきよまさ}',col:'#7a2f2f',fact:'加藤清正{かとうきよまさ}は お城{しろ}づくりの 名人{めいじん}。熊本城{くまもとじょう}の 石垣{いしがき}は、上{うえ}へ いくほど そりかえって のぼれない「武者返{むしゃがえ}し」で 知られる。'},
+  {n:'肥前{ひぜん}',lord:'龍造寺隆信{りゅうぞうじたかのぶ}',col:'#5a4a2a',fact:'龍造寺隆信{りゅうぞうじたかのぶ}は「肥前{ひぜん}の 熊{くま}」と よばれた。九州{きゅうしゅう}で 島津{しまづ}・大友{おおとも}と 力{ちから}を あらそった。'},
+  {n:'豊後{ぶんご}',lord:'大友宗麟{おおともそうりん}',col:'#8a6a9a',fact:'大友宗麟{おおともそうりん}は キリスト教{きょう}を 信{しん}じた「キリシタン大名{だいみょう}」。外国{がいこく}との 貿易{ぼうえき}で 国{くに}を ゆたかに した。'},
+  {n:'伊予{いよ}',lord:'村上武吉{むらかみたけよし}',col:'#1f5f8f',fact:'村上武吉{むらかみたけよし}は 瀬戸内海{せとないかい}で 力{ちから}を ふるった 村上水軍{むらかみすいぐん}の 大将{たいしょう}。海{うみ}を 通{とお}る 船{ふね}を まもり、道{みち}あんないを した。'},
+  {n:'出雲{いずも}',lord:'尼子経久{あまごつねひさ}',col:'#4f7f5f',fact:'尼子経久{あまごつねひさ}は 月山富田城{がっさんとだじょう}を ねじろに、山陰{さんいん}に 力{ちから}を ひろげた。'},
+  {n:'備前{びぜん}',lord:'宇喜多秀家{うきたひでいえ}',col:'#2a2a4a',fact:'宇喜多秀家{うきたひでいえ}は 岡山城{おかやまじょう}を たてた。関ヶ原{せきがはら}で やぶれて 八丈島{はちじょうじま}へ 流{なが}され、そこで やく 50年{ねん} くらした。'},
+  {n:'播磨{はりま}',lord:'黒田官兵衛{くろだかんべえ}',col:'#3f5f3f',fact:'黒田官兵衛{くろだかんべえ}は 姫路{ひめじ}で 生{う}まれたと いわれる。豊臣秀吉{とよとみひでよし}を ちえで ささえた 軍師{ぐんし}。'},
+  {n:'紀伊{きい}',lord:'雑賀孫一{さいかまごいち}',col:'#9a5a1f',fact:'雑賀衆{さいかしゅう}は 鉄砲{てっぽう}の うでが すぐれた 人{ひと}たちの あつまり。織田信長{おだのぶなが}を 何年{なんねん}も くるしめた。'},
+  {n:'丹波{たんば}',lord:'明智光秀{あけちみつひで}',col:'#3f8f9f',fact:'明智光秀{あけちみつひで}は 1582年{ねん}、本能寺{ほんのうじ}で 織田信長{おだのぶなが}を うった。これを「本能寺の 変{へん}」と いう。'},
+  {n:'越前{えちぜん}',lord:'朝倉義景{あさくらよしかげ}',col:'#6f8f2f',fact:'朝倉{あさくら}氏{し}は 一乗谷{いちじょうだに}に にぎやかな 町{まち}を つくった。その あとは 今{いま}も のこり、むかしの 町なみを 見{み}る ことが できる。'},
+  {n:'近江{おうみ}',lord:'浅井長政{あざいながまさ}',col:'#af7f2f',fact:'浅井長政{あざいながまさ}は 小谷城{おだにじょう}の とのさま。織田信長{おだのぶなが}の 妹{いもうと}・お市{いち}の方{かた}と 結婚{けっこん}したが、のちに 信長と たたかった。'},
+  {n:'美濃{みの}',lord:'斎藤道三{さいとうどうさん}',col:'#5f3f2f',fact:'斎藤道三{さいとうどうさん}は「美濃{みの}の まむし」と よばれた。むすめの 濃姫{のうひめ}は 織田信長{おだのぶなが}の つま。'},
+  {n:'信濃{しなの}',lord:'真田昌幸{さなだまさゆき}',col:'#af2f3f',fact:'真田昌幸{さなだまさゆき}は 上田城{うえだじょう}で、徳川{とくがわ}の 大軍{たいぐん}を 二度{にど}も おいかえした。真田幸村{さなだゆきむら}の 父{ちち}。'},
+  {n:'駿河{するが}',lord:'今川義元{いまがわよしもと}',col:'#7f5faf',fact:'今川義元{いまがわよしもと}は「海道一{かいどういち}の 弓取{ゆみと}り」と よばれた。駿河{するが}・遠江{とおとうみ}・三河{みかわ}を おさめた。'},
+  {n:'相模{さがみ}',lord:'北条氏康{ほうじょううじやす}',col:'#2f7f6f',fact:'北条氏康{ほうじょううじやす}の 小田原城{おだわらじょう}は、上杉謙信{うえすぎけんしん}や 武田信玄{たけだしんげん}に せめられても 落{お}ちなかった。'},
+  {n:'常陸{ひたち}',lord:'佐竹義重{さたけよししげ}',col:'#4a4a5a',fact:'佐竹義重{さたけよししげ}は「鬼義重{おによししげ}」と おそれられた。常陸{ひたち}を ひとつに まとめた。'},
   {n:'江戸{えど}',lord:'徳川家康{とくがわいえやす}',col:'#1f6a45',fact:'徳川家康{とくがわいえやす}は 1603年{ねん}に 江戸幕府{えどばくふ}を ひらいた。幕府は やく 260年{ねん} つづいた。'}
 ];
 const shade=(hex,f)=>{const n=parseInt(hex.slice(1),16),r=n>>16,g=n>>8&255,b=n&255,m=v=>Math.max(0,Math.min(255,Math.round(f>1?v+(255-v)*(f-1):v*f)));return'rgb('+m(r)+','+m(g)+','+m(b)+')'};
 const HP0=2.1,CNT0=58;
-const wavesOf=s=>3+Math.ceil(s/3),hpMul=s=>HP0+.52*(s-1)+.019*(s-1)*(s-1),cntMul=s=>1.25+.06*(s-1);
+/* 15国{くに}からは のびを ゆるやかに する（波{なみ}の 数{かず}と 敵{てき}の 数は ふやしすぎない） */
+const HPA=.46,HPB=.014;
+const wavesOf=s=>s<=14?3+Math.ceil(s/3):8+(s>=23?1:0),hpMul=s=>s<=14?HP0+.52*(s-1)+.019*(s-1)*(s-1):HP0+.52*13+.019*169+HPA*(s-14)+HPB*(s-14)*(s-14),cntMul=s=>s<=14?1.25+.06*(s-1):2.03+.01*(s-14),subsOf=s=>s>=30?3:s>=23?2:s>=15?1:0;
 
 /* ---- お城でのそなえ（ずっと残る） ---- */
 const SAVE='akatsuki-save-v3'+(()=>{try{const d=JSON.parse(localStorage.getItem('castleQuest.v1'));return d&&d.activeId?':'+d.activeId:''}catch(e){return''}})();
 const DIFF=[.6,1,1.6],DNAME=['やさしい','ふつう','むずかしい'];
 let M={ryo:0,cleared:0,diff:1,up:{yashiki:1,buki:0,yoroi:0,toride:0,ashigaru:0,teppo:0,yumitai:0,musha:0,ashiLv:0,teppoLv:0,yumiLv:0,mushaLv:0}};
 try{const o=JSON.parse(localStorage.getItem(SAVE));if(o&&o.up)M=Object.assign(M,o,{up:Object.assign(M.up,o.up)})}catch(e){}
+/* 30国{くに}に ふやした とき：江戸{えど}は さいごに うつったので、前{まえ}に 全部{ぜんぶ} したがえた 人は 14番目{ばんめ}から つづき */
+if(!M.x30){if(M.cleared>=14)M.cleared=13;M.x30=1}
 function save(){try{localStorage.setItem(SAVE,JSON.stringify(M))}catch(e){}}
 const UP={
   yashiki:{n:'お城{しろ}を 大きくする',d:'ほかの そなえを もっと 強{つよ}く できる。はじめの 小判{こばん}も ふえる。',base:100,g:1.6,max:()=>10},
@@ -153,7 +173,10 @@ const NEWS={1:'大将{たいしょう}は「ごうれい」を かけて、ま�
   2:'弓兵{ゆみへい}：とおくから 赤{あか}い 矢{や}を うってくる。うごいて よけよう。',
   3:'たて兵{へい}：竹{たけ}の たてで 矢{や}を はじく。大筒{おおづつ}や 足軽{あしがる}が よく きく。<br>騎馬隊{きばたい}：馬{うま}で いっきに かけこんでくる。',
   5:'しのび：道{みち}を 通{とお}らず、まっすぐ お城{しろ}へ 走{はし}ってくる。',
-  7:'敵{てき}の 大筒{おおづつ}：とおくから お城{しろ}を うつ。近{ちか}づいて 先{さき}に たおそう。'};
+  7:'敵{てき}の 大筒{おおづつ}：とおくから お城{しろ}を うつ。近{ちか}づいて 先{さき}に たおそう。',
+  15:'副将{ふくしょう}：さいごの 波{なみ}に、大将{たいしょう}と いっしょに 副将が 出{で}てくる。副将も「ごうれい」を かける。大将を たおせば 勝{か}ち。',
+  23:'副将{ふくしょう}が ふたりに ふえる。',
+  30:'さいごの 戦{いくさ}。副将{ふくしょう}は 3人{にん}。'};
 const costOf=k=>Math.round(UP[k].base*Math.pow(UP[k].g,M.up[k]-(k==='yashiki'?1:0))/5)*5;
 
 /* ---- 砦の柵と、敵の通り道 ---- */
@@ -304,11 +327,11 @@ function mk(kind,x,y,ent,inn){const g=G,n=Math.max(1,g.wave),hp=(3.4+n*1.1)*hpMu
   const e={rt:(Math.random()*3)|0,x,y,r:T[0],hp:hp*T[1],sp:sp*T[2],boss:0,big:kind==='big'?1:0,mid:kind==='mid'?1:0,h:T[3],fl:0,ph:Math.random()*6,off:Math.random()*2-1,ent,in:inn?1:0,cd:1+Math.random()*2};
   if(kind==='arc'||kind==='shd'||kind==='cav'||kind==='nin'||kind==='can'){e[kind]=1;e.max=e.hp}g.en.push(e);return e}
 function spawn(boss,kind,side){const g=G,s=side!=null?side:g.sides[(Math.random()*g.sides.length)|0],d=DIRS[s],t=14+Math.random()*40,j=(Math.random()-.5)*18,x=d.x+d.ox*t-d.oy*j,y=d.y+d.oy*t+d.ox*j,ent=[d.x,d.y];
-  if(boss){const hp=(160+95*g.s)*hpMul(g.s);g.en.push({x,y,r:13,hp,max:hp,sp:12*CUR.spd,boss:1,fl:0,ph:0,ent,in:0,cd:6});return}
+  if(boss){const sub=kind==='sub',hp=(160+95*g.s)*hpMul(g.s)*(sub?.4:1);g.en.push({x,y,r:sub?11:13,hp,max:hp,sp:(sub?14:12)*CUR.spd,boss:1,sub:sub?1:0,fl:0,ph:0,ent,in:0,cd:sub?9:6});return}
   if(!kind){const q=Math.random(),S=g.s,a=Math.min(ARC1,.05+.012*S),b=Math.min(.1,.03+.008*S);
     kind=S>=2&&q<.18?'fast':S>=2&&q<.18+a?'arc':S>=3&&q<.18+a+b?'shd':S>=5&&q>.94?'big':q>(S>1?.82:.9)?'mid':'n'}
   mk(kind,x,y,ent,0)}
-const ARC1=.14,ARCD=4;
+const ARC1=.14,ARCD=4,RW15=60;
 function eshot(e,tx,ty,dmg,cas){const a=Math.atan2(ty-e.y,tx-e.x),d=Math.hypot(tx-e.x,ty-e.y);G.ea.push({x:e.x,y:e.y-6,vx:Math.cos(a)*170,vy:Math.sin(a)*170,life:d/170+.12,dmg,cas:cas?1:0})}
 /* 技を使う敵：弓兵は止まって射る、大筒は遠くから城を撃つ、大将は号令をかける。立ち止まるときは true */
 function tech(e,dt,hd){const g=G,H=g.hero;e.cd-=dt;
@@ -333,7 +356,7 @@ function startWave(){const g=G,n=++g.wave;g.toSpawn=Math.round((CNT0+30*n)*cntMu
 function update(dt){const g=G,H=g.hero,en=g.en;g.t+=dt;if(g.shake>0)g.shake-=dt;
   /* 波 */
   if(g.toSpawn<=0){if(g.wave<g.waves){g.waveT-=dt;if(g.waveT<=0&&en.length<520)startWave();else if(en.length===0&&g.wave>0&&g.waveT>2)g.waveT=2}}
-  else{g.spawnAcc+=g.spawnRate*dt;while(g.spawnAcc>=1&&g.toSpawn>0){g.spawnAcc--;g.toSpawn--;if(en.length<700)spawn(false)}if(g.bossDue&&g.toSpawn<g.spawnRate*5){g.bossDue=false;spawn(true)}}
+  else{g.spawnAcc+=g.spawnRate*dt;while(g.spawnAcc>=1&&g.toSpawn>0){g.spawnAcc--;g.toSpawn--;if(en.length<700)spawn(false)}if(g.bossDue&&g.toSpawn<g.spawnRate*5){g.bossDue=false;spawn(true);for(let j=subsOf(g.s);j>0;j--)spawn(true,'sub')}}
   for(let i=g.ev.length-1;i>=0;i--){const v=g.ev[i];v.t-=dt;
     if(!v.w&&v.t<1.8){v.w=1;sfx('wave');
       if(v.k==='nin'){v.pts=[];for(let j=0;j<v.n;j++){const q=(Math.random()*4)|0,u=Math.random();v.pts.push(q===0?[20+u*320,-10]:q===1?[20+u*320,HT+10]:q===2?[-10,40+u*560]:[W+10,40+u*560])}}
@@ -412,7 +435,7 @@ function update(dt){const g=G,H=g.hero,en=g.en;g.t+=dt;if(g.shake>0)g.shake-=dt;
       g.fx.push({k:'x',x:b.tx,y:b.ty,t:.5,d:.5,R:30});g.shake=.25;sfx('boom');g.eb[i]=g.eb[g.eb.length-1];g.eb.pop()}}
   /* 倒れた敵と小判 */
   for(let i=en.length-1;i>=0;i--){const e=en[i];if(e.hp>0)continue;g.kills++;
-    if(e.boss){g.won=true;g.fx.push({k:'r',x:e.x,y:e.y,t:.6,d:.6,R:40,col:'235,226,205'})}
+    if(e.boss&&!e.sub){g.won=true;g.fx.push({k:'r',x:e.x,y:e.y,t:.6,d:.6,R:40,col:'235,226,205'})}
     else if(e.mid||e.big||e.can||e.cav||e.shd){for(let k=0;k<(e.can?4:e.big?2:1);k++)g.cn.push({x:e.x+(Math.random()-.5)*14,y:e.y+(Math.random()-.5)*14,t:22})}
     else if(Math.random()<.19&&g.cn.length<400)g.cn.push({x:e.x,y:e.y,t:22});
     if(g.fx.length<110)g.fx.push(e.boss?{k:'p',x:e.x,y:e.y,t:.25}:{k:'d',x:e.x,y:e.y,t:.5,d:.5,vx:(e.x<BX?-1:1)*(8+Math.random()*30),r:(Math.random()-.5)*9,fl:e.x<BX,h:e.h||27,m:e.mid});en[i]=en[en.length-1];en.pop()}
@@ -426,7 +449,7 @@ function update(dt){const g=G,H=g.hero,en=g.en;g.t+=dt;if(g.shake>0)g.shake-=dt;
   for(const f of g.fx)f.t-=dt;g.fx=g.fx.filter(f=>f.t>0);
   if(!g.over&&(g.won||g.base.hp<=0))finish(g.won)}
 function finish(win){const g=G;g.over=true;const first=win&&g.s>M.cleared;
-  g.reward=win?(45+27*g.s)*(first?2:1):Math.round((15+9*g.s)*g.wave/g.waves);g.first=first;M.ryo+=g.reward;if(first)M.cleared=g.s;save();
+  g.reward=win?(45+27*g.s+(g.s>14?RW15*(g.s-14):0))*(first?2:1):Math.round((15+9*g.s+(g.s>14?RW15/3*(g.s-14):0))*g.wave/g.waves);g.first=first;M.ryo+=g.reward;if(first)M.cleared=g.s;save();
   state=win?(g.s===ST.length&&first?'ending':'win'):'lose';sfx(win?'build':'lose');inp.x=0;inp.y=0;joy=null;g.goal=null;showCard()}
 
 /* ---- 絵（img/ の画像。読めないときは仮の図形で描く） ---- */
